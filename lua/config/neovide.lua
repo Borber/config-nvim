@@ -1,31 +1,10 @@
 -- 字体：英文等宽 + 中文回退，按需替换字体名
-vim.o.guifont = "Maple Mono NF, LXGW Bright, monospace:h21"
+local is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
+local font_size = is_windows and 17 or 21
+vim.o.guifont = string.format("Maple Mono NF, LXGW Bright, monospace:h%d", font_size)
 vim.opt.linespace = 2
 vim.g.neovide_theme = "light"
-
--- IME 输入法
-vim.g.neovide_input_ime = false
-
--- 仅在插入/命令行模式启用 IME，Normal 模式自动关闭
-local function set_ime(args)
-if args.event:match("Enter$") then
-    vim.g.neovide_input_ime = true
-else
-    vim.g.neovide_input_ime = false
-end
-end
-
-local ime_input = vim.api.nvim_create_augroup("ime_input", { clear = true })
-vim.api.nvim_create_autocmd({ "InsertEnter", "InsertLeave" }, {
-group = ime_input,
-pattern = "*",
-callback = set_ime,
-})
-vim.api.nvim_create_autocmd({ "CmdlineEnter", "CmdlineLeave" }, {
-group = ime_input,
-pattern = "*",
-callback = set_ime,
-})
+vim.g.neovide_floating_shadow = false
 
 -- 缩放（4K 屏可改为 1.25 或 1.5）
 vim.g.neovide_scale_factor = 1.0
