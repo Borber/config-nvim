@@ -24,27 +24,12 @@ vim.g.maplocalleader = "\\"
 -- Setup lazy.nvim
 require("lazy").setup({
   spec = {
-	{ "sevenc-nanashi/neov-ime.nvim" },
-
-  -- ========================================
-  -- Markdown 编辑增强
-  -- ========================================
-  {
-    "yousefhadder/markdown-plus.nvim",
-    ft = "markdown",
-    opts = {},
-    -- 默认快捷键（<localleader> 默认是 \）：
-    -- 列表: Enter 自动续行, Tab/S-Tab 缩进
-    -- 格式化: \mb 加粗, \mi 斜体, \ms 删除线, \m` 行内代码
-    -- 标题: \m1~\m6 设置标题级别, \mk/\mj 升/降级
-    -- TOC: \mt 生成目录
-    -- Checkbox: \mx 切换勾选
-  },
-
+    { import = "plugins" },
   },
   -- Configure any other settings here. See the documentation for more details.
   -- colorscheme that will be used when installing plugins.
-  install = { colorscheme = { "habamax" } },
+  install = { colorscheme = { "rose-pine", "habamax" } },
   -- automatically check for plugin updates
-  checker = { enabled = true },
+  checker = { enabled = true, notify = false },
+  change_detection = { notify = false },
 })
