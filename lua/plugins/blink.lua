@@ -2,10 +2,26 @@ return {
   "saghen/blink.cmp",
   version = "1.*",
   event = "VeryLazy",
+  dependencies = {
+    "L3MON4D3/LuaSnip",
+  },
   opts = {
     enabled = function()
-      return false
+      return true
     end,
+    keymap = {
+      preset = "super-tab",
+      ["<M-j>"] = { "select_next", "fallback" },
+      ["<M-k>"] = { "select_prev", "fallback" },
+    },
+    completion = {
+      trigger = {
+        show_in_snippet = false,
+      },
+    },
+    snippets = {
+      preset = "luasnip",
+    },
     fuzzy = {
       implementation = "prefer_rust",
     },
