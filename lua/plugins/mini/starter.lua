@@ -2,16 +2,16 @@ local M = {}
 
 function M.setup()
   local starter = require("mini.starter")
+  local visits = require("plugins.mini.visits")
 
   starter.setup({
     header = "",
     footer = "",
     items = {
-      starter.sections.recent_files(5, false, true),
       {
         name = "Find file",
         action = function()
-          require("mini.pick").builtin.files()
+          require("telescope.builtin").find_files()
         end,
         section = "Actions",
       },
@@ -28,7 +28,7 @@ function M.setup()
             return
           end
 
-          vim.cmd("edit " .. vim.fn.fnameescape(dir))
+          visits.open_path(dir)
         end,
         section = "Actions",
       },
@@ -49,6 +49,7 @@ function M.setup()
         action = "qa",
         section = "Actions",
       },
+      visits.recent_paths_section(5),
     },
     content_hooks = {
       starter.gen_hook.aligning("center", "center"),
