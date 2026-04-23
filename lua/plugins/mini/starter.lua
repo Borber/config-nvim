@@ -7,6 +7,7 @@ function M.setup()
     header = "",
     footer = "",
     items = {
+      starter.sections.recent_files(5, false, true),
       {
         name = "Find file",
         action = function()
@@ -48,7 +49,6 @@ function M.setup()
         action = "qa",
         section = "Actions",
       },
-      starter.sections.recent_files(5, false, true),
     },
     content_hooks = {
       starter.gen_hook.aligning("center", "center"),

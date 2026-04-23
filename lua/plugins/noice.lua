@@ -14,6 +14,13 @@ return {
         },
       },
     },
+    views = {
+      cmdline_popup = {
+        size = {
+          min_width = 30,
+        },
+      },
+    },
     messages = {
       enabled = true,
       view = "mini",
