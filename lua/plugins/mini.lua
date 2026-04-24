@@ -9,7 +9,16 @@ return {
 
     require("mini.pairs").setup()
     require("mini.ai").setup()
-    require("mini.surround").setup()
+    require("mini.surround").setup({
+      mappings = {
+        add = "msa",
+        delete = "msd",
+        find = "msf",
+        find_left = "msF",
+        highlight = "msh",
+        replace = "msr",
+      },
+    })
 
     require("plugins.mini.visits").setup()
     require("plugins.mini.files").setup()
