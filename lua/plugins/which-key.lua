@@ -3,11 +3,16 @@ return {
   event = "VeryLazy",
   opts = {
     preset = "helix",
+    delay = 0,
     spec = {
+      { "<leader>e", group = "file" },
       { "<leader>f", group = "find" },
-      { "<leader>h", group = "hunk" },
+      { "<leader>h", group = "git" },
       { "<leader>c", group = "code" },
-      { "<leader>r", group = "rename" },
+      { "<leader>r", group = "code" },
+      { "<leader>t", group = "tab" },
+      { "<localleader>t", group = "terminal" },
+      { "<localleader>m", group = "markdown" },
     },
   },
   keys = {

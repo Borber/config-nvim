@@ -110,10 +110,6 @@ function M.setup()
     desc = "Explorer",
     silent = true,
   })
-  vim.keymap.set("n", "<localleader>e", toggle_files, {
-    desc = "Explorer",
-    silent = true,
-  })
 end
 
 return M

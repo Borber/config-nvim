@@ -69,11 +69,11 @@ return {
   init = function()
     vim.o.showtabline = 2
 
-    vim.keymap.set("n", "<leader>t", "<Cmd>tabnew<CR>", {
+    vim.keymap.set("n", "<leader>tn", "<Cmd>tabnew<CR>", {
       desc = "New tab",
       silent = true,
     })
-    vim.keymap.set("n", "<leader>x", close_tab, {
+    vim.keymap.set("n", "<leader>tx", close_tab, {
       desc = "Close tab",
       silent = true,
     })

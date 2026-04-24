@@ -54,15 +54,26 @@ return {
         group = vim.api.nvim_create_augroup("ConfigMarkdownKeys", { clear = true }),
         pattern = "markdown",
         callback = function(event)
-          vim.keymap.set("n", "K", open_markdown_target, {
-            buffer = event.buf,
-            desc = "Open markdown link",
-            silent = true,
-          })
+          local map = function(mode, lhs, rhs, desc)
+            vim.keymap.set(mode, lhs, rhs, {
+              buffer = event.buf,
+              desc = desc,
+              silent = true,
+              remap = type(rhs) == "string" and rhs:match("^<Plug>") ~= nil,
+            })
+          end
+          map("n", "K", open_markdown_target, "Open markdown link")
+          -- markdown-plus 默认映射已整体禁用（见下方 opts.keymaps.enabled=false），
+          -- 这里手工保留唯一需要的：<localleader>mx 切换 checkbox（n/x 模式）。
+          map({ "n", "x" }, "<localleader>mx", "<Plug>(MarkdownPlusToggleCheckbox)", "Toggle checkbox")
         end,
       })
     end,
-    opts = {},
+    opts = {
+      -- 关掉 markdown-plus 自带的所有默认 keymap（避免 <localleader>h* / <localleader>t* 冲突）。
+      -- 需要用到的功能通过 <Plug>(MarkdownPlus...) 手工绑定。
+      keymaps = { enabled = false },
+    },
   },
   {
     "MeanderingProgrammer/render-markdown.nvim",

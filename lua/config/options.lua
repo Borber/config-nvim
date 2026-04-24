@@ -15,6 +15,7 @@ opt.showcmdloc = "statusline"  -- 在状态栏显示命令提示
 opt.showmode = false           -- 不单独显示当前模式
 opt.termguicolors = true       -- 24 位真彩色
 opt.fillchars:append({ eob = " " }) -- 去掉 ~ 号
+opt.signcolumn = "yes"        -- 固定保留 sign 列，避免 Git/LSP 标记挤动文本
 opt.hidden = true              -- 切换缓冲区时保留未保存修改
 opt.autowriteall = true        -- 切换窗口等操作时自动保存
 opt.ignorecase = true          -- 搜索默认忽略大小写
@@ -33,3 +34,14 @@ vim.filetype.add({
     TODO = "markdown",
   },
 })
+
+-- Windows 下默认使用 pwsh，保持 UTF-8 与纯文本输出，避免 PSStyle 乱码
+if vim.fn.has("win32") == 1 and vim.fn.executable("pwsh") == 1 then
+  vim.o.shell = "pwsh.exe -NoLogo"
+  vim.o.shellcmdflag =
+    "-ExecutionPolicy RemoteSigned -Command $PSStyle.OutputRendering = 'PlainText';"
+  vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+  vim.o.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+  vim.o.shellquote = ""
+  vim.o.shellxquote = ""
+end
