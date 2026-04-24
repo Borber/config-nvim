@@ -6,9 +6,6 @@ return {
     "L3MON4D3/LuaSnip",
   },
   opts = {
-    enabled = function()
-      return true
-    end,
     keymap = {
       preset = "super-tab",
       ["<M-j>"] = { "select_next", "fallback" },
@@ -35,24 +32,17 @@ return {
       },
       sources = function()
         local cmdtype = vim.fn.getcmdtype()
-
         if cmdtype == "/" or cmdtype == "?" then
           return { "buffer" }
         end
-
         if cmdtype == ":" or cmdtype == "@" then
           return { "cmdline", "buffer" }
         end
-
         return {}
       end,
       completion = {
-        ghost_text = {
-          enabled = true,
-        },
-        menu = {
-          auto_show = true,
-        },
+        menu = { auto_show = true },
+        ghost_text = { enabled = true },
       },
     },
   },

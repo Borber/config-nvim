@@ -1,0 +1,35 @@
+-- ============================================
+-- 基础选项
+-- ============================================
+vim.g.mapleader = " "
+vim.g.maplocalleader = ","
+
+local opt = vim.opt
+
+opt.number = true              -- 显示行号
+opt.relativenumber = true     -- 相对行号
+opt.mouse = "a"                -- 启用鼠标
+opt.cmdheight = 0              -- 隐藏命令行空白区域
+opt.showcmd = true             -- 显示未完成的命令
+opt.showcmdloc = "statusline"  -- 在状态栏显示命令提示
+opt.showmode = false           -- 不单独显示当前模式
+opt.termguicolors = true       -- 24 位真彩色
+opt.fillchars:append({ eob = " " }) -- 去掉 ~ 号
+opt.hidden = true              -- 切换缓冲区时保留未保存修改
+opt.autowriteall = true        -- 切换窗口等操作时自动保存
+opt.ignorecase = true          -- 搜索默认忽略大小写
+opt.smartcase = true           -- 搜索词含大写时改为区分大小写
+opt.hlsearch = true            -- 高亮搜索结果
+opt.incsearch = true           -- 输入搜索词时即时跳转匹配
+
+-- 延迟到 UIEnter 后再挂系统剪贴板，避免启动期 fork pbcopy/xclip 阻塞
+vim.schedule(function()
+  opt.clipboard = "unnamedplus"
+end)
+
+-- filetype 自定义
+vim.filetype.add({
+  filename = {
+    TODO = "markdown",
+  },
+})
