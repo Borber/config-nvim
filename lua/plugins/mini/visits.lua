@@ -1,6 +1,9 @@
 local M = {}
 
 local uv = vim.uv or vim.loop
+local recent_paths = nil
+local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+local recent_paths_limit = 100
 
 local function normalize_path(path)
   if path == nil or path == "" then
@@ -14,37 +17,127 @@ local function is_directory(path)
   return path ~= nil and vim.fn.isdirectory(path) == 1
 end
 
-local function format_path_name(path)
-  local name = vim.fn.fnamemodify(path, ":t")
-
-  if name == "" or name == "." then
-    name = vim.fn.fnamemodify(path, ":~")
+local function path_directory(path)
+  if path == nil then
+    return nil
   end
 
   if is_directory(path) then
-    name = name .. " [dir]"
+    return path
   end
 
-  return string.format("%s (%s)", name, vim.fn.fnamemodify(path, ":~:."))
+  return normalize_path(vim.fn.fnamemodify(path, ":h"))
 end
 
-function M.setup()
-  require("mini.visits").setup()
+local function load_recent_paths()
+  if recent_paths ~= nil then
+    return recent_paths
+  end
+
+  if uv.fs_stat(recent_paths_store) == nil then
+    recent_paths = {}
+    return recent_paths
+  end
+
+  local lines = vim.fn.readfile(recent_paths_store)
+  local ok, decoded = pcall(vim.json.decode, table.concat(lines, "\n"))
+
+  recent_paths = {}
+  if not ok or type(decoded) ~= "table" then
+    return recent_paths
+  end
+
+  for _, path in ipairs(decoded) do
+    local resolved_path = normalize_path(path)
+    if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
+      table.insert(recent_paths, resolved_path)
+    end
+  end
+
+  return recent_paths
 end
 
-function M.register_directory(path)
-  local directory = normalize_path(path)
-  if not is_directory(directory) then
+local function write_recent_paths()
+  if recent_paths == nil then
     return
   end
 
-  require("mini.visits").register_visit(directory, vim.fn.getcwd())
+  vim.fn.writefile({ vim.json.encode(recent_paths) }, recent_paths_store)
+end
+
+local function push_recent_path(path)
+  local resolved_path = normalize_path(path)
+  if resolved_path == nil or uv.fs_stat(resolved_path) == nil then
+    return
+  end
+
+  local paths = load_recent_paths()
+
+  for index = #paths, 1, -1 do
+    if paths[index] == resolved_path then
+      table.remove(paths, index)
+    end
+  end
+
+  table.insert(paths, 1, resolved_path)
+
+  while #paths > recent_paths_limit do
+    table.remove(paths)
+  end
+
+  write_recent_paths()
+end
+
+local function startup_paths()
+  local paths = {}
+
+  for index = vim.fn.argc() - 1, 0, -1 do
+    local resolved_path = normalize_path(vim.fn.argv(index))
+    if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
+      table.insert(paths, resolved_path)
+    end
+  end
+
+  return paths
+end
+
+local function path_name(path)
+  local trimmed_path = path:gsub("[/\\]+$", "")
+  local name = trimmed_path:match("([^/\\]+)$")
+
+  return name or path
+end
+
+local function format_path_name(path)
+  local icon = is_directory(path) and "󰉋" or "󰈔"
+  local name = path_name(path)
+
+  return string.format("%s  %s  %s", name, path, icon)
+end
+
+function M.setup()
+  load_recent_paths()
+
+  vim.api.nvim_create_autocmd("VimEnter", {
+    group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
+    once = true,
+    callback = function()
+      for _, path in ipairs(startup_paths()) do
+        push_recent_path(path)
+      end
+    end,
+  })
 end
 
 function M.open_path(path)
   local resolved_path = normalize_path(path)
   if resolved_path == nil then
     return
+  end
+
+  local directory = path_directory(resolved_path)
+  if directory ~= nil then
+    vim.api.nvim_set_current_dir(directory)
   end
 
   vim.cmd("edit " .. vim.fn.fnameescape(resolved_path))
@@ -54,16 +147,12 @@ function M.recent_paths_section(limit)
   limit = limit or 5
 
   return function()
-    local visits = require("mini.visits")
-    local paths = visits.list_paths("", {
-      sort = visits.gen_sort.default({ recency_weight = 1 }),
-      filter = function(path_data)
-        return uv.fs_stat(path_data.path) ~= nil
-      end,
-    })
-
     local items = {}
-    for _, path in ipairs(paths) do
+    for _, path in ipairs(load_recent_paths()) do
+      if uv.fs_stat(path) == nil then
+        goto continue
+      end
+
       table.insert(items, {
         action = function()
           M.open_path(path)
@@ -75,6 +164,8 @@ function M.recent_paths_section(limit)
       if #items >= limit then
         break
       end
+
+      ::continue::
     end
 
     if #items == 0 then

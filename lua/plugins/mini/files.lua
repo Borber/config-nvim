@@ -18,16 +18,16 @@ function M.setup()
     options = {
       use_as_default_explorer = true,
     },
+    windows = {
+      preview = true,
+      width_preview = 60,
+    },
   })
 
   vim.api.nvim_create_autocmd("User", {
     pattern = "MiniFilesBufferCreate",
     callback = function(args)
-      local visits = require("plugins.mini.visits")
       local buf_id = args.data.buf_id
-      local path = vim.api.nvim_buf_get_name(buf_id):match("^minifiles://%d+/(.+)$")
-
-      visits.register_directory(path)
 
       vim.keymap.set("n", "<Esc>", function()
         require("mini.files").close()
