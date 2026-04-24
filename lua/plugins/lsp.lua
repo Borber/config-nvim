@@ -79,17 +79,35 @@ return {
           return
         end
 
-        local map = function(mode, lhs, rhs, desc)
-          vim.keymap.set(mode, lhs, rhs, { buffer = event.buf, desc = desc, silent = true })
-        end
+        vim.schedule(function()
+          if not vim.api.nvim_buf_is_valid(event.buf) then
+            return
+          end
 
-        map("n", "K", vim.lsp.buf.hover, "LSP hover")
-        map("n", "gd", vim.lsp.buf.definition, "Goto definition")
-        map("n", "gr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References")
-        map("n", "gI", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation")
-        map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
-        map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-        map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
+          pcall(vim.keymap.del, "n", "grn", { buffer = event.buf })
+          pcall(vim.keymap.del, "n", "grr", { buffer = event.buf })
+          pcall(vim.keymap.del, "n", "gri", { buffer = event.buf })
+          pcall(vim.keymap.del, "n", "gra", { buffer = event.buf })
+          pcall(vim.keymap.del, "x", "gra", { buffer = event.buf })
+
+          local map = function(mode, lhs, rhs, desc, opts)
+            local keymap_opts = vim.tbl_extend("force", {
+              buffer = event.buf,
+              desc = desc,
+              silent = true,
+            }, opts or {})
+
+            vim.keymap.set(mode, lhs, rhs, keymap_opts)
+          end
+
+          map("n", "K", vim.lsp.buf.hover, "LSP hover")
+          map("n", "gd", vim.lsp.buf.definition, "Goto definition")
+          map("n", "gr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References", { nowait = true })
+          map("n", "gI", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation", { nowait = true })
+          map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
+          map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+          map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
+        end)
       end,
     })
   end,

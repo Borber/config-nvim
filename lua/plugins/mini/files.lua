@@ -1,20 +1,87 @@
 local M = {}
 
-local function toggle_files()
-  local minifiles = require("mini.files")
-  local path = vim.api.nvim_buf_get_name(0)
-
+-- 从 cwd 向下构造分支，直到当前文件或目录所在的位置。
+local function build_branch_from_cwd(cwd, path)
   if path == "" then
-    path = vim.fn.getcwd()
+    return nil
   end
 
+  local normalized_cwd = vim.fs.normalize(cwd)
+  local normalized_path = vim.fs.normalize(path)
+  local current_dir = vim.fn.isdirectory(path) == 1 and normalized_path or vim.fs.dirname(normalized_path)
+  local branch = { current_dir }
+  local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
+
+  while branch[1] ~= normalized_cwd and branch[1]:find(cwd_ancestor_pattern) ~= nil do
+    table.insert(branch, 1, vim.fs.dirname(branch[1]))
+  end
+
+  if branch[1] ~= normalized_cwd then
+    return nil
+  end
+
+  return branch
+end
+
+-- 在最深一列里把光标移动到当前文件对应的那一行。
+local function focus_file_entry(minifiles, directory_path, file_path)
+  local state = minifiles.get_explorer_state()
+  if state == nil then
+    return
+  end
+
+  local target_win
+  for _, window in ipairs(state.windows) do
+    if window.path == directory_path then
+      target_win = window.win_id
+      break
+    end
+  end
+
+  if target_win == nil or not vim.api.nvim_win_is_valid(target_win) then
+    return
+  end
+
+  local buf_id = vim.api.nvim_win_get_buf(target_win)
+  local line_count = vim.api.nvim_buf_line_count(buf_id)
+
+  for line = 1, line_count do
+    local entry = minifiles.get_fs_entry(buf_id, line)
+    if entry ~= nil and entry.path == file_path then
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_set_cursor(target_win, { line, 0 })
+      return
+    end
+  end
+end
+
+local function toggle_files()
+  local minifiles = require("mini.files")
+  local cwd = vim.fs.normalize(vim.fn.getcwd())
+  local path = vim.api.nvim_buf_get_name(0)
+
   if not minifiles.close() then
-    minifiles.open(path, true)
+    -- 先以 cwd 作为锚点打开，再展开到当前文件所在位置。
+    minifiles.open(cwd, false)
+
+    local branch = build_branch_from_cwd(cwd, path)
+    if branch == nil then
+      return
+    end
+
+    minifiles.set_branch(branch, { depth_focus = #branch })
+
+    if vim.fn.filereadable(path) == 1 then
+      focus_file_entry(minifiles, branch[#branch], vim.fs.normalize(path))
+    end
   end
 end
 
 function M.setup()
   require("mini.files").setup({
+    mappings = {
+      go_in_plus = "<CR>",
+    },
     options = {
       use_as_default_explorer = true,
     },
