@@ -12,29 +12,24 @@ return {
     { "<leader>hl", "<cmd>Neogit log<cr>", desc = "Git log" },
   },
   opts = {
-    kind = "floating",
-    floating = {
-      width = 0.8,
-      height = 0.7,
-      border = "rounded",
-    },
+    kind = "auto",
     commit_editor = {
-      kind = "floating",
+      kind = "auto",
     },
     commit_select_view = {
-      kind = "floating",
+      kind = "auto",
     },
     log_view = {
-      kind = "floating",
+      kind = "auto",
     },
     reflog_view = {
-      kind = "floating",
+      kind = "auto",
     },
     refs_view = {
-      kind = "floating",
+      kind = "auto",
     },
     stash = {
-      kind = "floating",
+      kind = "auto",
     },
     integrations = {
       telescope = true,
