@@ -23,6 +23,48 @@ local servers = {
   },
 }
 
+local function completion_capabilities()
+  return vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
+    textDocument = {
+      completion = {
+        completionItem = {
+          snippetSupport = true,
+          commitCharactersSupport = false,
+          documentationFormat = { "markdown", "plaintext" },
+          deprecatedSupport = true,
+          preselectSupport = false,
+          tagSupport = { valueSet = { 1 } },
+          insertReplaceSupport = true,
+          resolveSupport = {
+            properties = {
+              "documentation",
+              "detail",
+              "additionalTextEdits",
+              "command",
+              "data",
+            },
+          },
+          insertTextModeSupport = {
+            valueSet = { 1 },
+          },
+          labelDetailsSupport = true,
+        },
+        completionList = {
+          itemDefaults = {
+            "commitCharacters",
+            "editRange",
+            "insertTextFormat",
+            "insertTextMode",
+            "data",
+          },
+        },
+        contextSupport = true,
+        insertTextMode = 1,
+      },
+    },
+  })
+end
+
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
     pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })
@@ -35,7 +77,6 @@ return {
   dependencies = {
     { "williamboman/mason.nvim", opts = {} },
     "williamboman/mason-lspconfig.nvim",
-    "saghen/blink.cmp",
   },
   config = function()
     vim.diagnostic.config({
@@ -54,7 +95,7 @@ return {
 
     -- 所有 server 共享的默认 capabilities
     vim.lsp.config("*", {
-      capabilities = require("blink.cmp").get_lsp_capabilities(),
+      capabilities = completion_capabilities(),
     })
 
     for name, cfg in pairs(servers) do

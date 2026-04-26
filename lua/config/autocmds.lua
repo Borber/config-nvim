@@ -3,26 +3,45 @@
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
 
--- 让无名 buffer 默认以 markdown filetype 打开
-vim.api.nvim_create_autocmd("BufEnter", {
-  group = augroup("unnamed_markdown", { clear = true }),
+-- 仅对“正常文件 buffer”执行自动保存：
+-- - 必须是有效 buffer
+-- - 不能是 terminal/help/quickfix 等特殊 buftype
+-- - 必须可修改、非只读、且当前确实有未保存改动
+-- - 必须已经有文件名，避免把无名临时 buffer 强行写盘
+local function autosave_normal_buffer(bufnr)
+  if not bufnr or bufnr == 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
+
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  local bo = vim.bo[bufnr]
+  if bo.buftype ~= "" or not bo.modifiable or bo.readonly or not bo.modified then
+    return
+  end
+
+  if vim.api.nvim_buf_get_name(bufnr) == "" then
+    return
+  end
+
+  pcall(vim.api.nvim_buf_call, bufnr, function()
+    -- 用 :update 而不是 :write：只有内容真的变更时才写盘。
+    -- silent 避免在频繁切窗/失焦时打扰命令行区域。
+    vim.cmd("silent update")
+  end)
+end
+
+-- 严格 autosave：覆盖几类最常见的“离开当前编辑上下文”场景
+-- - InsertLeave：退出插入模式时保存
+-- - BufLeave：离开当前 buffer（含切到 terminal / 切 tab / 切别的文件）时保存
+-- - FocusLost：Neovim / Neovide 失焦时保存
+-- - VimLeavePre：退出前再尽量保存一次
+vim.api.nvim_create_autocmd({ "InsertLeave", "BufLeave", "FocusLost", "VimLeavePre" }, {
+  group = augroup("config_autosave", { clear = true }),
   callback = function(event)
-    -- 启动屏幕等先初始化自己的 buffer
-    if vim.v.vim_did_enter == 0 then
-      return
-    end
-
-    if vim.bo[event.buf].buftype ~= "" then
-      return
-    end
-    if vim.api.nvim_buf_get_name(event.buf) ~= "" then
-      return
-    end
-    if vim.bo[event.buf].filetype ~= "" then
-      return
-    end
-
-    vim.bo[event.buf].filetype = "markdown"
+    autosave_normal_buffer(event.buf)
   end,
 })
 

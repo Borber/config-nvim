@@ -33,10 +33,30 @@ local function prefer_plain_symbol_over_copilot(item_a, item_b)
   return nil
 end
 
+local function preview_multiline_completion(item)
+  local text_edits = require("blink.cmp.lib.text_edits")
+  local text_edit = text_edits.get_from_item(item)
+
+  if item.insertTextFormat == vim.lsp.protocol.InsertTextFormat.Snippet then
+    local expanded_snippet = require("blink.cmp.sources.snippets.utils").safe_parse(text_edit.newText)
+    text_edit.newText = expanded_snippet and tostring(expanded_snippet) or text_edit.newText
+  end
+
+  local original_cursor = vim.api.nvim_win_get_cursor(0)
+  local undo_text_edit = text_edits.get_undo_text_edit(text_edit)
+  text_edits.apply(text_edit)
+
+  if vim.api.nvim_get_mode().mode ~= "c" then
+    vim.api.nvim_win_set_cursor(0, original_cursor)
+  end
+
+  return undo_text_edit, nil
+end
+
 return {
   "saghen/blink.cmp",
   version = "1.*",
-  event = "VeryLazy",
+  event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
     "L3MON4D3/LuaSnip",
     "fang2hou/blink-copilot",
@@ -52,6 +72,9 @@ return {
         suggestion = {
           enabled = false,
         },
+        filetypes = {
+          markdown = true,
+        },
         server_opts_overrides = {
           settings = {
             advanced = {
@@ -62,6 +85,10 @@ return {
       },
     },
   },
+  config = function(_, opts)
+    package.loaded["blink.cmp.completion.accept.preview"] = preview_multiline_completion
+    require("blink.cmp").setup(opts)
+  end,
   opts = {
     keymap = {
       preset = "super-tab",
@@ -97,9 +124,30 @@ return {
       preset = "luasnip",
     },
     sources = {
-      -- 保留 Copilot 在主菜单里，但仍然让 LSP/片段排在更靠前的位置。
-      default = { "lsp", "snippets", "copilot", "path", "buffer" },
+      default = { "lsp", "copilot", "path", "buffer" },
+      per_filetype = {
+        markdown = { inherit_defaults = true, "snippets" },
+      },
       providers = {
+        buffer = {
+          opts = {
+            get_bufnrs = function()
+              if vim.bo.filetype == "markdown" then
+                return { vim.api.nvim_get_current_buf() }
+              end
+
+              return vim
+                .iter(vim.api.nvim_list_wins())
+                :map(function(win)
+                  return vim.api.nvim_win_get_buf(win)
+                end)
+                :filter(function(buf)
+                  return vim.bo[buf].buftype ~= "nofile"
+                end)
+                :totable()
+            end,
+          },
+        },
         copilot = {
           name = "copilot",
           module = "blink-copilot",

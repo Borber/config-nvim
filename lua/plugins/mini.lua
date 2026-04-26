@@ -22,6 +22,20 @@ return {
 
     require("plugins.mini.visits").setup()
     require("plugins.mini.files").setup()
-    require("plugins.mini.starter").setup()
+
+    vim.keymap.set("n", "<leader>e", function()
+      require("plugins.mini.files").toggle()
+    end, {
+      desc = "Explorer",
+      silent = true,
+    })
+
+    vim.api.nvim_create_user_command("Starter", function()
+      require("plugins.mini.starter").open()
+    end, { desc = "Open starter", force = true })
+
+    if vim.fn.argc() == 0 then
+      require("plugins.mini.starter").setup({ autoopen = true })
+    end
   end,
 }

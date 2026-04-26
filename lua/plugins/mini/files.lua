@@ -1,4 +1,20 @@
 local M = {}
+local configured = false
+
+local function canonical_path(path)
+  if path == nil or path == "" then
+    return path
+  end
+
+  local normalized = vim.fs.normalize(path):gsub("\\", "/")
+  normalized = normalized:gsub("^([A-Za-z]:)/+", "%1/")
+
+  if #normalized > 3 then
+    normalized = normalized:gsub("/+$", "")
+  end
+
+  return normalized
+end
 
 -- 从 cwd 向下构造分支，直到当前文件或目录所在的位置。
 local function build_branch_from_cwd(cwd, path)
@@ -6,14 +22,14 @@ local function build_branch_from_cwd(cwd, path)
     return nil
   end
 
-  local normalized_cwd = vim.fs.normalize(cwd)
-  local normalized_path = vim.fs.normalize(path)
-  local current_dir = vim.fn.isdirectory(path) == 1 and normalized_path or vim.fs.dirname(normalized_path)
+  local normalized_cwd = canonical_path(cwd)
+  local normalized_path = canonical_path(path)
+  local current_dir = vim.fn.isdirectory(path) == 1 and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
   local branch = { current_dir }
   local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
 
   while branch[1] ~= normalized_cwd and branch[1]:find(cwd_ancestor_pattern) ~= nil do
-    table.insert(branch, 1, vim.fs.dirname(branch[1]))
+    table.insert(branch, 1, canonical_path(vim.fs.dirname(branch[1])))
   end
 
   if branch[1] ~= normalized_cwd then
@@ -32,7 +48,7 @@ local function focus_file_entry(minifiles, directory_path, file_path)
 
   local target_win
   for _, window in ipairs(state.windows) do
-    if window.path == directory_path then
+    if canonical_path(window.path) == directory_path then
       target_win = window.win_id
       break
     end
@@ -47,7 +63,7 @@ local function focus_file_entry(minifiles, directory_path, file_path)
 
   for line = 1, line_count do
     local entry = minifiles.get_fs_entry(buf_id, line)
-    if entry ~= nil and entry.path == file_path then
+    if entry ~= nil and canonical_path(entry.path) == file_path then
       vim.api.nvim_set_current_win(target_win)
       vim.api.nvim_win_set_cursor(target_win, { line, 0 })
       return
@@ -78,6 +94,12 @@ local function toggle_files()
 end
 
 function M.setup()
+  if configured then
+    return
+  end
+
+  configured = true
+
   require("mini.files").setup({
     mappings = {
       go_in_plus = "<CR>",
@@ -92,6 +114,7 @@ function M.setup()
   })
 
   vim.api.nvim_create_autocmd("User", {
+    group = vim.api.nvim_create_augroup("ConfigMiniFiles", { clear = true }),
     pattern = "MiniFilesBufferCreate",
     callback = function(args)
       local buf_id = args.data.buf_id
@@ -105,11 +128,11 @@ function M.setup()
       })
     end,
   })
+end
 
-  vim.keymap.set("n", "<leader>e", toggle_files, {
-    desc = "Explorer",
-    silent = true,
-  })
+function M.toggle()
+  M.setup()
+  toggle_files()
 end
 
 return M

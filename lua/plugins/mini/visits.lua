@@ -1,4 +1,5 @@
 local M = {}
+local configured = false
 
 local uv = vim.uv or vim.loop
 local recent_paths = nil
@@ -88,6 +89,29 @@ local function push_recent_path(path)
   write_recent_paths()
 end
 
+local function remove_recent_path(path)
+  local resolved_path = normalize_path(path)
+  if resolved_path == nil then
+    return false
+  end
+
+  local paths = load_recent_paths()
+  local removed = false
+
+  for index = #paths, 1, -1 do
+    if paths[index] == resolved_path then
+      table.remove(paths, index)
+      removed = true
+    end
+  end
+
+  if removed then
+    write_recent_paths()
+  end
+
+  return removed
+end
+
 local function startup_paths()
   local paths = {}
 
@@ -116,7 +140,11 @@ local function format_path_name(path)
 end
 
 function M.setup()
-  load_recent_paths()
+  if configured then
+    return
+  end
+
+  configured = true
 
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
@@ -143,6 +171,10 @@ function M.open_path(path)
   vim.cmd("edit " .. vim.fn.fnameescape(resolved_path))
 end
 
+function M.remove_recent_path(path)
+  return remove_recent_path(path)
+end
+
 function M.recent_paths_section(limit)
   limit = limit or 5
 
@@ -158,6 +190,7 @@ function M.recent_paths_section(limit)
           M.open_path(path)
         end,
         name = format_path_name(path),
+        recent_path = path,
         section = "Recent paths",
       })
 

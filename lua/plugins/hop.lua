@@ -1,35 +1,17 @@
-local function hop_opts()
-  local mode = vim.fn.mode(1)
-
-  if mode == "v" or mode == "V" or mode == "\22" then
-    return { extend_visual = true }
-  end
-
-  return {}
-end
-
 return {
-  "smoka7/hop.nvim",
-  version = "*",
+  "wsdjeg/hop.nvim",
   keys = {
     {
       "s",
-      function()
-        require("hop").hint_words(hop_opts())
-      end,
-      mode = { "n", "v" },
+     "<cmd>HopWord<cr>",
+      mode = { "n", "x", "o" },
       desc = "Hop hint words",
       silent = true,
-    },
-    {
-      "S",
-      function()
-        require("hop").hint_lines(hop_opts())
-      end,
-      mode = { "n", "v" },
-      desc = "Hop hint lines",
-      silent = true,
-    },
+    }
   },
-  opts = {},
+  opts = {
+    keys = "werasdfcvjlk",
+    jump_on_sole_occurrence = true,
+    dim_unmatched = false
+  },
 }
