@@ -71,6 +71,55 @@ local function focus_file_entry(minifiles, directory_path, file_path)
   end
 end
 
+local function is_reusable_unnamed_buffer(win_id)
+  if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
+    return false
+  end
+
+  local buf_id = vim.api.nvim_win_get_buf(win_id)
+  if vim.api.nvim_buf_get_name(buf_id) ~= "" or vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
+    return false
+  end
+
+  return vim.api.nvim_buf_line_count(buf_id) == 1
+    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+end
+
+local function open_entry()
+  local minifiles = require("mini.files")
+  local entry = minifiles.get_fs_entry()
+
+  if entry == nil then
+    return
+  end
+
+  if entry.fs_type == "directory" then
+    for _ = 1, vim.v.count1 do
+      minifiles.go_in()
+    end
+    return
+  end
+
+  if entry.fs_type ~= "file" then
+    return
+  end
+
+  local state = minifiles.get_explorer_state()
+  local target_win = state and state.target_window
+
+  if is_reusable_unnamed_buffer(target_win) then
+    minifiles.go_in({ close_on_file = true })
+    return
+  end
+
+  local path = entry.path
+  if minifiles.close() == false then
+    return
+  end
+
+  vim.cmd("tabedit " .. vim.fn.fnameescape(path))
+end
+
 local function toggle_files()
   local minifiles = require("mini.files")
   local cwd = vim.fs.normalize(vim.fn.getcwd())
@@ -124,6 +173,18 @@ function M.setup()
       end, {
         buffer = buf_id,
         desc = "Close explorer",
+        silent = true,
+      })
+
+      vim.keymap.set("n", "<CR>", open_entry, {
+        buffer = buf_id,
+        desc = "Open entry",
+        silent = true,
+      })
+
+      vim.keymap.set("n", "l", open_entry, {
+        buffer = buf_id,
+        desc = "Open entry",
         silent = true,
       })
 
