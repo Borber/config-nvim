@@ -126,6 +126,15 @@ function M.setup()
         desc = "Close explorer",
         silent = true,
       })
+
+      -- mini.files 里每一行就是一个文件项，s 改为按行跳转。
+      vim.keymap.set("n", "s", function()
+        require("hop").hint_lines()
+      end, {
+        buffer = buf_id,
+        desc = "Hop hint lines",
+        silent = true,
+      })
     end,
   })
 end
