@@ -46,6 +46,29 @@ return {
       lualine_y = {},
       lualine_z = {},
     },
+    -- 顶部只展示 buffer 列表；原生 tab/tabby 不再承担文件切换职责。
+    tabline = {
+      lualine_a = {
+        {
+          "buffers",
+          mode = 2,
+          show_modified_status = true,
+          max_length = function()
+            return vim.o.columns
+          end,
+          symbols = {
+            modified = " ●",
+            alternate_file = "#",
+            directory = "",
+          },
+        },
+      },
+      lualine_b = {},
+      lualine_c = {},
+      lualine_x = {},
+      lualine_y = {},
+      lualine_z = {},
+    },
     extensions = { "lazy", "quickfix", "man" },
   },
 }

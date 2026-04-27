@@ -9,6 +9,7 @@ return {
 
     require("mini.pairs").setup()
     require("mini.ai").setup()
+    require("mini.bufremove").setup()
     require("plugins.mini.trailspace").setup()
 
     require("mini.surround").setup({
@@ -32,6 +33,21 @@ return {
       require("plugins.mini.files").toggle()
     end, {
       desc = "Explorer",
+      silent = true,
+    })
+
+    -- mini.bufremove 删除 buffer 时尽量保留窗口布局，比 :bd 更适合 buffer-first 工作流。
+    vim.keymap.set("n", "<leader>bd", function()
+      require("mini.bufremove").delete(0, false)
+    end, {
+      desc = "Delete buffer",
+      silent = true,
+    })
+
+    vim.keymap.set("n", "<leader>bD", function()
+      require("mini.bufremove").delete(0, true)
+    end, {
+      desc = "Force delete buffer",
       silent = true,
     })
 

@@ -183,17 +183,24 @@ function M.open_path(path, opts)
     M.record_path(resolved_path)
   end
 
-  local directory = path_directory(resolved_path)
-  if directory ~= nil then
-    -- 打开文件/目录前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
-    vim.api.nvim_set_current_dir(directory)
-  end
-
   if is_directory(resolved_path) then
+    -- 打开目录前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
+    vim.api.nvim_set_current_dir(resolved_path)
+
     local sessions = require("plugins.mini.sessions")
     if sessions.has_current() and sessions.read_current({ notify = false, verbose = false }) then
       return
     end
+
+    -- 目录是项目上下文，不是文件 buffer；没有 session 时打开文件树，而不是 edit 目录本身。
+    require("plugins.mini.files").open(resolved_path)
+    return
+  end
+
+  local directory = path_directory(resolved_path)
+  if directory ~= nil then
+    -- 打开文件前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
+    vim.api.nvim_set_current_dir(directory)
   end
 
   vim.cmd("edit " .. vim.fn.fnameescape(resolved_path))

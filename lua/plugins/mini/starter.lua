@@ -41,6 +41,68 @@ local function attach_starter_mappings(buf_id)
   })
 end
 
+local function is_terminal_running(buf_id)
+  -- 这里能可靠判断的是 terminal job 是否还活着；shell 是否“空闲”没有稳定通用信号。
+  local ok, job_id = pcall(vim.api.nvim_buf_get_var, buf_id, "terminal_job_id")
+  if not ok or type(job_id) ~= "number" then
+    return false
+  end
+
+  return vim.fn.jobwait({ job_id }, 0)[1] == -1
+end
+
+local function is_clearable_buffer(buf_id)
+  -- Starter 是项目切换入口：清掉用户可见 buffer，但保留仍在运行的 terminal。
+  if not vim.api.nvim_buf_is_valid(buf_id) then
+    return false
+  end
+
+  if vim.bo[buf_id].buftype == "terminal" then
+    return not is_terminal_running(buf_id)
+  end
+
+  return vim.bo[buf_id].buflisted
+end
+
+local function save_buffer(buf_id)
+  if not vim.bo[buf_id].modified or vim.bo[buf_id].readonly or not vim.bo[buf_id].modifiable then
+    return
+  end
+
+  pcall(vim.api.nvim_buf_call, buf_id, function()
+    vim.cmd("silent write")
+  end)
+end
+
+local function delete_buffer(buf_id)
+  save_buffer(buf_id)
+
+  local ok, bufremove = pcall(require, "mini.bufremove")
+  if ok then
+    pcall(bufremove.delete, buf_id, false)
+    return
+  end
+
+  pcall(vim.api.nvim_buf_delete, buf_id, { force = false })
+end
+
+local function prepare_starter()
+  -- 真正进入 Starter 前先保存当前项目并清场，让下一次 Open 像刚启动一样干净。
+  require("plugins.mini.sessions").write_current({ verbose = false })
+
+  pcall(function()
+    require("mini.files").close()
+  end)
+
+  for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
+    if is_clearable_buffer(buf_id) then
+      delete_buffer(buf_id)
+    end
+  end
+
+  pcall(vim.cmd, "silent! only")
+end
+
 local function ensure_setup(autoopen)
   if configured then
     return
@@ -114,6 +176,7 @@ end
 
 function M.open()
   ensure_setup(false)
+  prepare_starter()
   require("mini.starter").open()
 end
 

@@ -1,7 +1,7 @@
 local M = {}
 local configured = false
 
--- starter 的 Open 入口临时复用 mini.files 做选择器：只在那一次里启用 <S-CR> 直接打开当前项。
+-- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。
 local enable_starter_open_key = false
 
 local function canonical_path(path)
@@ -79,7 +79,7 @@ end
 
 local function is_reusable_unnamed_buffer(win_id)
   -- 启动页或空白新窗口通常是一个未命名、未修改、只有一行空内容的 buffer。
-  -- 这种窗口可以直接复用，不必为了打开文件额外新建 tab。
+  -- 这个占位可以直接复用为第一个真实文件 buffer。
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
     return false
   end
@@ -95,7 +95,7 @@ end
 
 local function is_reusable_directory_buffer(win_id)
   -- :edit 目录会先留下一个目录 buffer，再由 mini.files 接管。
-  -- 选中文件时应复用这个占位窗口，而不是额外开新 tab。
+  -- 选中真实文件时复用这个占位，避免目录名变成一个长期存在的 buffer。
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
     return false
   end
@@ -169,8 +169,8 @@ local function open_entry()
     return
   end
 
-  -- 已经有实际编辑内容时，文件从新 tab 打开，减少覆盖当前工作区的风险。
-  vim.cmd("tabedit " .. vim.fn.fnameescape(entry.path))
+  -- buffer-first：文件在当前窗口打开，已打开文件仍留在 buffer 列表里。
+  vim.cmd("edit " .. vim.fn.fnameescape(entry.path))
 end
 
 local function open_files(root)

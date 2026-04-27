@@ -2,8 +2,8 @@ local function default_neogit_cwd()
   local git = require("util.git")
   local main_file = require("util.main_file")
   local cwd = vim.fn.getcwd()
-  -- 优先使用当前 tab 主文件所在目录推导仓库根；推不出来时回退到 cwd。
-  local dir = git.dir_from_buffer(main_file.tab_buf(0)) or cwd
+  -- 优先用当前/最近文件 buffer 推导仓库；Neogit 这类特殊 buffer 不再依赖原生 tab 继承上下文。
+  local dir = git.dir_from_buffer(main_file.current_buf()) or cwd
 
   return git.root_from(dir) or git.root_from(cwd) or dir
 end
@@ -29,7 +29,7 @@ local function open_neogit(args)
       opts.no_expand = true
     end
 
-    -- Direct popups use Neogit's current repo instance; seed it with our cwd.
+    -- 直接打开 commit/log 等 popup 时，先用我们的 cwd 初始化 Neogit 仓库实例。
     local repo_cwd = popup_repo_cwd(opts)
     if opts[1] and repo_cwd then
       require("neogit.lib.git.repository").instance(repo_cwd)

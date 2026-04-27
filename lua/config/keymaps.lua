@@ -29,9 +29,15 @@ map("n", "<leader>qq", "<Cmd>qa<CR>", { silent = true, desc = "Quit all" })
 map("n", "<leader>qw", "<Cmd>wqa<CR>", { silent = true, desc = "Write and quit all" })
 map("n", "<leader>qQ", "<Cmd>qa!<CR>", { silent = true, desc = "Force quit all" })
 
--- <leader>1..9 直接跳到第 N 个 tab（用 Vim 原生 {count}gt，无需 closure）
+-- Buffer 切换：默认以 buffer 作为文件切换单位。
+map("n", "<leader>bn", "<Cmd>bnext<CR>", { silent = true, desc = "Next buffer" })
+map("n", "<leader>bp", "<Cmd>bprevious<CR>", { silent = true, desc = "Previous buffer" })
+
 for i = 1, 9 do
-  map("n", "<leader>t" .. i, i .. "gt", { silent = true, desc = "Goto tab " .. i })
+  map("n", "<leader>b" .. i, "<Cmd>LualineBuffersJump " .. i .. "<CR>", {
+    silent = true,
+    desc = "Goto buffer " .. i,
+  })
 end
 
 -- Terminal 模式：双 Esc 退出，<C-hjkl> 直接切窗

@@ -45,7 +45,7 @@ end
 
 -- 严格 autosave：覆盖几类最常见的“离开当前编辑上下文”场景
 -- - InsertLeave：退出插入模式时保存
--- - BufLeave：离开当前 buffer（含切到 terminal / 切 tab / 切别的文件）时保存
+-- - BufLeave：离开当前 buffer（含切到 terminal / 切窗口 / 切别的文件）时保存
 -- - FocusLost：Neovim / Neovide 失焦时保存
 -- - VimLeavePre：退出前再尽量保存一次
 vim.api.nvim_create_autocmd({ "InsertLeave", "BufLeave", "FocusLost", "VimLeavePre" }, {
