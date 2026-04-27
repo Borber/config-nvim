@@ -171,13 +171,17 @@ function M.record_path(path)
   push_recent_path(resolved_path)
 end
 
-function M.open_path(path)
+function M.open_path(path, opts)
+  opts = opts or {}
+
   local resolved_path = normalize_path(path)
   if resolved_path == nil then
     return
   end
 
-  M.record_path(resolved_path)
+  if opts.record ~= false then
+    M.record_path(resolved_path)
+  end
 
   local directory = path_directory(resolved_path)
   if directory ~= nil then

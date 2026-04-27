@@ -113,10 +113,6 @@ local function is_reusable_target_window(win_id)
   return is_reusable_unnamed_buffer(win_id) or is_reusable_directory_buffer(win_id)
 end
 
-local function record_recent_path(path)
-  require("plugins.mini.visits").record_path(path)
-end
-
 local function open_path(path)
   require("mini.files").close()
   require("plugins.mini.visits").open_path(path)
@@ -149,8 +145,6 @@ local function open_entry()
   end
 
   if entry.fs_type == "directory" then
-    record_recent_path(entry.path)
-
     -- 支持 2<CR> 这类 count 操作，一次进入多层目录。
     for _ = 1, vim.v.count1 do
       minifiles.go_in()
@@ -161,8 +155,6 @@ local function open_entry()
   if entry.fs_type ~= "file" then
     return
   end
-
-  record_recent_path(entry.path)
 
   local state = minifiles.get_explorer_state()
   local target_win = state and state.target_window
@@ -296,7 +288,6 @@ function M.open(path)
 
   local root = path or vim.fn.getcwd()
   require("mini.files").close()
-  record_recent_path(root)
   enable_starter_open_key = true
   open_files(root)
 end

@@ -82,7 +82,7 @@ local function ensure_setup(autoopen)
       {
         name = "Config",
         action = function()
-          vim.cmd("edit " .. vim.fn.fnameescape(vim.fn.stdpath("config")))
+          require("plugins.mini.visits").open_path(vim.fn.stdpath("config"), { record = false })
         end,
         section = "Actions",
       },
