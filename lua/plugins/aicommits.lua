@@ -32,10 +32,6 @@ return {
       end,
     })
   end,
-  keys = {
-    { "<leader>ha", "<Cmd>AICommit<CR>", desc = "AI commit" },
-    { "<leader>hA", "<Cmd>AICommitHealth<CR>", desc = "AI commit health" },
-  },
   opts = function()
     local local_config = local_aicommits_config()
 
