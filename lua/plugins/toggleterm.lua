@@ -30,6 +30,7 @@ local function attach_term_buf(term)
 end
 
 local function find_same_direction_open_win(direction)
+  -- 同方向终端共享同一块区域：水平终端横向分列，垂直终端纵向分行。
   for _, t in ipairs(terminal_mod().get_all(false)) do
     if t:is_open() and t.direction == direction and t.window
       and api.nvim_win_is_valid(t.window) then
@@ -39,6 +40,8 @@ local function find_same_direction_open_win(direction)
 end
 
 local function find_content_window()
+  -- content 窗口指普通编辑窗口；新建 vertical 终端时优先从这里切分，
+  -- 这样不会把底部 horizontal 终端区域也劈开。
   for _, win in ipairs(api.nvim_tabpage_list_wins(0)) do
     local buf = api.nvim_win_get_buf(win)
     if vim.bo[buf].buftype ~= "terminal" then
@@ -86,6 +89,8 @@ local function open_new(direction)
   return function()
     local ui = require("toggleterm.ui")
     local orig = ui.open_split
+    -- 只在本次 open() 调用期间替换布局函数，调用结束立刻还原，
+    -- 避免影响 toggleterm 其他命令或插件内部逻辑。
     ui.open_split = custom_open_split
     local ok, err = pcall(function()
       terminal_mod().Terminal:new({ direction = direction }):open()
@@ -96,6 +101,7 @@ local function open_new(direction)
 end
 
 local function current_term()
+  -- identify() 会根据当前 buffer/window 找到对应的 toggleterm 实例。
   local _, term = terminal_mod().identify()
   return term
 end
@@ -131,6 +137,7 @@ local function pick_terminal()
 
   local has_telescope, pickers = pcall(require, "telescope.pickers")
   if not has_telescope then
+    -- Telescope 没加载时退回 toggleterm 自带选择器，保证命令仍然可用。
     vim.cmd.TermSelect()
     return
   end
@@ -180,6 +187,7 @@ local function pick_terminal()
         if entry and entry.value then
           entry.value:shutdown()
           actions.close(bufnr)
+          -- 关闭后重新打开选择器，方便连续清理多个终端。
           vim.schedule(pick_terminal)
         end
       end
@@ -206,6 +214,7 @@ return {
   },
   opts = {
     size = function(term)
+      -- 终端尺寸随窗口缩放，但保留最低可用尺寸。
       if term.direction == "horizontal" then
         return math.max(12, math.floor(vim.o.lines * 0.3))
       end

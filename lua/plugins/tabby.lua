@@ -3,6 +3,7 @@ local function modified_tab_buffers(tabpage)
   local seen = {}
   local has_unnamed = false
 
+  -- 一个 tab 里可能有多个窗口指向同一个 buffer，所以用 seen 去重。
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
     local buf = vim.api.nvim_win_get_buf(win)
 
@@ -43,6 +44,8 @@ local function close_tab()
     return
   end
 
+  -- 有文件名的改动 buffer 可以直接写盘；无名 buffer 必须询问，
+  -- 否则 tabclose! 会让用户还没命名的新内容消失。
   if #buffers > 0 and not write_buffers(buffers) then
     return
   end

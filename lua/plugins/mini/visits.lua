@@ -7,6 +7,7 @@ local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json
 local recent_paths_limit = 100
 
 local function normalize_path(path)
+  -- 转成绝对路径，避免同一个目录因为相对路径不同而在最近列表里重复出现。
   if path == nil or path == "" then
     return nil
   end
@@ -31,6 +32,7 @@ local function path_directory(path)
 end
 
 local function load_recent_paths()
+  -- 最近路径按需懒加载，并缓存在内存里，避免 starter 每次刷新都读文件。
   if recent_paths ~= nil then
     return recent_paths
   end
@@ -48,6 +50,7 @@ local function load_recent_paths()
     return recent_paths
   end
 
+  -- 读取时顺手过滤已经不存在的路径，starter 里就不会出现失效入口。
   for _, path in ipairs(decoded) do
     local resolved_path = normalize_path(path)
     if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
@@ -74,6 +77,7 @@ local function push_recent_path(path)
 
   local paths = load_recent_paths()
 
+  -- 移到队首前先删除旧位置，保持“最近使用”列表唯一且有序。
   for index = #paths, 1, -1 do
     if paths[index] == resolved_path then
       table.remove(paths, index)
@@ -115,6 +119,7 @@ end
 local function startup_paths()
   local paths = {}
 
+  -- argv 从后往前压入，最后显示时仍能保持命令行参数的原始顺序。
   for index = vim.fn.argc() - 1, 0, -1 do
     local resolved_path = normalize_path(vim.fn.argv(index))
     if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
@@ -165,6 +170,7 @@ function M.open_path(path)
 
   local directory = path_directory(resolved_path)
   if directory ~= nil then
+    -- 打开文件/目录前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
     vim.api.nvim_set_current_dir(directory)
   end
 

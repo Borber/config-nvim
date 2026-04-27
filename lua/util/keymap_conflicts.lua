@@ -15,6 +15,7 @@ local function has_suffix(text, suffix)
 end
 
 local function ignored_source(path)
+  -- lazy.nvim 和本工具自身会间接调用 keymap.set，这些来源不算真实用户配置冲突。
   for _, fragment in ipairs(IGNORE_FRAGMENTS) do
     if path:find(fragment, 1, true) then
       return true
@@ -31,6 +32,7 @@ local function ignored_source(path)
 end
 
 local function state()
+  -- 把状态挂到 vim 上，确保 :R 重新加载模块后仍能沿用同一份记录和原函数。
   local current = rawget(vim, STATE_KEY)
 
   if current ~= nil then
@@ -60,6 +62,7 @@ local function mode_list(mode)
 end
 
 local function caller_site()
+  -- 从调用栈里找到第一个“像用户配置”的位置，用它标记键位来自哪里。
   for level = 3, 12 do
     local info = debug.getinfo(level, "Sln")
 
@@ -97,6 +100,7 @@ local function add_conflict(current, mode, lhs, previous, latest)
     latest = latest,
   }
 
+  -- 记录时用 schedule 通知，避免在 keymap.set 的调用链里直接打断插件初始化。
   vim.schedule(function()
     vim.notify(
       ("Global keymap conflict [%s] %s\nold: %s\nnew: %s"):format(mode, lhs, previous, latest),
@@ -172,6 +176,7 @@ function M.setup()
   current.originals.keymap_set = vim.keymap.set
   current.originals.nvim_set_keymap = vim.api.nvim_set_keymap
 
+  -- 包裹 vim.keymap.set：只跟踪全局键位，buffer-local 键位通常由 LSP/插件按 buffer 创建。
   vim.keymap.set = function(mode, lhs, rhs, opts)
     opts = opts or {}
 
@@ -194,9 +199,10 @@ function M.setup()
     return list_unpack(results, 2)
   end
 
+  -- 兼容仍然使用旧 API 的插件或配置；in_keymap_set 用来避免重复记录同一次调用。
   vim.api.nvim_set_keymap = function(mode, lhs, rhs, opts)
     if current.in_keymap_set == 0 then
-    record(mode, lhs)
+      record(mode, lhs)
     end
 
     return current.originals.nvim_set_keymap(mode, lhs, rhs, opts)

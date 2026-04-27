@@ -2,6 +2,7 @@ local M = {}
 local configured = false
 
 local function canonical_path(path)
+  -- Windows/Unix 路径统一成 /，并去掉多余尾斜杠，方便后续前缀比较。
   if path == nil or path == "" then
     return path
   end
@@ -28,6 +29,8 @@ local function build_branch_from_cwd(cwd, path)
   local branch = { current_dir }
   local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
 
+  -- mini.files 的 set_branch 需要从根到叶子的目录列表，
+  -- 所以这里从当前目录一路向上补齐到 cwd。
   while branch[1] ~= normalized_cwd and branch[1]:find(cwd_ancestor_pattern) ~= nil do
     table.insert(branch, 1, canonical_path(vim.fs.dirname(branch[1])))
   end
@@ -72,6 +75,8 @@ local function focus_file_entry(minifiles, directory_path, file_path)
 end
 
 local function is_reusable_unnamed_buffer(win_id)
+  -- 启动页或空白新窗口通常是一个未命名、未修改、只有一行空内容的 buffer。
+  -- 这种窗口可以直接复用，不必为了打开文件额外新建 tab。
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
     return false
   end
@@ -94,6 +99,7 @@ local function open_entry()
   end
 
   if entry.fs_type == "directory" then
+    -- 支持 2<CR> 这类 count 操作，一次进入多层目录。
     for _ = 1, vim.v.count1 do
       minifiles.go_in()
     end
@@ -108,6 +114,7 @@ local function open_entry()
   local target_win = state and state.target_window
 
   if is_reusable_unnamed_buffer(target_win) then
+    -- 空白 buffer 里打开文件时沿用当前窗口，保持启动后的第一次打开足够轻。
     minifiles.go_in({ close_on_file = true })
     return
   end
@@ -117,6 +124,7 @@ local function open_entry()
     return
   end
 
+  -- 已经有实际编辑内容时，文件从新 tab 打开，减少覆盖当前工作区的风险。
   vim.cmd("tabedit " .. vim.fn.fnameescape(path))
 end
 
@@ -168,6 +176,7 @@ function M.setup()
     callback = function(args)
       local buf_id = args.data.buf_id
 
+      -- 这些键位只绑定到 mini.files 的临时 buffer，离开文件树后不会污染全局键位。
       vim.keymap.set("n", "<Esc>", function()
         require("mini.files").close()
       end, {

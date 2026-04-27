@@ -37,15 +37,20 @@ local function preview_multiline_completion(item)
   local text_edits = require("blink.cmp.lib.text_edits")
   local text_edit = text_edits.get_from_item(item)
 
+  -- Copilot/LSP 可能返回 snippet 格式；预览前先展开占位符，避免把 ${1:...}
+  -- 这类 snippet 语法直接临时写进 buffer。
   if item.insertTextFormat == vim.lsp.protocol.InsertTextFormat.Snippet then
     local expanded_snippet = require("blink.cmp.sources.snippets.utils").safe_parse(text_edit.newText)
     text_edit.newText = expanded_snippet and tostring(expanded_snippet) or text_edit.newText
   end
 
+  -- blink 的多行预览是“先应用、再撤销”：这里保存 undo edit，
+  -- 让补全菜单关闭或候选变化时能恢复原文。
   local original_cursor = vim.api.nvim_win_get_cursor(0)
   local undo_text_edit = text_edits.get_undo_text_edit(text_edit)
   text_edits.apply(text_edit)
 
+  -- 命令行模式没有普通窗口光标语义；只在普通插入场景还原光标位置。
   if vim.api.nvim_get_mode().mode ~= "c" then
     vim.api.nvim_win_set_cursor(0, original_cursor)
   end
@@ -86,6 +91,8 @@ return {
     },
   },
   config = function(_, opts)
+    -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
+    -- 这个入口属于内部模块，升级 blink 后如果预览异常，优先检查这里。
     package.loaded["blink.cmp.completion.accept.preview"] = preview_multiline_completion
     require("blink.cmp").setup(opts)
   end,
@@ -133,9 +140,11 @@ return {
           opts = {
             get_bufnrs = function()
               if vim.bo.filetype == "markdown" then
+                -- Markdown buffer 经常同时打开笔记/长文；只取当前 buffer，避免补全串词。
                 return { vim.api.nvim_get_current_buf() }
               end
 
+              -- 其他文件从所有可见窗口收集 buffer，让分屏中的上下文也参与补全。
               return vim
                 .iter(vim.api.nvim_list_wins())
                 :map(function(win)
@@ -177,6 +186,7 @@ return {
       },
       sources = function()
         local cmdtype = vim.fn.getcmdtype()
+        -- 搜索命令只需要当前 buffer 内容；冒号命令则同时补命令和已有文本。
         if cmdtype == "/" or cmdtype == "?" then
           return { "buffer" }
         end

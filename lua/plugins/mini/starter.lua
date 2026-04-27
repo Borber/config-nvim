@@ -2,6 +2,7 @@ local M = {}
 local configured = false
 
 local function current_recent_path()
+  -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
   local content = require("mini.starter").get_content()
   local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
   local content_line = content[cursor_line]
@@ -27,6 +28,7 @@ local function delete_current_recent_path()
 
   local visits = require("plugins.mini.visits")
   if visits.remove_recent_path(recent_path) then
+    -- 删除后立即刷新启动页，不需要重开 Neovim。
     require("mini.starter").refresh()
   end
 end
@@ -49,6 +51,7 @@ local function ensure_setup(autoopen)
   local starter = require("mini.starter")
   local visits = require("plugins.mini.visits")
 
+  -- 最近路径的采集独立放在 visits 模块里，starter 这里只负责展示和动作。
   visits.setup()
 
   starter.setup({
@@ -72,6 +75,7 @@ local function ensure_setup(autoopen)
       {
         name = "Open folder",
         action = function()
+          -- input(..., "dir") 会启用目录补全，适合快速切换项目根目录。
           local dir = vim.fn.input("Open folder: ", vim.fn.getcwd(), "dir")
           if dir == "" or vim.fn.isdirectory(dir) == 0 then
             return

@@ -8,6 +8,7 @@ local servers = {
         completion = { callSnippet = "Replace" },
         diagnostics = { globals = { "vim" } },
         workspace = {
+          -- 让 lua_ls 认识 Neovim runtime 下的 API 定义，减少 vim.* 误报。
           checkThirdParty = false,
           library = vim.api.nvim_get_runtime_file("", true),
         },
@@ -17,12 +18,15 @@ local servers = {
   rust_analyzer = {
     settings = {
       ["rust-analyzer"] = {
+        -- Rust 项目默认启用所有 feature，避免条件编译下的符号缺失。
         cargo = { allFeatures = true },
       },
     },
   },
 }
 
+-- blink.cmp 不依赖 cmp-nvim-lsp，这里手动声明补全能力。
+-- 这些能力告诉 LSP：客户端支持 snippet、resolve、label details 等更完整的补全项。
 local function completion_capabilities()
   return vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
     textDocument = {
@@ -66,6 +70,7 @@ local function completion_capabilities()
 end
 
 local function enable_inlay_hints(bufnr)
+  -- 不同 Neovim 小版本的 inlay_hint API 曾有差异，用 pcall 保持兼容。
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
     pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })
   end
@@ -79,6 +84,8 @@ return {
     "williamboman/mason-lspconfig.nvim",
   },
   config = function()
+    -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。
+    -- 这样能减少日常编辑时的视觉噪音，但不会丢失诊断信息。
     vim.diagnostic.config({
       severity_sort = true,
       signs = true,
@@ -117,6 +124,7 @@ return {
         end
 
         if vim.bo[event.buf].filetype == "markdown" then
+          -- markdown 主要依赖 Treesitter/补全，不绑 LSP 跳转键，避免普通写作时误触。
           return
         end
 
@@ -125,6 +133,8 @@ return {
             return
           end
 
+          -- Neovim 0.11 会给 LSP 预置 gr* 系列键位；这里先删掉再按个人习惯重绑。
+          -- 放进 schedule 是为了等内置绑定完成后再覆盖，避免顺序竞争。
           pcall(vim.keymap.del, "n", "grn", { buffer = event.buf })
           pcall(vim.keymap.del, "n", "grr", { buffer = event.buf })
           pcall(vim.keymap.del, "n", "gri", { buffer = event.buf })

@@ -34,6 +34,7 @@ return {
     "nvim-lua/plenary.nvim",
     {
       "nvim-telescope/telescope-fzf-native.nvim",
+      -- fzf-native 是 C 扩展，需要本地编译；加载失败时下面的 pcall 会安静跳过。
       build = "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release --target install",
     },
   },
@@ -54,6 +55,7 @@ return {
       },
       extensions = {
         fzf = {
+          -- 用 fzf-native 替换默认排序器，文件和文本搜索都会更快。
           fuzzy = true,
           override_generic_sorter = true,
           override_file_sorter = true,
