@@ -35,20 +35,11 @@ return {
     },
     builders = {
       NeogitCommitPopup = function(builder)
-        if builder.state.keys["C"] then
-          return
-        end
-
         -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
         -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
-        builder.state.keys["C"] = true
-        table.insert(builder.state.actions[1], 3, {
-          keys = { "C" },
-          description = "AI Commit",
-          callback = function()
-            require("aicommits").commit()
-          end,
-        })
+        builder:new_action_group("AI"):action("C", "AI Commit", function()
+          require("aicommits").commit()
+        end)
       end,
     },
     integrations = {
