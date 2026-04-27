@@ -1,2 +1,3 @@
 lazy-lock.json
 .ace-tool/
+lua/config/local.lua

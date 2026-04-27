@@ -5,6 +5,8 @@ return {
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim",
     "sindrets/diffview.nvim",
+    -- 让 Neogit 打开时同时加载 AI commit 集成；status buffer 里可按 C 生成提交。
+    "404pilo/aicommits.nvim",
   },
   keys = {
     { "<leader>hg", "<cmd>Neogit<cr>", desc = "Git status" },
