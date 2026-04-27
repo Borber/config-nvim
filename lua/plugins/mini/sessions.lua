@@ -98,7 +98,10 @@ local function refresh_neogit_status_windows()
       pcall(function()
         vim.api.nvim_set_current_tabpage(window.tab_id)
         vim.api.nvim_set_current_win(window.win_id)
-        require("neogit").open({ cwd = window.cwd, kind = "replace" })
+
+        local opts = { cwd = window.cwd, kind = "replace", no_expand = true }
+        require("neogit").open(opts)
+        require("util.neogit_loading").start(opts, window.win_id)
       end)
     end
   end

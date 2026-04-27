@@ -9,6 +9,10 @@ vim.g.neovide_floating_shadow = false
 vim.g.neovide_refresh_rate = 144
 vim.g.neovide_refresh_rate_idle = 5
 
+-- Neovide 标题栏显示当前工作目录，而不是当前文件名。
+vim.o.title = true
+vim.o.titlestring = "%{fnamemodify(getcwd(), ':~')}"
+
 if is_macos then
 	vim.g.neovide_input_macos_option_key_is_meta = "only_left"
 end

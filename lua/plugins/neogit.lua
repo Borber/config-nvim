@@ -78,6 +78,7 @@ local function open_neogit(args)
     end
 
     require("neogit").open(opts)
+    require("util.neogit_loading").start(opts)
   end
 end
 
