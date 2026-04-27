@@ -39,9 +39,9 @@ return {
       },
       integrations = {
         neogit = {
-          -- 禁用插件内置集成，避免提交成功后自动 refresh 触发 Neogit 异步报错。
-          -- AI action 由 neogit.lua 注入到 NeogitCommitPopup。
-          enabled = false,
+          -- 打开内置 Neogit refresh，但不使用它的 status 页独立 C 映射。
+          -- AI action 仍由 neogit.lua 注入到 NeogitCommitPopup。
+          enabled = true,
           mappings = {
             enabled = false,
             key = "C",
