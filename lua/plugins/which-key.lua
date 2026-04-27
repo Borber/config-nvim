@@ -10,6 +10,7 @@ return {
       { "<leader>e", group = "file" },
       { "<leader>f", group = "find" },
       { "<leader>h", group = "git" },
+      { "<leader>k", group = "keys" },
       { "<leader>c", group = "code" },
       { "<leader>r", group = "code" },
       { "<leader>q", group = "quit" },

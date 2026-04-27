@@ -59,9 +59,3 @@ vim.api.nvim_create_user_command("R", function()
   vim.notify("Reloaded config", vim.log.levels.INFO)
 end, { desc = "Reload Neovim config" })
 
--- :CheckKeymapConflicts 按需加载 keymap 冲突检测
--- 仅当手动调用时才会 monkey-patch vim.keymap.set，避免常驻开销
-vim.api.nvim_create_user_command("CheckKeymapConflicts", function()
-  require("util.keymap_conflicts").setup()
-  vim.cmd("CheckKeymapConflicts")
-end, { desc = "Enable & show keymap conflicts" })
