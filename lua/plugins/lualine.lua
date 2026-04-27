@@ -22,7 +22,14 @@ return {
         { "branch",      cond = min_cols(100) },
         { "diagnostics", cond = min_cols(120) },
       },
-      lualine_c = { { "filename", path = 1, shorting_target = 40 } },
+      lualine_c = {
+        {
+          function()
+            return require("util.main_file").status_name()
+          end,
+          shorting_target = 40,
+        },
+      },
       lualine_x = { { "filetype", cond = min_cols(80) } },
       lualine_y = { { "progress", cond = min_cols(120) } },
       lualine_z = { "location" },
@@ -30,7 +37,11 @@ return {
     inactive_sections = {
       lualine_a = {},
       lualine_b = {},
-      lualine_c = { { "filename", path = 1 } },
+      lualine_c = {
+        function()
+          return require("util.main_file").status_name()
+        end,
+      },
       lualine_x = { "location" },
       lualine_y = {},
       lualine_z = {},

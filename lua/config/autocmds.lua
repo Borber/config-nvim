@@ -3,6 +3,8 @@
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
 
+require("util.main_file").setup()
+
 -- 仅对“正常文件 buffer”执行自动保存：
 -- - 必须是有效 buffer
 -- - 不能是 terminal/help/quickfix 等特殊 buftype

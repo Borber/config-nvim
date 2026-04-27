@@ -84,6 +84,11 @@ return {
   opts = {
     preset = "tab_only",
     option = {
+      tab_name = {
+        name_fallback = function(tabpage)
+          return require("util.main_file").tab_name(tabpage)
+        end,
+      },
       nerdfont = true,
       buf_name = {
         mode = "unique",

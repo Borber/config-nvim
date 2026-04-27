@@ -10,6 +10,7 @@ return {
       { "<leader>h", group = "git" },
       { "<leader>c", group = "code" },
       { "<leader>r", group = "code" },
+      { "<leader>q", group = "quit" },
       { "<leader>t", group = "tab" },
       { "<localleader>t", group = "terminal" },
       { "<localleader>m", group = "markdown" },

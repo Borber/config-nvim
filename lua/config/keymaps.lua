@@ -12,11 +12,22 @@ map("i", "<M-l>", "<Right>", { silent = true })
 map("i", "<M-b>", "<C-o>b",  { silent = true })
 map("i", "<M-f>", "<C-o>w",  { silent = true })
 
+-- 命令行模式快捷键（/、?、:）
+map("c", "<M-h>", "<Left>",  { silent = true })
+map("c", "<M-j>", "<Down>",  { silent = true })
+map("c", "<M-k>", "<Up>",    { silent = true })
+map("c", "<M-l>", "<Right>", { silent = true })
+
 -- 窗口切换
 map("n", "<C-h>", "<C-w>h", { silent = true })
 map("n", "<C-j>", "<C-w>j", { silent = true })
 map("n", "<C-k>", "<C-w>k", { silent = true })
 map("n", "<C-l>", "<C-w>l", { silent = true })
+
+-- 退出
+map("n", "<leader>qq", "<Cmd>qa<CR>", { silent = true, desc = "Quit all" })
+map("n", "<leader>qw", "<Cmd>wqa<CR>", { silent = true, desc = "Write and quit all" })
+map("n", "<leader>qQ", "<Cmd>qa!<CR>", { silent = true, desc = "Force quit all" })
 
 -- <leader>1..9 直接跳到第 N 个 tab（用 Vim 原生 {count}gt，无需 closure）
 for i = 1, 9 do
