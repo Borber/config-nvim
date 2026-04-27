@@ -35,8 +35,14 @@ local function current_directory_is_home()
   return current_directory() == vim.fs.normalize(home)
 end
 
+local function current_session_disabled_message()
+  if current_directory_is_home() then
+    return "Home directory uses starter instead of a session"
+  end
+end
+
 local function current_session_path()
-  return vim.fs.normalize(require("mini.sessions").config.directory .. "/" .. current_session_name())
+  return vim.fs.normalize(vim.fs.joinpath(require("mini.sessions").config.directory, current_session_name()))
 end
 
 local function session_has_file_buffers(path)
@@ -249,7 +255,7 @@ end
 function M.has_current()
   M.setup()
 
-  if current_directory_is_home() then
+  if current_session_disabled_message() ~= nil then
     return false
   end
 
@@ -263,9 +269,10 @@ end
 function M.write_current(opts)
   M.setup()
 
-  if current_directory_is_home() then
+  local disabled_message = current_session_disabled_message()
+  if disabled_message ~= nil then
     if opts and opts.verbose then
-      vim.notify("Home directory uses starter instead of a session", vim.log.levels.INFO)
+      vim.notify(disabled_message, vim.log.levels.INFO)
     end
 
     return
@@ -295,9 +302,10 @@ function M.read_current(opts)
   M.setup()
   opts = opts or {}
 
-  if current_directory_is_home() then
+  local disabled_message = current_session_disabled_message()
+  if disabled_message ~= nil then
     if opts.notify ~= false then
-      vim.notify("Home directory uses starter instead of a session", vim.log.levels.INFO)
+      vim.notify(disabled_message, vim.log.levels.INFO)
     end
 
     return false

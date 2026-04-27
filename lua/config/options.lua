@@ -38,11 +38,11 @@ vim.filetype.add({
   },
 })
 
--- Windows 下默认使用 pwsh，保持 UTF-8 与纯文本输出，避免 PSStyle 乱码
+-- Windows 下默认使用 pwsh，保持 UTF-8 与纯文本输出，避免 profile/PSStyle 干扰
 if vim.fn.has("win32") == 1 and vim.fn.executable("pwsh") == 1 then
   -- shellcmdflag 里显式把 PSStyle 输出设为 PlainText，避免 :! / makeprg
   -- 的结果带 ANSI 样式控制符，影响 quickfix 或命令输出阅读。
-  vim.o.shell = "pwsh.exe -NoLogo"
+  vim.o.shell = "pwsh.exe -NoLogo -NoProfile"
   vim.o.shellcmdflag =
     "-ExecutionPolicy RemoteSigned -Command $PSStyle.OutputRendering = 'PlainText';"
   vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"

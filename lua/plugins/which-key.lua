@@ -13,6 +13,7 @@ return {
       { "<leader>c", group = "code" },
       { "<leader>r", group = "code" },
       { "<leader>q", group = "quit" },
+      { "<leader>s", group = "session" },
       { "<leader>t", group = "tab" },
       { "<localleader>t", group = "terminal" },
       { "<localleader>m", group = "markdown" },
