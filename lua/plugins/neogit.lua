@@ -5,7 +5,7 @@ return {
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim",
     "sindrets/diffview.nvim",
-    -- 让 Neogit 打开时同时加载 AI commit 集成；status buffer 里可按 C 生成提交。
+    -- 让 Neogit 的 commit popup 能调用 AI commit action。
     "404pilo/aicommits.nvim",
   },
   keys = {
@@ -32,6 +32,24 @@ return {
     },
     stash = {
       kind = "auto",
+    },
+    builders = {
+      NeogitCommitPopup = function(builder)
+        if builder.state.keys["C"] then
+          return
+        end
+
+        -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
+        -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
+        builder.state.keys["C"] = true
+        table.insert(builder.state.actions[1], 3, {
+          keys = { "C" },
+          description = "AI Commit",
+          callback = function()
+            require("aicommits").commit()
+          end,
+        })
+      end,
     },
     integrations = {
       telescope = true,
