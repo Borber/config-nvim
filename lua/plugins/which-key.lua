@@ -1,6 +1,8 @@
 return {
   "folke/which-key.nvim",
-  event = "VeryLazy",
+  -- 调整为 VimEnter 事件，确保在 Vim 启动完成后加载 which-key 插件
+  -- 保证第一次打开 which-key 的速度
+  event = "VimEnter",
   opts = {
     preset = "helix",
     delay = 0,
