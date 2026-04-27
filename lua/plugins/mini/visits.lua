@@ -174,6 +174,13 @@ function M.open_path(path)
     vim.api.nvim_set_current_dir(directory)
   end
 
+  if is_directory(resolved_path) then
+    local sessions = require("plugins.mini.sessions")
+    if sessions.has_current() and sessions.read_current({ notify = false, verbose = false }) then
+      return
+    end
+  end
+
   vim.cmd("edit " .. vim.fn.fnameescape(resolved_path))
 end
 

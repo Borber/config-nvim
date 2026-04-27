@@ -23,6 +23,9 @@ return {
     require("plugins.mini.visits").setup()
     require("plugins.mini.files").setup()
 
+    local sessions = require("plugins.mini.sessions")
+    sessions.setup()
+
     vim.keymap.set("n", "<leader>e", function()
       require("plugins.mini.files").toggle()
     end, {
@@ -34,7 +37,7 @@ return {
       require("plugins.mini.starter").open()
     end, { desc = "Open starter", force = true })
 
-    if vim.fn.argc() == 0 then
+    if vim.fn.argc() == 0 and not sessions.has_current() then
       require("plugins.mini.starter").setup({ autoopen = true })
     end
   end,

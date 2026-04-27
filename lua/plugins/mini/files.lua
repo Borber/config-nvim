@@ -90,6 +90,26 @@ local function is_reusable_unnamed_buffer(win_id)
     and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
 end
 
+local function is_reusable_directory_buffer(win_id)
+  -- :edit 目录会先留下一个目录 buffer，再由 mini.files 接管。
+  -- 选中文件时应复用这个占位窗口，而不是额外开新 tab。
+  if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
+    return false
+  end
+
+  local buf_id = vim.api.nvim_win_get_buf(win_id)
+  local name = vim.api.nvim_buf_get_name(buf_id)
+
+  return vim.bo[buf_id].buftype == ""
+    and not vim.bo[buf_id].modified
+    and name ~= ""
+    and vim.fn.isdirectory(name) == 1
+end
+
+local function is_reusable_target_window(win_id)
+  return is_reusable_unnamed_buffer(win_id) or is_reusable_directory_buffer(win_id)
+end
+
 local function open_entry()
   local minifiles = require("mini.files")
   local entry = minifiles.get_fs_entry()
@@ -113,8 +133,8 @@ local function open_entry()
   local state = minifiles.get_explorer_state()
   local target_win = state and state.target_window
 
-  if is_reusable_unnamed_buffer(target_win) then
-    -- 空白 buffer 里打开文件时沿用当前窗口，保持启动后的第一次打开足够轻。
+  if is_reusable_target_window(target_win) then
+    -- 空白/目录占位 buffer 里打开文件时沿用当前窗口，保持启动后的第一次打开足够轻。
     minifiles.go_in({ close_on_file = true })
     return
   end
