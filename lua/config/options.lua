@@ -22,6 +22,7 @@ opt.ignorecase = true          -- 搜索默认忽略大小写
 opt.smartcase = true           -- 搜索词含大写时改为区分大小写
 opt.hlsearch = true            -- 高亮搜索结果
 opt.incsearch = true           -- 输入搜索词时即时跳转匹配
+opt.scrolloff = 999            -- 尽量让光标行保持在窗口中间
 
 -- 延迟到 UIEnter 后再挂系统剪贴板，避免启动期 fork pbcopy/xclip 阻塞
 -- 这里用 schedule 让首屏更快出现；剪贴板会在事件循环空闲时再接管。
