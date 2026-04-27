@@ -1,53 +1,9 @@
-local function normalize_path(path)
-  if not path or path == "" or path:match("^%w[%w+.-]*://") then
-    return nil
-  end
-
-  return vim.fs.normalize(path)
-end
-
-local function current_buffer_dir()
-  if vim.api.nvim_get_option_value("buftype", { buf = 0 }) ~= "" then
-    return nil
-  end
-
-  local name = normalize_path(vim.api.nvim_buf_get_name(0))
-  if not name then
-    return nil
-  end
-
-  local stat = vim.uv.fs_stat(name)
-  if stat and stat.type == "directory" then
-    return name
-  end
-
-  return vim.fs.dirname(name)
-end
-
-local function git_root_from(dir)
-  dir = normalize_path(dir)
-  if not dir then
-    return nil
-  end
-
-  local result = vim.system({ "git", "-C", dir, "rev-parse", "--show-toplevel" }, { text = true }):wait()
-  if result.code ~= 0 then
-    return nil
-  end
-
-  local root = vim.trim(result.stdout)
-  if root == "" then
-    return nil
-  end
-
-  return vim.fs.normalize(root)
-end
-
 local function default_neogit_cwd()
+  local git = require("util.git")
   local cwd = vim.fn.getcwd()
-  local dir = current_buffer_dir() or cwd
+  local dir = git.dir_from_tab_file(0) or cwd
 
-  return git_root_from(dir) or git_root_from(cwd) or dir
+  return git.root_from(dir) or git.root_from(cwd) or dir
 end
 
 local function popup_repo_cwd(opts)

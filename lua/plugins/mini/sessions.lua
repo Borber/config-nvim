@@ -26,6 +26,25 @@ local function current_session_path()
   return vim.fs.normalize(require("mini.sessions").config.directory .. "/" .. current_session_name())
 end
 
+local function session_has_file_buffers(path)
+  if vim.uv.fs_stat(path) == nil then
+    return false
+  end
+
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if not ok then
+    return false
+  end
+
+  for _, line in ipairs(lines) do
+    if line:match("^badd%s+") or line:match("^edit%s+") then
+      return true
+    end
+  end
+
+  return false
+end
+
 local function close_transient_windows()
   pcall(function()
     require("mini.files").close()
@@ -96,10 +115,16 @@ local function refresh_neogit_status_windows()
   for _, window in ipairs(collect_neogit_status_windows()) do
     if vim.api.nvim_tabpage_is_valid(window.tab_id) and vim.api.nvim_win_is_valid(window.win_id) then
       pcall(function()
+        local git = require("util.git")
+        local repo_cwd = git.root_from_tab_file(window.tab_id) or git.root_from(window.cwd)
+        if not repo_cwd then
+          return
+        end
+
         vim.api.nvim_set_current_tabpage(window.tab_id)
         vim.api.nvim_set_current_win(window.win_id)
 
-        local opts = { cwd = window.cwd, kind = "replace", no_expand = true }
+        local opts = { cwd = repo_cwd, kind = "replace", no_expand = true }
         require("neogit").open(opts)
         require("util.neogit_loading").start(opts, window.win_id)
       end)
@@ -211,7 +236,7 @@ end
 function M.has_current()
   M.setup()
 
-  return vim.uv.fs_stat(current_session_path()) ~= nil
+  return session_has_file_buffers(current_session_path())
 end
 
 function M.should_auto_restore()

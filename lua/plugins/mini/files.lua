@@ -182,7 +182,7 @@ function M.setup()
       go_in_plus = "<CR>",
     },
     options = {
-      use_as_default_explorer = true,
+      use_as_default_explorer = false,
     },
     windows = {
       preview = true,
