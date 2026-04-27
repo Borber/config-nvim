@@ -25,50 +25,6 @@ local servers = {
   },
 }
 
--- blink.cmp 不依赖 cmp-nvim-lsp，这里手动声明补全能力。
--- 这些能力告诉 LSP：客户端支持 snippet、resolve、label details 等更完整的补全项。
-local function completion_capabilities()
-  return vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
-    textDocument = {
-      completion = {
-        completionItem = {
-          snippetSupport = true,
-          commitCharactersSupport = false,
-          documentationFormat = { "markdown", "plaintext" },
-          deprecatedSupport = true,
-          preselectSupport = false,
-          tagSupport = { valueSet = { 1 } },
-          insertReplaceSupport = true,
-          resolveSupport = {
-            properties = {
-              "documentation",
-              "detail",
-              "additionalTextEdits",
-              "command",
-              "data",
-            },
-          },
-          insertTextModeSupport = {
-            valueSet = { 1 },
-          },
-          labelDetailsSupport = true,
-        },
-        completionList = {
-          itemDefaults = {
-            "commitCharacters",
-            "editRange",
-            "insertTextFormat",
-            "insertTextMode",
-            "data",
-          },
-        },
-        contextSupport = true,
-        insertTextMode = 1,
-      },
-    },
-  })
-end
-
 local function enable_inlay_hints(bufnr)
   -- 不同 Neovim 小版本的 inlay_hint API 曾有差异，用 pcall 保持兼容。
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
@@ -100,9 +56,10 @@ return {
       float = { border = "rounded", source = "if_many" },
     })
 
-    -- 所有 server 共享的默认 capabilities
+    -- 所有 server 共享的默认 capabilities：直接复用 blink.cmp 给出的能力声明，
+    -- 与补全菜单实际支持的特性（snippet/resolve/labelDetails 等）保持一致。
     vim.lsp.config("*", {
-      capabilities = completion_capabilities(),
+      capabilities = require("blink.cmp").get_lsp_capabilities(nil, true),
     })
 
     for name, cfg in pairs(servers) do

@@ -73,15 +73,9 @@ local function ensure_setup(autoopen)
         section = "Actions",
       },
       {
-        name = "Open folder",
+        name = "Open",
         action = function()
-          -- input(..., "dir") 会启用目录补全，适合快速切换项目根目录。
-          local dir = vim.fn.input("Open folder: ", vim.fn.getcwd(), "dir")
-          if dir == "" or vim.fn.isdirectory(dir) == 0 then
-            return
-          end
-
-          visits.open_path(dir)
+          require("plugins.mini.files").open()
         end,
         section = "Actions",
       },

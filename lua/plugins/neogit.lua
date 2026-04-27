@@ -1,7 +1,9 @@
 local function default_neogit_cwd()
   local git = require("util.git")
+  local main_file = require("util.main_file")
   local cwd = vim.fn.getcwd()
-  local dir = git.dir_from_tab_file(0) or cwd
+  -- 优先使用当前 tab 主文件所在目录推导仓库根；推不出来时回退到 cwd。
+  local dir = git.dir_from_buffer(main_file.tab_buf(0)) or cwd
 
   return git.root_from(dir) or git.root_from(cwd) or dir
 end

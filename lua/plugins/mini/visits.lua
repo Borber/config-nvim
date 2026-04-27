@@ -162,11 +162,22 @@ function M.setup()
   })
 end
 
+function M.record_path(path)
+  local resolved_path = normalize_path(path)
+  if resolved_path == nil then
+    return
+  end
+
+  push_recent_path(resolved_path)
+end
+
 function M.open_path(path)
   local resolved_path = normalize_path(path)
   if resolved_path == nil then
     return
   end
+
+  M.record_path(resolved_path)
 
   local directory = path_directory(resolved_path)
   if directory ~= nil then

@@ -1,14 +1,7 @@
 local M = {}
 local configured = false
 
-local function is_writable_normal_buffer(bufnr)
-  if not bufnr or bufnr == 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-    return false
-  end
-
-  local bo = vim.bo[bufnr]
-  return bo.buftype == "" and bo.modifiable and not bo.readonly
-end
+local buffer_util = require("util.buffer")
 
 function M.setup()
   if configured then
@@ -23,7 +16,7 @@ function M.setup()
   vim.api.nvim_create_autocmd("BufWritePre", {
     group = vim.api.nvim_create_augroup("ConfigMiniTrailspace", { clear = true }),
     callback = function(event)
-      if not is_writable_normal_buffer(event.buf) then
+      if buffer_util.normal_writable(event.buf) == nil then
         return
       end
 

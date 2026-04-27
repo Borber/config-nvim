@@ -1,6 +1,9 @@
 local M = {}
 local configured = false
 
+-- starter 的 Open 入口临时复用 mini.files 做选择器：只在那一次里启用 <S-CR> 直接打开当前项。
+local enable_starter_open_key = false
+
 local function canonical_path(path)
   -- Windows/Unix 路径统一成 /，并去掉多余尾斜杠，方便后续前缀比较。
   if path == nil or path == "" then
@@ -110,7 +113,16 @@ local function is_reusable_target_window(win_id)
   return is_reusable_unnamed_buffer(win_id) or is_reusable_directory_buffer(win_id)
 end
 
-local function open_entry()
+local function record_recent_path(path)
+  require("plugins.mini.visits").record_path(path)
+end
+
+local function open_path(path)
+  require("mini.files").close()
+  require("plugins.mini.visits").open_path(path)
+end
+
+local function current_entry()
   local minifiles = require("mini.files")
   local entry = minifiles.get_fs_entry()
 
@@ -118,7 +130,27 @@ local function open_entry()
     return
   end
 
+  return minifiles, entry
+end
+
+local function open_selected_entry()
+  local _, entry = current_entry()
+  if entry == nil then
+    return
+  end
+
+  open_path(entry.path)
+end
+
+local function open_entry()
+  local minifiles, entry = current_entry()
+  if entry == nil then
+    return
+  end
+
   if entry.fs_type == "directory" then
+    record_recent_path(entry.path)
+
     -- 支持 2<CR> 这类 count 操作，一次进入多层目录。
     for _ = 1, vim.v.count1 do
       minifiles.go_in()
@@ -130,6 +162,8 @@ local function open_entry()
     return
   end
 
+  record_recent_path(entry.path)
+
   local state = minifiles.get_explorer_state()
   local target_win = state and state.target_window
 
@@ -139,34 +173,31 @@ local function open_entry()
     return
   end
 
-  local path = entry.path
   if minifiles.close() == false then
     return
   end
 
   -- 已经有实际编辑内容时，文件从新 tab 打开，减少覆盖当前工作区的风险。
-  vim.cmd("tabedit " .. vim.fn.fnameescape(path))
+  vim.cmd("tabedit " .. vim.fn.fnameescape(entry.path))
 end
 
-local function toggle_files()
+local function open_files(root)
   local minifiles = require("mini.files")
-  local cwd = vim.fs.normalize(vim.fn.getcwd())
+  local cwd = vim.fs.normalize(root or vim.fn.getcwd())
   local path = vim.api.nvim_buf_get_name(0)
 
-  if not minifiles.close() then
-    -- 先以 cwd 作为锚点打开，再展开到当前文件所在位置。
-    minifiles.open(cwd, false)
+  -- 先以 cwd 作为锚点打开，再展开到当前文件所在位置。
+  minifiles.open(cwd, false)
 
-    local branch = build_branch_from_cwd(cwd, path)
-    if branch == nil then
-      return
-    end
+  local branch = build_branch_from_cwd(cwd, path)
+  if branch == nil then
+    return
+  end
 
-    minifiles.set_branch(branch, { depth_focus = #branch })
+  minifiles.set_branch(branch, { depth_focus = #branch })
 
-    if vim.fn.filereadable(path) == 1 then
-      focus_file_entry(minifiles, branch[#branch], vim.fs.normalize(path))
-    end
+  if vim.fn.filereadable(path) == 1 then
+    focus_file_entry(minifiles, branch[#branch], vim.fs.normalize(path))
   end
 end
 
@@ -190,8 +221,10 @@ function M.setup()
     },
   })
 
+  local group = vim.api.nvim_create_augroup("ConfigMiniFiles", { clear = true })
+
   vim.api.nvim_create_autocmd("User", {
-    group = vim.api.nvim_create_augroup("ConfigMiniFiles", { clear = true }),
+    group = group,
     pattern = "MiniFilesBufferCreate",
     callback = function(args)
       local buf_id = args.data.buf_id
@@ -211,6 +244,14 @@ function M.setup()
         silent = true,
       })
 
+      if enable_starter_open_key then
+        vim.keymap.set("n", "<S-CR>", open_selected_entry, {
+          buffer = buf_id,
+          desc = "Open selected path",
+          silent = true,
+        })
+      end
+
       vim.keymap.set("n", "l", open_entry, {
         buffer = buf_id,
         desc = "Open entry",
@@ -227,11 +268,37 @@ function M.setup()
       })
     end,
   })
+
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "MiniFilesExplorerClose",
+    callback = function()
+      enable_starter_open_key = false
+    end,
+  })
 end
 
 function M.toggle()
   M.setup()
-  toggle_files()
+
+  enable_starter_open_key = false
+
+  local minifiles = require("mini.files")
+  if minifiles.close() then
+    return
+  end
+
+  open_files()
+end
+
+function M.open(path)
+  M.setup()
+
+  local root = path or vim.fn.getcwd()
+  require("mini.files").close()
+  record_recent_path(root)
+  enable_starter_open_key = true
+  open_files(root)
 end
 
 return M

@@ -135,7 +135,9 @@ local function refresh_neogit_status_windows()
     if vim.api.nvim_tabpage_is_valid(window.tab_id) and vim.api.nvim_win_is_valid(window.win_id) then
       pcall(function()
         local git = require("util.git")
-        local repo_cwd = git.root_from_tab_file(window.tab_id) or git.root_from(window.cwd)
+        local main_file = require("util.main_file")
+        local repo_cwd = git.root_from_buffer(main_file.tab_buf(window.tab_id))
+          or git.root_from(window.cwd)
         if not repo_cwd then
           return
         end

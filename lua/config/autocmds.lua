@@ -2,28 +2,12 @@
 -- 全局 autocmd
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
+local buffer_util = require("util.buffer")
 
 require("util.main_file").setup()
 
-local function writable_normal_buffer(bufnr)
-  if not bufnr or bufnr == 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-    bufnr = vim.api.nvim_get_current_buf()
-  end
-
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    return nil
-  end
-
-  local bo = vim.bo[bufnr]
-  if bo.buftype ~= "" or not bo.modifiable or bo.readonly then
-    return nil
-  end
-
-  return bufnr, bo
-end
-
 local function strip_carriage_returns(bufnr)
-  local target_bufnr, bo = writable_normal_buffer(bufnr)
+  local target_bufnr, bo = buffer_util.normal_writable(bufnr)
   if target_bufnr == nil or bo.binary then
     return
   end
@@ -43,7 +27,7 @@ end
 -- - 必须可修改、非只读、且当前确实有未保存改动
 -- - 必须已经有文件名，避免把无名临时 buffer 强行写盘
 local function autosave_normal_buffer(bufnr)
-  local target_bufnr, bo = writable_normal_buffer(bufnr)
+  local target_bufnr, bo = buffer_util.normal_writable(bufnr)
   if target_bufnr == nil or not bo.modified then
     return
   end

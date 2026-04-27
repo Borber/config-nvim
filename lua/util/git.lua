@@ -29,20 +29,6 @@ function M.dir_from_buffer(bufnr)
   return vim.fs.dirname(name)
 end
 
-function M.dir_from_tab_file(tabpage)
-  local ok, main_file = pcall(require, "util.main_file")
-  if ok then
-    local dir = M.dir_from_buffer(main_file.tab_buf(tabpage or 0))
-    if dir then
-      return dir
-    end
-  end
-
-  if tabpage == nil or tabpage == 0 or tabpage == vim.api.nvim_get_current_tabpage() then
-    return M.dir_from_buffer(0)
-  end
-end
-
 function M.root_from(dir)
   dir = M.normalize_path(dir)
   if not dir then
@@ -62,8 +48,8 @@ function M.root_from(dir)
   return vim.fs.normalize(root)
 end
 
-function M.root_from_tab_file(tabpage)
-  return M.root_from(M.dir_from_tab_file(tabpage))
+function M.root_from_buffer(bufnr)
+  return M.root_from(M.dir_from_buffer(bufnr))
 end
 
 return M
