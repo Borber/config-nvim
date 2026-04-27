@@ -5,6 +5,29 @@ local augroup = vim.api.nvim_create_augroup
 
 require("util.main_file").setup()
 
+local function strip_carriage_returns(bufnr)
+  if not bufnr or bufnr == 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
+
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  local bo = vim.bo[bufnr]
+  if bo.buftype ~= "" or bo.binary or not bo.modifiable or bo.readonly then
+    return
+  end
+
+  local view = vim.fn.winsaveview()
+
+  pcall(vim.api.nvim_buf_call, bufnr, function()
+    vim.cmd([[silent! keepjumps keeppatterns %s/\r//ge]])
+  end)
+
+  vim.fn.winrestview(view)
+end
+
 -- 仅对“正常文件 buffer”执行自动保存：
 -- - 必须是有效 buffer
 -- - 不能是 terminal/help/quickfix 等特殊 buftype
@@ -44,6 +67,14 @@ vim.api.nvim_create_autocmd({ "InsertLeave", "BufLeave", "FocusLost", "VimLeaveP
   group = augroup("config_autosave", { clear = true }),
   callback = function(event)
     autosave_normal_buffer(event.buf)
+  end,
+})
+
+-- 清理混合换行/残留 CR 字符，避免行尾显示 ^M。
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePre" }, {
+  group = augroup("config_strip_carriage_returns", { clear = true }),
+  callback = function(event)
+    strip_carriage_returns(event.buf)
   end,
 })
 

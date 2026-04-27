@@ -68,13 +68,6 @@ local function ensure_setup(autoopen)
         section = "Actions",
       },
       {
-        name = "Restore session",
-        action = function()
-          require("plugins.mini.sessions").select_read()
-        end,
-        section = "Actions",
-      },
-      {
         name = "New file",
         action = "ene | startinsert",
         section = "Actions",

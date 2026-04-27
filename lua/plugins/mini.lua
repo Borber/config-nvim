@@ -9,6 +9,17 @@ return {
 
     require("mini.pairs").setup()
     require("mini.ai").setup()
+    local trailspace = require("mini.trailspace")
+    trailspace.setup()
+
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      group = vim.api.nvim_create_augroup("ConfigMiniTrailspace", { clear = true }),
+      callback = function()
+        trailspace.trim()
+        trailspace.trim_last_lines()
+      end,
+    })
+
     require("mini.surround").setup({
       mappings = {
         add = "msa",

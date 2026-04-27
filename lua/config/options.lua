@@ -14,6 +14,7 @@ opt.showcmd = true             -- 显示未完成的命令
 opt.showcmdloc = "statusline"  -- 在状态栏显示命令提示
 opt.showmode = false           -- 不单独显示当前模式
 opt.termguicolors = true       -- 24 位真彩色
+opt.fileformats = { "unix", "dos" } -- 识别 LF/CRLF；新文件默认使用 LF
 opt.fillchars:append({ eob = " ", diff = " " }) -- 去掉 ~ 号，并隐藏 diff filler 横线
 opt.signcolumn = "yes"        -- 固定保留 sign 列，避免 Git/LSP 标记挤动文本
 opt.hidden = true              -- 切换缓冲区时保留未保存修改

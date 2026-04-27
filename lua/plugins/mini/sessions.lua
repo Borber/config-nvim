@@ -14,12 +14,25 @@ local function session_slug(text)
   return slug ~= "" and slug or "session"
 end
 
+local function current_directory()
+  return vim.fs.normalize(vim.fn.getcwd())
+end
+
 local function current_session_name()
-  local cwd = vim.fs.normalize(vim.fn.getcwd())
+  local cwd = current_directory()
   local name = session_slug(project_basename(cwd))
   local hash = vim.fn.sha256(cwd):sub(1, 8)
 
   return string.format("%s-%s.vim", name, hash)
+end
+
+local function current_directory_is_home()
+  local home = vim.uv.os_homedir()
+  if home == nil or home == "" then
+    return false
+  end
+
+  return current_directory() == vim.fs.normalize(home)
 end
 
 local function current_session_path()
@@ -236,6 +249,10 @@ end
 function M.has_current()
   M.setup()
 
+  if current_directory_is_home() then
+    return false
+  end
+
   return session_has_file_buffers(current_session_path())
 end
 
@@ -245,6 +262,14 @@ end
 
 function M.write_current(opts)
   M.setup()
+
+  if current_directory_is_home() then
+    if opts and opts.verbose then
+      vim.notify("Home directory uses starter instead of a session", vim.log.levels.INFO)
+    end
+
+    return
+  end
 
   if not has_file_buffer() then
     if opts and opts.verbose then
@@ -269,6 +294,14 @@ end
 function M.read_current(opts)
   M.setup()
   opts = opts or {}
+
+  if current_directory_is_home() then
+    if opts.notify ~= false then
+      vim.notify("Home directory uses starter instead of a session", vim.log.levels.INFO)
+    end
+
+    return false
+  end
 
   local ok, err = pcall(function()
     require("mini.sessions").read(current_session_name(), {
