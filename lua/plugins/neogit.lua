@@ -53,6 +53,11 @@ local function create_neogit_command()
   })
 end
 
+local fold_signs = {
+  closed = vim.fn.nr2char(0xf460),
+  open = vim.fn.nr2char(0xf47c),
+}
+
 return {
   "NeogitOrg/neogit",
   init = create_neogit_command,
@@ -70,6 +75,34 @@ return {
   },
   opts = {
     kind = "auto",
+    graph_style = "unicode",
+    signs = {
+      hunk = { "", "" },
+      item = { fold_signs.closed, fold_signs.open },
+      section = { fold_signs.closed, fold_signs.open },
+    },
+    status = {
+      HEAD_padding = 8,
+      mode_padding = 2,
+      mode_text = {
+        M = "● modified",
+        N = "+ new file",
+        A = "+ added",
+        D = "- deleted",
+        C = "· copied",
+        U = "! updated",
+        R = "→ renamed",
+        T = "● changed",
+        DD = "! unmerged",
+        AU = "! unmerged",
+        UD = "! unmerged",
+        UA = "! unmerged",
+        DU = "! unmerged",
+        AA = "! unmerged",
+        UU = "! unmerged",
+        ["?"] = "",
+      },
+    },
     commit_editor = {
       kind = "auto",
     },
@@ -107,6 +140,7 @@ return {
   },
   config = function(_, opts)
     require("neogit").setup(opts)
+    require("plugins.neogit.highlights").apply()
     create_neogit_command()
   end,
 }
