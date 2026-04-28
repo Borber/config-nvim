@@ -1,3 +1,15 @@
+local function buffer_path_display(_, path)
+  local filename = vim.fn.fnamemodify(path, ":t")
+  local parent = vim.fn.fnamemodify(vim.fn.fnamemodify(path, ":h"), ":~:.")
+
+  if parent == "." or parent == "" then
+    return filename
+  end
+
+  -- Buffer 列表优先显示文件名，只保留一段短目录用来区分同名文件。
+  return filename .. " " .. parent:gsub("\\", "/")
+end
+
 return {
   "nvim-telescope/telescope.nvim",
   keys = {
@@ -25,7 +37,9 @@ return {
     {
       "<leader>,",
       function()
-        require("telescope.builtin").buffers()
+        require("telescope.builtin").buffers({
+          path_display = buffer_path_display,
+        })
       end,
       desc = "Buffers",
     },
