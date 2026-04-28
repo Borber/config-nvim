@@ -24,7 +24,7 @@ return {
           endpoint = local_config.endpoint,
           model = local_config.model,
           max_length = 72,
-          generate = 3,
+          generate = 5,
           temperature = 0.3,
           max_tokens = 200,
         },
@@ -42,10 +42,6 @@ return {
           -- 打开内置 Neogit refresh，但不使用它的 status 页独立 C 映射。
           -- AI action 仍由 neogit.lua 注入到 NeogitCommitPopup。
           enabled = true,
-          mappings = {
-            enabled = false,
-            key = "C",
-          },
         },
       },
     }
