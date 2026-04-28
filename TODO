@@ -1,1 +1,2 @@
 - [x] neogit 自动识别 git 仓库 类似 chromium/src 的情况
+- [ ] 语法高亮远不如vscode, 需要改进, 只有零星几个高亮, 特别是在 chromium 项目上, 的 C++ 代码上, 也许是因为项目太大了?

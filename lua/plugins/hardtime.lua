@@ -16,7 +16,4 @@ return {
       starter = true,
     },
   },
-  config = function(_, opts)
-    require("hardtime").setup(opts)
-  end,
 }

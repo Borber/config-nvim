@@ -85,19 +85,30 @@ local function custom_open_split(size, term)
   attach_term_buf(term)
 end
 
+local function with_custom_open_split(callback)
+  local ui = require("toggleterm.ui")
+  local orig = ui.open_split
+  ui.open_split = custom_open_split
+  local ok, err = pcall(callback)
+  ui.open_split = orig
+  if not ok then error(err) end
+end
+
 local function open_new(direction)
   return function()
-    local ui = require("toggleterm.ui")
-    local orig = ui.open_split
-    -- 只在本次 open() 调用期间替换布局函数，调用结束立刻还原，
-    -- 避免影响 toggleterm 其他命令或插件内部逻辑。
-    ui.open_split = custom_open_split
-    local ok, err = pcall(function()
+    with_custom_open_split(function()
       terminal_mod().Terminal:new({ direction = direction }):open()
     end)
-    ui.open_split = orig
-    if not ok then error(err) end
   end
+end
+
+local default_terminal
+
+local function toggle_default()
+  default_terminal = default_terminal or terminal_mod().Terminal:new({ direction = "horizontal" })
+  with_custom_open_split(function()
+    default_terminal:toggle()
+  end)
 end
 
 local function current_term()
@@ -131,7 +142,7 @@ end
 local function pick_terminal()
   local terms = terminal_mod().get_all(true)
   if #terms == 0 then
-    vim.notify("No terminals; use <localleader>th or <localleader>tv to create one", vim.log.levels.INFO)
+    vim.notify("No terminals; create one with <leader>th or <leader>tv", vim.log.levels.INFO)
     return
   end
 
@@ -174,11 +185,9 @@ local function pick_terminal()
         actions.close(bufnr)
         if entry and entry.value then
           -- 被选中的终端如果当前是 hidden，也按相同布局规则打开
-          local ui = require("toggleterm.ui")
-          local orig = ui.open_split
-          ui.open_split = custom_open_split
-          pcall(function() entry.value:open() end)
-          ui.open_split = orig
+          with_custom_open_split(function()
+            entry.value:open()
+          end)
         end
       end
 
@@ -205,12 +214,13 @@ return {
   dependencies = { "nvim-telescope/telescope.nvim" },
   cmd          = { "ToggleTerm", "TermExec", "TermSelect", "ToggleTermSetName" },
   keys = {
-    { "<localleader>th", open_new("horizontal"), desc = "New terminal (horizontal)", mode = { "n", "t" } },
-    { "<localleader>tv", open_new("vertical"),   desc = "New terminal (vertical)",   mode = { "n", "t" } },
-    { "<localleader>to", pick_terminal,          desc = "Pick terminal",             mode = { "n", "t" } },
-    { "<C-x>",           hide_current,           desc = "Hide current terminal",     mode = { "t" } },
-    { "<C-S-x>",         shutdown_current,       desc = "Shutdown current terminal", mode = { "t" } },
-    { "<localleader>tr", rename_terminal,        desc = "Rename terminal",           mode = { "n", "t" } },
+    { "<leader>tt",      toggle_default,         desc = "Toggle terminal",           mode = "n" },
+    { "<leader>th",      open_new("horizontal"), desc = "New terminal (horizontal)", mode = "n" },
+    { "<leader>tv",      open_new("vertical"),   desc = "New terminal (vertical)",   mode = "n" },
+    { "<leader>to",      pick_terminal,          desc = "Pick terminal",             mode = "n" },
+    { "<leader>tr",      rename_terminal,        desc = "Rename terminal",           mode = "n" },
+    { "<C-x>",           hide_current,           desc = "Hide current terminal",     mode = "t" },
+    { "<C-S-x>",         shutdown_current,       desc = "Shutdown current terminal", mode = "t" },
   },
   opts = {
     size = function(term)

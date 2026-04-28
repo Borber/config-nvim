@@ -48,7 +48,7 @@ map("t", "<C-k>", [[<C-\><C-n><C-w>k]], { silent = true })
 map("t", "<C-l>", [[<C-\><C-n><C-w>l]], { silent = true })
 
 -- 外部终端
-map("n", "<localleader>tn", function()
+map("n", "<leader>tn", function()
   require("util.external_terminal").open_shell()
 end, { silent = true, desc = "Terminal new (external)" })
 
@@ -64,4 +64,3 @@ vim.api.nvim_create_user_command("R", function()
   dofile(vim.env.MYVIMRC)
   vim.notify("Reloaded config", vim.log.levels.INFO)
 end, { desc = "Reload Neovim config" })
-

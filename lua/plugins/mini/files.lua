@@ -1,24 +1,9 @@
 local M = {}
 local configured = false
+local canonical_path = require("util.path").canonical
 
 -- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。
 local enable_starter_open_key = false
-
-local function canonical_path(path)
-  -- Windows/Unix 路径统一成 /，并去掉多余尾斜杠，方便后续前缀比较。
-  if path == nil or path == "" then
-    return path
-  end
-
-  local normalized = vim.fs.normalize(path):gsub("\\", "/")
-  normalized = normalized:gsub("^([A-Za-z]:)/+", "%1/")
-
-  if #normalized > 3 then
-    normalized = normalized:gsub("/+$", "")
-  end
-
-  return normalized
-end
 
 -- 从 cwd 向下构造分支，直到当前文件或目录所在的位置。
 local function build_branch_from_cwd(cwd, path)

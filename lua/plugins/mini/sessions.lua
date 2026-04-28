@@ -256,6 +256,40 @@ local function startup_directory()
   return vim.fs.normalize(path)
 end
 
+local function is_empty_directory_buffer(buf_id, directory)
+  if not vim.api.nvim_buf_is_valid(buf_id) or not vim.api.nvim_buf_is_loaded(buf_id) then
+    return false
+  end
+
+  if vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
+    return false
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf_id)
+  if name == "" or vim.fn.isdirectory(name) ~= 1 then
+    return false
+  end
+
+  if canonical_path(name) ~= canonical_path(directory) then
+    return false
+  end
+
+  return vim.api.nvim_buf_line_count(buf_id) == 1
+    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+end
+
+local function mark_startup_directory_buffer(directory)
+  -- nvim <dir> 会先创建一个目录名的空 buffer；没有 session 时它会留在首屏。
+  -- 把它标成临时占位：不显示在 buffer 列表里，被真实文件替换/隐藏时自动擦掉。
+  local buf_id = vim.api.nvim_get_current_buf()
+  if not is_empty_directory_buffer(buf_id, directory) then
+    return
+  end
+
+  vim.bo[buf_id].buflisted = false
+  vim.bo[buf_id].bufhidden = "wipe"
+end
+
 local function notify_read_error(err)
   local message = tostring(err)
 
@@ -350,6 +384,7 @@ function M.setup()
       local directory = startup_directory()
       if directory ~= nil then
         vim.api.nvim_set_current_dir(directory)
+        mark_startup_directory_buffer(directory)
       end
 
       if M.should_auto_restore() then

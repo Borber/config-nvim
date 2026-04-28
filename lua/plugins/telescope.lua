@@ -2,6 +2,13 @@ return {
   "nvim-telescope/telescope.nvim",
   keys = {
     {
+      "<leader>/",
+      function()
+        require("telescope.builtin").current_buffer_fuzzy_find()
+      end,
+      desc = "Search buffer",
+    },
+    {
       "<leader>ff",
       function()
         require("telescope.builtin").find_files()
@@ -16,7 +23,7 @@ return {
       desc = "Live grep",
     },
     {
-      "<leader>fb",
+      "<leader>,",
       function()
         require("telescope.builtin").buffers()
       end,
@@ -28,6 +35,13 @@ return {
         require("telescope.builtin").help_tags()
       end,
       desc = "Help tags",
+    },
+    {
+      "<leader>fr",
+      function()
+        require("telescope.builtin").oldfiles()
+      end,
+      desc = "Recent files",
     },
   },
   dependencies = {

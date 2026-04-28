@@ -2,7 +2,7 @@
 -- 基础选项
 -- ============================================
 vim.g.mapleader = " "
-vim.g.maplocalleader = ","
+vim.g.maplocalleader = "\\"
 
 local opt = vim.opt
 

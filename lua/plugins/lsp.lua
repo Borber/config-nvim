@@ -8,9 +8,8 @@ local servers = {
         completion = { callSnippet = "Replace" },
         diagnostics = { globals = { "vim" } },
         workspace = {
-          -- 让 lua_ls 认识 Neovim runtime 下的 API 定义，减少 vim.* 误报。
           checkThirdParty = false,
-          library = vim.api.nvim_get_runtime_file("", true),
+          library = { vim.env.VIMRUNTIME },
         },
       },
     },
@@ -90,14 +89,6 @@ return {
             return
           end
 
-          -- Neovim 0.11 会给 LSP 预置 gr* 系列键位；这里先删掉再按个人习惯重绑。
-          -- 放进 schedule 是为了等内置绑定完成后再覆盖，避免顺序竞争。
-          pcall(vim.keymap.del, "n", "grn", { buffer = event.buf })
-          pcall(vim.keymap.del, "n", "grr", { buffer = event.buf })
-          pcall(vim.keymap.del, "n", "gri", { buffer = event.buf })
-          pcall(vim.keymap.del, "n", "gra", { buffer = event.buf })
-          pcall(vim.keymap.del, "x", "gra", { buffer = event.buf })
-
           local map = function(mode, lhs, rhs, desc, opts)
             local keymap_opts = vim.tbl_extend("force", {
               buffer = event.buf,
@@ -110,10 +101,8 @@ return {
 
           map("n", "K", vim.lsp.buf.hover, "LSP hover")
           map("n", "gd", vim.lsp.buf.definition, "Goto definition")
-          map("n", "gr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References", { nowait = true })
-          map("n", "gI", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation", { nowait = true })
-          map("n", "<leader>rn", vim.lsp.buf.rename, "Rename")
-          map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+          map("n", "grr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References")
+          map("n", "gri", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation")
           map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
         end)
       end,

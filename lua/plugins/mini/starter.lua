@@ -64,6 +64,20 @@ local function is_clearable_buffer(buf_id)
   return vim.bo[buf_id].buflisted
 end
 
+local function is_reusable_empty_buffer(buf_id)
+  -- 手动打开 Starter 时复用清场后留下的空白占位，避免它在选中文件后残留成 [No Name]。
+  if not vim.api.nvim_buf_is_valid(buf_id) then
+    return false
+  end
+
+  if vim.api.nvim_buf_get_name(buf_id) ~= "" or vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
+    return false
+  end
+
+  return vim.api.nvim_buf_line_count(buf_id) == 1
+    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+end
+
 local function save_buffer(buf_id)
   if not vim.bo[buf_id].modified or vim.bo[buf_id].readonly or not vim.bo[buf_id].modifiable then
     return
@@ -84,6 +98,10 @@ local function delete_buffer(buf_id)
   end
 
   pcall(vim.api.nvim_buf_delete, buf_id, { force = false })
+end
+
+local function home_directory()
+  return vim.uv.os_homedir() or vim.fn.expand("~")
 end
 
 local function prepare_starter()
@@ -137,7 +155,7 @@ local function ensure_setup(autoopen)
       {
         name = "Open",
         action = function()
-          require("plugins.mini.files").open()
+          require("plugins.mini.files").open(home_directory())
         end,
         section = "Actions",
       },
@@ -177,7 +195,14 @@ end
 function M.open()
   ensure_setup(false)
   prepare_starter()
-  require("mini.starter").open()
+
+  local starter_buf
+  local buf_id = vim.api.nvim_get_current_buf()
+  if is_reusable_empty_buffer(buf_id) then
+    starter_buf = buf_id
+  end
+
+  require("mini.starter").open(starter_buf)
 end
 
 return M

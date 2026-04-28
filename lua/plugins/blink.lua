@@ -181,10 +181,8 @@ return {
       keymap = {
         preset = "cmdline",
         ["<Tab>"] = { "show", "accept" },
-        ["<M-h>"] = { "select_prev", "fallback" },
         ["<M-j>"] = { "select_next", "fallback" },
         ["<M-k>"] = { "select_prev", "fallback" },
-        ["<M-l>"] = { "select_next", "fallback" },
         ["<Up>"] = { "select_prev", "fallback" },
         ["<Down>"] = { "select_next", "fallback" },
       },

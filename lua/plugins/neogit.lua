@@ -64,9 +64,9 @@ return {
     "404pilo/aicommits.nvim",
   },
   keys = {
-    { "<leader>hg", open_neogit(), desc = "Git status" },
-    { "<leader>hc", open_neogit({ "commit" }), desc = "Git commit" },
-    { "<leader>hl", open_neogit({ "log" }), desc = "Git log" },
+    { "<leader>gg", open_neogit(), desc = "Git status" },
+    { "<leader>gc", open_neogit({ "commit" }), desc = "Git commit" },
+    { "<leader>gl", open_neogit({ "log" }), desc = "Git log" },
   },
   opts = {
     kind = "auto",

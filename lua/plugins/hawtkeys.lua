@@ -29,7 +29,4 @@ return {
       },
     },
   },
-  config = function(_, opts)
-    require("hawtkeys").setup(opts)
-  end,
 }

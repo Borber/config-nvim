@@ -52,5 +52,5 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 ## Neogit 仓库识别
 
-`:Neogit` 和 `<leader>hg` / `<leader>hc` / `<leader>hl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
+`:Neogit` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
 需要手动指定仓库时，仍然可以使用 Neogit 原生参数，例如 `:Neogit cwd=/path/to/repo`。
