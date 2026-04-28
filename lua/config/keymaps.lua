@@ -33,13 +33,6 @@ map("n", "<leader>qQ", "<Cmd>qa!<CR>", { silent = true, desc = "Force quit all" 
 map("n", "<leader>bn", "<Cmd>bnext<CR>", { silent = true, desc = "Next buffer" })
 map("n", "<leader>bp", "<Cmd>bprevious<CR>", { silent = true, desc = "Previous buffer" })
 
-for i = 1, 9 do
-  map("n", "<leader>b" .. i, "<Cmd>LualineBuffersJump " .. i .. "<CR>", {
-    silent = true,
-    desc = "Goto buffer " .. i,
-  })
-end
-
 -- Terminal 模式：双 Esc 退出，<C-hjkl> 直接切窗
 map("t", "<Esc><Esc>", [[<C-\><C-n>]], { silent = true, desc = "Leave terminal mode" })
 map("t", "<C-h>", [[<C-\><C-n><C-w>h]], { silent = true })

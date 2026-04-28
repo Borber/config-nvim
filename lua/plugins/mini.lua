@@ -42,14 +42,14 @@ return {
     })
 
     -- mini.bufremove 删除 buffer 时尽量保留窗口布局，比 :bd 更适合 buffer-first 工作流。
-    vim.keymap.set("n", "<leader>bd", function()
+    vim.keymap.set("n", "<leader>x", function()
       require("mini.bufremove").delete(0, false)
     end, {
       desc = "Delete buffer",
       silent = true,
     })
 
-    vim.keymap.set("n", "<leader>bD", function()
+    vim.keymap.set("n", "<leader>X", function()
       require("mini.bufremove").delete(0, true)
     end, {
       desc = "Force delete buffer",
