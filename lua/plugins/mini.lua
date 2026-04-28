@@ -9,6 +9,11 @@ return {
 
     require("mini.pairs").setup()
     require("mini.ai").setup()
+    -- 常用编辑增强：注释、移动选区/行、交互式对齐，以及参数 split/join。
+    require("mini.comment").setup()
+    require("mini.move").setup()
+    require("mini.align").setup()
+    require("mini.splitjoin").setup()
     require("mini.bufremove").setup()
     require("plugins.mini.trailspace").setup()
 

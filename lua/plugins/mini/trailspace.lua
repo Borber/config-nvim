@@ -10,8 +10,8 @@ function M.setup()
 
   configured = true
 
+  -- 行尾空格的显示交给 listchars.trail；这里仅复用 mini.trailspace 的清理函数。
   local trailspace = require("mini.trailspace")
-  trailspace.setup()
 
   vim.api.nvim_create_autocmd("BufWritePre", {
     group = vim.api.nvim_create_augroup("ConfigMiniTrailspace", { clear = true }),

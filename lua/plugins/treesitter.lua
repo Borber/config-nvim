@@ -14,6 +14,10 @@ local ensure_installed = {
   "toml",
   "c",
   "cpp",
+  -- 补齐常见构建/工程文件 parser；只按语言安装，不写项目专用 filetype 规则。
+  "cmake",
+  "gn",
+  "ninja",
   "bash",
   "json",
   "typescript",
@@ -44,6 +48,35 @@ local function install_missing_parsers()
   end
 end
 
+local function configured_parser_lookup()
+  -- 把 parser 列表转成集合，FileType autocmd 可以快速判断是否需要启动 Treesitter。
+  local lookup = {}
+
+  for _, lang in ipairs(ensure_installed) do
+    lookup[lang] = true
+  end
+
+  return lookup
+end
+
+local parsers = configured_parser_lookup()
+
+local function start_configured_parser(bufnr)
+  local filetype = vim.bo[bufnr].filetype
+  if filetype == "" then
+    return
+  end
+
+  local lang = vim.treesitter.language.get_lang(filetype) or filetype
+  if not parsers[lang] then
+    return
+  end
+
+  -- nvim-treesitter main 分支更接近 parser 管理器；这里显式启动高亮，
+  -- 避免大项目里只落到传统 syntax 的零散高亮状态。
+  pcall(vim.treesitter.start, bufnr, lang)
+end
+
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
@@ -57,6 +90,19 @@ return {
       force = true,
     })
 
-    vim.schedule(install_missing_parsers)
+    -- main 分支不会再用旧版 highlight.enable 配置，这里按 filetype 显式启动已配置 parser。
+    vim.api.nvim_create_autocmd("FileType", {
+      group = vim.api.nvim_create_augroup("ConfigTreesitterStart", { clear = true }),
+      callback = function(event)
+        start_configured_parser(event.buf)
+      end,
+      desc = "Start configured Treesitter parsers",
+    })
+
+    vim.schedule(function()
+      -- 启动后补装缺失 parser，再尝试给当前 buffer 启动高亮。
+      install_missing_parsers()
+      start_configured_parser(vim.api.nvim_get_current_buf())
+    end)
   end,
 }

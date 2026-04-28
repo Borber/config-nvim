@@ -22,12 +22,50 @@ local servers = {
       },
     },
   },
+  -- C/C++ 只启用通用 clangd 能力，不写项目路径或 Chromium 专用探测。
+  clangd = {
+    cmd = {
+      "clangd",
+      "--background-index",             -- 后台索引，提升跨文件跳转和引用查找体验
+      "--completion-style=detailed",     -- 补全项保留更多类型/签名信息
+      "--header-insertion=never",        -- 不让 clangd 自动插入 include，避免误改代码
+    },
+    init_options = {
+      clangdFileStatus = true,           -- 允许 clangd 回报索引/解析状态
+    },
+  },
+  -- 常见 Web / 配置文件语言服务器先纳入 Mason 管理；具体项目能力由各 server 自己判断。
+  ts_ls = {},
+  eslint = {},
+  jsonls = {},
+  bashls = {},
+  taplo = {},
 }
 
 local function enable_inlay_hints(bufnr)
   -- 不同 Neovim 小版本的 inlay_hint API 曾有差异，用 pcall 保持兼容。
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
     pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })
+  end
+end
+
+local function diagnostic_jump(count)
+  -- Neovim 0.11+ 使用 diagnostic.jump；旧版本回退到 goto_next/goto_prev。
+  return function()
+    if vim.diagnostic.jump ~= nil then
+      vim.diagnostic.jump({ count = count, float = true })
+      return
+    end
+
+    local fallback = count > 0 and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
+    fallback({ float = true })
+  end
+end
+
+local function telescope_lsp_picker(name)
+  -- 延迟 require Telescope，避免 LSP attach 时就加载 picker。
+  return function()
+    require("telescope.builtin")[name]()
   end
 end
 
@@ -99,11 +137,26 @@ return {
             vim.keymap.set(mode, lhs, rhs, keymap_opts)
           end
 
+          -- 基础 LSP 跳转：定义、声明、类型定义、引用和实现分开保留。
           map("n", "K", vim.lsp.buf.hover, "LSP hover")
           map("n", "gd", vim.lsp.buf.definition, "Goto definition")
+          -- C/C++ 等语言里声明和定义经常分离：gD 去声明，gd 去实现/定义。
+          map("n", "gD", vim.lsp.buf.declaration, "Goto declaration")
+          -- gy 用来看变量/表达式背后的类型定义，适合强类型项目里追类型来源。
+          map("n", "gy", vim.lsp.buf.type_definition, "Goto type definition")
           map("n", "grr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References")
           map("n", "gri", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation")
+          -- 修改类动作统一放在 <leader>c 下：rename 改符号名，code action 做快速修复/重构。
+          map("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
+          map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+          -- 查找类入口统一放在 <leader>f 下；Trouble 承担诊断列表，Telescope 承担符号列表。
           map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
+          map("n", "<leader>fD", "<Cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>", "Workspace diagnostics")
+          map("n", "<leader>fs", telescope_lsp_picker("lsp_document_symbols"), "Document symbols")
+          map("n", "<leader>fS", telescope_lsp_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
+          -- 诊断跳转保留原生 [d/]d 手感，并在跳转后弹出诊断浮窗。
+          map("n", "]d", diagnostic_jump(1), "Next diagnostic")
+          map("n", "[d", diagnostic_jump(-1), "Previous diagnostic")
         end)
       end,
     })
