@@ -25,6 +25,7 @@ return {
       { "<leader>f", icon = icons.find, group = "find" },
       { "<leader>g", icon = icons.git, group = "git" },
       { "<leader>h", icon = icons.hunk, group = "hunk" },
+      { "<leader>j", icon = { icon = "J", color = "green" }, group = "job" },
       { "<leader>k", icon = icons.keys, group = "keys" },
       { "<leader>b", icon = icons.buffer, group = "buffer" },
       { "<leader>c", icon = icons.code, group = "code" },
