@@ -45,6 +45,8 @@ local function setup_failure_output(overseer)
   overseer.add_template_hook({}, function(task_defn, util)
     util.add_component(task_defn, {
       "open_output",
+      -- open_output 默认会在启动时展开输出；这里只保留失败后的自动展开。
+      on_start = "never",
       on_complete = "failure",
       direction = "dock",
       focus = true,
