@@ -117,6 +117,65 @@ function tests.starter_reuses_empty_placeholder_buffer()
   assert_eq(opened_buf, placeholder, "starter should reuse the empty unnamed placeholder buffer")
 end
 
+function tests.starter_hides_hidden_empty_placeholders()
+  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "mini.bufremove")
+
+  local opened_buf
+
+  package.loaded["plugins.mini.visits"] = {
+    setup = function() end,
+    recent_paths_section = function()
+      return function()
+        return {}
+      end
+    end,
+    open_path = function() end,
+  }
+  package.loaded["plugins.mini.sessions"] = {
+    write_current = function() end,
+  }
+  package.loaded["mini.files"] = {
+    close = function()
+      return true
+    end,
+  }
+  package.loaded["mini.starter"] = {
+    setup = function() end,
+    gen_hook = {
+      aligning = function()
+        return function() end
+      end,
+    },
+    open = function(bufnr)
+      opened_buf = bufnr
+    end,
+  }
+
+  local file = temp_path("starter-special", "main.lua")
+  write_file(file, { "print('ok')" })
+
+  vim.cmd("silent! only")
+  vim.cmd("edit " .. vim.fn.fnameescape(file))
+  vim.cmd("vsplit")
+
+  local special = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(0, special)
+  vim.bo[special].buftype = "nofile"
+  vim.bo[special].filetype = "specialstatus"
+  vim.bo[special].buflisted = false
+
+  require("plugins.mini.starter").open()
+
+  assert_eq(opened_buf, nil, "starter should create its own buffer when current buffer is special")
+  for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
+    local is_hidden_empty = vim.bo[buf_id].buflisted
+      and #vim.fn.win_findbuf(buf_id) == 0
+      and vim.api.nvim_buf_get_name(buf_id) == ""
+      and vim.bo[buf_id].buftype == ""
+    assert_true(not is_hidden_empty, "starter should hide hidden empty placeholders")
+  end
+end
+
 function tests.mini_files_opens_from_root_and_focuses_current_branch()
   reset_modules("plugins.mini.files")
 
@@ -153,6 +212,33 @@ function tests.mini_files_opens_from_root_and_focuses_current_branch()
   assert_eq(branch[1], vim.fs.normalize(project), "branch should start at root")
   assert_eq(branch[#branch], vim.fs.normalize(nested), "branch should end at current file directory")
   assert_eq(focused_depth, #branch, "deepest branch should be focused")
+end
+
+function tests.mini_files_hides_reusable_target_placeholder()
+  reset_modules("plugins.mini.files")
+
+  local project = temp_path("placeholder-project")
+  vim.fn.mkdir(project, "p")
+
+  local target_win = vim.api.nvim_get_current_win()
+  vim.cmd("silent! enew!")
+  local placeholder = vim.api.nvim_get_current_buf()
+  vim.bo[placeholder].buflisted = true
+
+  package.loaded["mini.files"] = {
+    setup = function() end,
+    close = function()
+      return false
+    end,
+    open = function() end,
+    get_explorer_state = function()
+      return { target_window = target_win }
+    end,
+  }
+
+  require("plugins.mini.files").open(project)
+
+  assert_eq(vim.bo[placeholder].buflisted, false, "mini.files should hide reusable empty target placeholders")
 end
 
 function tests.session_restore_preserves_requested_cwd()
@@ -193,7 +279,9 @@ end
 local test_order = {
   "recent_paths_are_unique_ordered_and_removable",
   "starter_reuses_empty_placeholder_buffer",
+  "starter_hides_hidden_empty_placeholders",
   "mini_files_opens_from_root_and_focuses_current_branch",
+  "mini_files_hides_reusable_target_placeholder",
   "session_restore_preserves_requested_cwd",
 }
 

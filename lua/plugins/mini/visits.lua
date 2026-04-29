@@ -133,6 +133,18 @@ local function path_name(path)
   return path_util.basename(path) or path
 end
 
+local function close_current_starter()
+  -- 从 Starter 的最近路径或 <S-CR> 切换项目时，先关闭启动页，让后续窗口目标回到真实编辑区。
+  local buf_id = vim.api.nvim_get_current_buf()
+  if vim.bo[buf_id].filetype ~= "ministarter" then
+    return
+  end
+
+  pcall(function()
+    require("mini.starter").close(buf_id)
+  end)
+end
+
 local function format_path_name(path)
   local icon = is_directory(path) and "󰉋" or "󰈔"
   local name = path_name(path)
@@ -179,6 +191,8 @@ function M.open_path(path, opts)
   if opts.record ~= false then
     M.record_path(resolved_path)
   end
+
+  close_current_starter()
 
   if is_directory(resolved_path) then
     -- 打开目录前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。

@@ -89,6 +89,20 @@ local function open_selected_entry()
   open_path(entry.path)
 end
 
+local function hide_reusable_target_placeholder(minifiles)
+  -- mini.files 会保留一个目标窗口给之后打开文件；如果目标是空占位，先从 buffer 列表隐藏。
+  -- 真正 :edit 文件时 Neovim 会复用这个 buffer，并自动把它恢复成 listed 的文件 buffer。
+  local state = minifiles.get_explorer_state()
+  local target_win = state and state.target_window
+
+  if not buffer_util.window_has_reusable_placeholder(target_win) then
+    return
+  end
+
+  local target_buf = vim.api.nvim_win_get_buf(target_win)
+  vim.bo[target_buf].buflisted = false
+end
+
 local function open_entry()
   local minifiles, entry = current_entry()
   if entry == nil then
@@ -107,20 +121,11 @@ local function open_entry()
     return
   end
 
-  local state = minifiles.get_explorer_state()
-  local target_win = state and state.target_window
-
-  if buffer_util.window_has_reusable_placeholder(target_win) then
-    -- 空白/目录占位 buffer 里打开文件时沿用当前窗口，保持启动后的第一次打开足够轻。
-    minifiles.go_in({ close_on_file = true })
-    return
-  end
-
   if minifiles.close() == false then
     return
   end
 
-  -- buffer-first：文件在当前窗口打开，已打开文件仍留在 buffer 列表里。
+  -- buffer-first：用 :edit 保留空白占位 buffer 的编号，已打开文件仍留在 buffer 列表里。
   vim.cmd("edit " .. vim.fn.fnameescape(entry.path))
 end
 
@@ -131,6 +136,7 @@ local function open_files(root)
 
   -- 先以 cwd 作为锚点打开，再展开到当前文件所在位置。
   minifiles.open(cwd, false)
+  hide_reusable_target_placeholder(minifiles)
 
   local branch = build_branch_from_cwd(cwd, path)
   if branch == nil then
