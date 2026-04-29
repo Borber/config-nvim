@@ -26,12 +26,12 @@ local servers = {
   clangd = {
     cmd = {
       "clangd",
-      "--background-index",             -- 后台索引，提升跨文件跳转和引用查找体验
-      "--completion-style=detailed",     -- 补全项保留更多类型/签名信息
-      "--header-insertion=never",        -- 不让 clangd 自动插入 include，避免误改代码
+      "--background-index", -- 后台索引，提升跨文件跳转和引用查找体验
+      "--completion-style=detailed", -- 补全项保留更多类型/签名信息
+      "--header-insertion=never", -- 不让 clangd 自动插入 include，避免误改代码
     },
     init_options = {
-      clangdFileStatus = true,           -- 允许 clangd 回报索引/解析状态
+      clangdFileStatus = true, -- 允许 clangd 回报索引/解析状态
     },
   },
   -- 常见 Web / 配置文件语言服务器先纳入 Mason 管理；具体项目能力由各 server 自己判断。
@@ -41,6 +41,149 @@ local servers = {
   bashls = {},
   taplo = {},
 }
+
+local function local_lsp_config()
+  local ok, local_config = pcall(require, "config.local")
+  if not ok or type(local_config) ~= "table" then
+    return {}
+  end
+
+  return local_config.lsp or {}
+end
+
+local local_config = local_lsp_config()
+
+-- 在项目或父目录放置这些标记文件，可保留 LSP 跳转/补全但静音诊断。
+local diagnostic_mute_markers = {
+  ".nvim-disable-lsp-diagnostics",
+  ".nvim/lsp-diagnostics-off",
+}
+
+local function normalize_path(path)
+  if type(path) ~= "string" or path == "" then
+    return nil
+  end
+
+  return vim.fs.normalize(path)
+end
+
+local function path_contains(root, path)
+  root = normalize_path(root)
+  path = normalize_path(path)
+
+  if root == nil or path == nil then
+    return false
+  end
+
+  return path == root or vim.startswith(path, root .. "/")
+end
+
+local function client_root(client, bufnr)
+  if client and client.config and type(client.config.root_dir) == "string" then
+    return normalize_path(client.config.root_dir)
+  end
+
+  local bufname = normalize_path(vim.api.nvim_buf_get_name(bufnr))
+
+  if client and type(client.workspace_folders) == "table" then
+    local best_root
+
+    for _, folder in ipairs(client.workspace_folders) do
+      local root = normalize_path(vim.uri_to_fname(folder.uri))
+
+      if path_contains(root, bufname) and (best_root == nil or #root > #best_root) then
+        best_root = root
+      end
+    end
+
+    if best_root ~= nil then
+      return best_root
+    end
+  end
+
+  return bufname and vim.fs.root(bufname, { ".git" }) or nil
+end
+
+local function has_diagnostic_mute_marker(bufnr, client)
+  local bufname = normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local dir = bufname and vim.fs.dirname(bufname) or nil
+
+  if dir == nil then
+    return false
+  end
+
+  local markers = local_config.diagnostic_mute_markers or diagnostic_mute_markers
+
+  while dir ~= nil do
+    for _, marker in ipairs(markers) do
+      if vim.uv.fs_stat(vim.fs.joinpath(dir, marker)) ~= nil then
+        return true
+      end
+    end
+
+    local parent = vim.fs.dirname(dir)
+    if parent == nil or parent == dir then
+      break
+    end
+
+    dir = parent
+  end
+
+  return false
+end
+
+local function lsp_diagnostics_muted(bufnr, client)
+  local bufname = normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local root = client_root(client, bufnr)
+
+  for _, muted_root in ipairs(local_config.diagnostic_mute_roots or {}) do
+    if path_contains(muted_root, root) or path_contains(muted_root, bufname) then
+      return true
+    end
+  end
+
+  return has_diagnostic_mute_marker(bufnr, client)
+end
+
+local function reset_lsp_diagnostics(client_id, bufnr)
+  vim.diagnostic.reset(vim.lsp.diagnostic.get_namespace(client_id, false), bufnr)
+  vim.diagnostic.reset(vim.lsp.diagnostic.get_namespace(client_id, true), bufnr)
+end
+
+local function wrap_lsp_diagnostic_handlers(client)
+  if client == nil or client._config_diagnostic_handlers_wrapped then
+    return
+  end
+
+  client._config_diagnostic_handlers_wrapped = true
+  client.handlers = client.handlers or {}
+
+  local publish_handler = client.handlers["textDocument/publishDiagnostics"] or vim.lsp.handlers["textDocument/publishDiagnostics"]
+
+  client.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
+    local bufnr = result and result.uri and vim.uri_to_bufnr(result.uri) or nil
+
+    if bufnr ~= nil and lsp_diagnostics_muted(bufnr, client) then
+      reset_lsp_diagnostics(ctx.client_id, bufnr)
+      return
+    end
+
+    return publish_handler(err, result, ctx, config)
+  end
+
+  local pull_handler = client.handlers["textDocument/diagnostic"] or vim.lsp.handlers["textDocument/diagnostic"]
+
+  client.handlers["textDocument/diagnostic"] = function(err, result, ctx, config)
+    local bufnr = ctx.bufnr
+
+    if bufnr ~= nil and lsp_diagnostics_muted(bufnr, client) then
+      reset_lsp_diagnostics(ctx.client_id, bufnr)
+      return
+    end
+
+    return pull_handler(err, result, ctx, config)
+  end
+end
 
 local function enable_inlay_hints(bufnr)
   -- 不同 Neovim 小版本的 inlay_hint API 曾有差异，用 pcall 保持兼容。
@@ -112,6 +255,12 @@ return {
       group = vim.api.nvim_create_augroup("ConfigLspAttach", { clear = true }),
       callback = function(event)
         local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+        wrap_lsp_diagnostic_handlers(client)
+
+        if client and lsp_diagnostics_muted(event.buf, client) then
+          reset_lsp_diagnostics(client.id, event.buf)
+        end
 
         if client and client:supports_method("textDocument/inlayHint") then
           enable_inlay_hints(event.buf)

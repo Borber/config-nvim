@@ -13,10 +13,11 @@ local function normalize_path(path)
 end
 
 local function is_directory(path)
-  return path ~= nil and vim.fn.isdirectory(path) == 1
+  return path_util.is_directory(path)
 end
 
 local function path_directory(path)
+  -- 打开文件时把 cwd 切到文件所在目录；打开目录时 cwd 就是目录本身。
   if path == nil then
     return nil
   end
@@ -91,6 +92,7 @@ local function push_recent_path(path)
 end
 
 local function remove_recent_path(path)
+  -- 删除最近路径时同样先规整成绝对路径，保证 UI 中展示的路径能命中存储项。
   local resolved_path = normalize_path(path)
   if resolved_path == nil then
     return false
@@ -128,10 +130,7 @@ local function startup_paths()
 end
 
 local function path_name(path)
-  local trimmed_path = path:gsub("[/\\]+$", "")
-  local name = trimmed_path:match("([^/\\]+)$")
-
-  return name or path
+  return path_util.basename(path) or path
 end
 
 local function format_path_name(path)
@@ -169,6 +168,7 @@ function M.record_path(path)
 end
 
 function M.open_path(path, opts)
+  -- starter/recent path 的统一入口：负责记录最近路径、切 cwd、恢复 session 或打开文件。
   opts = opts or {}
 
   local resolved_path = normalize_path(path)

@@ -147,6 +147,8 @@ local function pick_terminal()
     return
   end
 
+  -- 终端选择器复用通用 Telescope 外壳，但保留 toggleterm 自己的业务动作：
+  -- Enter 打开/聚焦终端，<C-x> 关闭选中终端并重新弹出列表。
   telescope_picker.dropdown({
     prompt_title = "Terminals",
     layout_config = { width = 0.5, height = 0.45 },

@@ -54,20 +54,15 @@ end
 
 local function is_clearable_buffer(buf_id)
   -- Starter 是项目切换入口：清掉用户可见 buffer，但保留仍在运行的 terminal。
-  if not vim.api.nvim_buf_is_valid(buf_id) then
+  if buffer_util.resolve(buf_id) == nil then
     return false
   end
 
-  if vim.bo[buf_id].buftype == "terminal" then
+  if buffer_util.is_terminal(buf_id) then
     return not is_terminal_running(buf_id)
   end
 
   return vim.bo[buf_id].buflisted
-end
-
-local function is_reusable_empty_buffer(buf_id)
-  -- 手动打开 Starter 时复用清场后留下的空白占位，避免它在选中文件后残留成 [No Name]。
-  return buffer_util.is_empty_unnamed(buf_id)
 end
 
 local function save_buffer(buf_id)
@@ -190,7 +185,7 @@ function M.open()
 
   local starter_buf
   local buf_id = vim.api.nvim_get_current_buf()
-  if is_reusable_empty_buffer(buf_id) then
+  if buffer_util.is_empty_unnamed(buf_id) then
     starter_buf = buf_id
   end
 

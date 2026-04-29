@@ -54,3 +54,11 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 `:Neogit` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
 需要手动指定仓库时，仍然可以使用 Neogit 原生参数，例如 `:Neogit cwd=/path/to/repo`。
+
+## Headless 验证
+
+关键交互边界可以用 Neovim headless 脚本验证：
+
+```sh
+nvim --headless -u NONE --cmd "set shadafile=NONE" -S tests/headless/mini_behaviors.lua +qa
+```

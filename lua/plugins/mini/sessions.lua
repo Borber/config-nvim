@@ -1,13 +1,12 @@
 local M = {}
 local configured = false
-local buffer_util = require("util.buffer")
 local path_util = require("util.path")
+local session_buffers = require("plugins.mini.sessions.buffers")
+local session_file = require("plugins.mini.sessions.session_file")
+local session_neogit = require("plugins.mini.sessions.neogit")
 
 local function project_basename(path)
-  local trimmed = path:gsub("[/\\]+$", "")
-  local name = trimmed:match("([^/\\]+)$")
-
-  return name ~= nil and name ~= "" and name or "session"
+  return path_util.basename(path) or "session"
 end
 
 local function session_slug(text)
@@ -21,6 +20,8 @@ local function current_directory()
 end
 
 local function current_session_name()
+  -- session 文件名同时包含项目目录名和 cwd hash，
+  -- 避免多个同名项目目录互相覆盖。
   local cwd = current_directory()
   local name = session_slug(project_basename(cwd))
   local hash = vim.fn.sha256(cwd):sub(1, 8)
@@ -38,13 +39,16 @@ local function current_directory_is_home()
 end
 
 local function current_session_disabled_message()
+  -- home 目录作为 starter 的入口页，不写项目 session。
+  -- 否则随手退出 Neovim 会把 home 也恢复成一个“项目”。
   if current_directory_is_home() then
     return "Home directory uses starter instead of a session"
   end
 end
 
 local function current_session_path()
-  return vim.fs.normalize(vim.fs.joinpath(require("mini.sessions").config.directory, current_session_name()))
+  local directory = require("mini.sessions").config.directory
+  return vim.fs.normalize(vim.fs.joinpath(directory, current_session_name()))
 end
 
 local function delete_current_session(opts)
@@ -60,155 +64,6 @@ local function delete_current_session(opts)
   elseif (not ok or result ~= 0) and opts and opts.verbose then
     vim.notify("Failed to remove empty session", vim.log.levels.WARN)
   end
-end
-
-local function canonical_path(path)
-  -- session 文件里的路径和 buffer 路径来源不同，统一后才能稳定比较。
-  return path_util.canonical_absolute(path)
-end
-
-local function session_line_path(line)
-  -- 只解析 :mksession 里会恢复/引用 buffer 路径的命令行。
-  local path = line:match("^badd%s+%+%-?%d+%s+(.+)$")
-  if path ~= nil then
-    return path, "badd"
-  end
-
-  path = line:match("^edit%s+(.+)$")
-  if path ~= nil then
-    return path, "edit"
-  end
-
-  path = line:match("^balt%s+(.+)$")
-  if path ~= nil then
-    return path, "reference"
-  end
-
-  path = line:match("^%$argadd%s+(.+)$") or line:match("^argadd%s+(.+)$")
-  if path ~= nil then
-    return path, "reference"
-  end
-end
-
-local function is_session_file_path(path)
-  local normalized = canonical_path(path)
-  if normalized == nil then
-    return false
-  end
-
-  return vim.fn.filereadable(normalized) == 1
-end
-
-local function session_has_meaningful_buffers(path)
-  -- 旧 session 只有包含真实可读文件时才值得恢复。
-  if vim.uv.fs_stat(path) == nil then
-    return false
-  end
-
-  local ok, lines = pcall(vim.fn.readfile, path)
-  if not ok then
-    return false
-  end
-
-  for _, line in ipairs(lines) do
-    local session_path, kind = session_line_path(line)
-    if (kind == "badd" or kind == "edit") and is_session_file_path(session_path) then
-      return true
-    end
-  end
-
-  return false
-end
-
-local function is_blank_placeholder_buffer(buf_id)
-  -- 无名空白 buffer 或尚未落盘的空文件占位，不应该写进项目 session。
-  return buffer_util.is_blank_placeholder(buf_id)
-end
-
-local function is_meaningful_buffer(buf_id)
-  -- session 只保存普通文件 buffer；目录、特殊 buffer、空白占位都跳过。
-  if not vim.api.nvim_buf_is_valid(buf_id) or not vim.bo[buf_id].buflisted or vim.bo[buf_id].buftype ~= "" then
-    return false
-  end
-
-  local name = vim.api.nvim_buf_get_name(buf_id)
-  if name == "" or vim.fn.isdirectory(name) == 1 or is_blank_placeholder_buffer(buf_id) then
-    return false
-  end
-
-  return true
-end
-
-local function meaningful_buffer_paths()
-  local paths = {}
-  local first_buf
-
-  for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
-    if is_meaningful_buffer(buf_id) then
-      local path = canonical_path(vim.api.nvim_buf_get_name(buf_id))
-      if path ~= nil then
-        paths[path] = true
-        if first_buf == nil and vim.api.nvim_buf_is_loaded(buf_id) then
-          first_buf = buf_id
-        end
-      end
-    end
-  end
-
-  return paths, first_buf
-end
-
-local function has_meaningful_paths(paths)
-  return next(paths) ~= nil
-end
-
-local function sanitize_session_file(path, meaningful_paths)
-  -- mini.sessions 先生成完整 session，再二次过滤掉无意义路径。
-  local ok, lines = pcall(vim.fn.readfile, path)
-  if not ok then
-    return false
-  end
-
-  local filtered = {}
-  local has_buffer_line = false
-  local has_edit_line = false
-  local first_buffer_path
-
-  for _, line in ipairs(lines) do
-    local session_path, kind = session_line_path(line)
-
-    if session_path == nil then
-      table.insert(filtered, line)
-    else
-      local normalized_path = canonical_path(session_path)
-      if normalized_path ~= nil and meaningful_paths[normalized_path] then
-        table.insert(filtered, line)
-        if kind == "badd" or kind == "edit" then
-          has_buffer_line = true
-          first_buffer_path = first_buffer_path or session_path
-        end
-        has_edit_line = has_edit_line or kind == "edit"
-      end
-    end
-  end
-
-  if not has_buffer_line then
-    return false
-  end
-
-  if not has_edit_line and first_buffer_path ~= nil then
-    -- 只有 badd 没有 edit 时，补一个入口文件，避免恢复后落到空窗口。
-    local insert_at = 0
-    for index, line in ipairs(filtered) do
-      if line:match("^badd%s+") then
-        insert_at = index
-      end
-    end
-    table.insert(filtered, insert_at + 1, "edit " .. first_buffer_path)
-  end
-
-  local write_ok, result = pcall(vim.fn.writefile, filtered, path)
-  return write_ok and result == 0
 end
 
 local function close_transient_windows()
@@ -227,27 +82,11 @@ local function startup_directory()
   end
 
   local path = vim.fn.fnamemodify(vim.fn.argv(0), ":p")
-  if vim.fn.isdirectory(path) ~= 1 then
+  if not path_util.is_directory(path) then
     return nil
   end
 
   return vim.fs.normalize(path)
-end
-
-local function is_empty_directory_buffer(buf_id, directory)
-  return buffer_util.is_directory_placeholder(buf_id, directory)
-end
-
-local function mark_startup_directory_buffer(directory)
-  -- nvim <dir> 会先创建一个目录名的空 buffer；没有 session 时它会留在首屏。
-  -- 把它标成临时占位：不显示在 buffer 列表里，被真实文件替换/隐藏时自动擦掉。
-  local buf_id = vim.api.nvim_get_current_buf()
-  if not is_empty_directory_buffer(buf_id, directory) then
-    return
-  end
-
-  vim.bo[buf_id].buflisted = false
-  vim.bo[buf_id].bufhidden = "wipe"
 end
 
 local function notify_read_error(err)
@@ -258,45 +97,6 @@ local function notify_read_error(err)
   end
 
   vim.notify(message, vim.log.levels.WARN)
-end
-
-local function collect_neogit_status_windows()
-  local windows = {}
-
-  for _, win_id in ipairs(vim.api.nvim_list_wins()) do
-    local buf_id = vim.api.nvim_win_get_buf(win_id)
-
-    if vim.bo[buf_id].filetype == "NeogitStatus" then
-      table.insert(windows, {
-        win_id = win_id,
-        cwd = vim.api.nvim_win_call(win_id, vim.fn.getcwd),
-      })
-    end
-  end
-
-  return windows
-end
-
-local function refresh_neogit_status_windows()
-  for _, window in ipairs(collect_neogit_status_windows()) do
-    if vim.api.nvim_win_is_valid(window.win_id) then
-      pcall(function()
-        local git = require("util.git")
-        local main_file = require("util.main_file")
-        vim.api.nvim_set_current_win(window.win_id)
-
-        local repo_cwd = git.root_from(window.cwd)
-          or git.root_from_buffer(main_file.current_buf())
-        if not repo_cwd then
-          return
-        end
-
-        local opts = { cwd = repo_cwd, kind = "replace", no_expand = true }
-        require("neogit").open(opts)
-        require("util.neogit_loading").start(opts, window.win_id)
-      end)
-    end
-  end
 end
 
 function M.setup()
@@ -324,7 +124,7 @@ function M.setup()
         write = close_transient_windows,
       },
       post = {
-        read = refresh_neogit_status_windows,
+        read = session_neogit.refresh_status_windows,
       },
     },
     verbose = {
@@ -344,7 +144,7 @@ function M.setup()
       local directory = startup_directory()
       if directory ~= nil then
         vim.api.nvim_set_current_dir(directory)
-        mark_startup_directory_buffer(directory)
+        session_buffers.mark_startup_directory_placeholder(directory)
       end
 
       if M.should_auto_restore() then
@@ -398,6 +198,8 @@ function M.setup()
 end
 
 function M.has_current()
+  -- 只有 session 文件里确实有可恢复文件时才认为当前项目有 session。
+  -- 空 session 会被顺手删除，避免下一次启动反复恢复到空壳。
   M.setup()
 
   if current_session_disabled_message() ~= nil then
@@ -405,7 +207,7 @@ function M.has_current()
   end
 
   local path = current_session_path()
-  if session_has_meaningful_buffers(path) then
+  if session_file.has_meaningful_buffers(path) then
     return true
   end
 
@@ -414,10 +216,13 @@ function M.has_current()
 end
 
 function M.should_auto_restore()
+  -- headless 模式通常是测试或脚本调用，不自动读写 UI session。
   return not is_headless() and (vim.fn.argc() == 0 or startup_directory() ~= nil) and M.has_current()
 end
 
 function M.write_current(opts)
+  -- 写入时先收集真实文件 buffer，再让 mini.sessions 生成原始 session，
+  -- 最后由 session_file.sanitize 过滤掉目录/空白占位等无意义路径。
   M.setup()
   opts = opts or {}
 
@@ -430,8 +235,8 @@ function M.write_current(opts)
     return
   end
 
-  local paths, first_buf = meaningful_buffer_paths()
-  if not has_meaningful_paths(paths) then
+  local paths, first_buf = session_buffers.meaningful_paths()
+  if not session_buffers.has_meaningful_paths(paths) then
     -- 当前项目没有真实文件 buffer 时，旧 session 也一起清掉。
     delete_current_session(opts)
 
@@ -465,7 +270,7 @@ function M.write_current(opts)
     return
   end
 
-  if not sanitize_session_file(current_session_path(), paths) then
+  if not session_file.sanitize(current_session_path(), paths) then
     delete_current_session(opts)
     if opts.verbose then
       vim.notify("No meaningful buffers to save in session", vim.log.levels.INFO)
@@ -474,9 +279,10 @@ function M.write_current(opts)
 end
 
 function M.read_current(opts)
+  -- 读取当前项目 session，但保留调用前 cwd。
+  -- 旧 session 可能残留 :cd；读取后恢复用户选择的 cwd，避免 Starter Open 被旧项目污染。
   M.setup()
   opts = opts or {}
-  -- 旧 session 可能残留 :cd；读取后恢复用户选择的 cwd，避免 Starter Open 被旧项目污染。
   local directory = current_directory()
 
   local disabled_message = current_session_disabled_message()

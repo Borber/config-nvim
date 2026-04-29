@@ -1,12 +1,13 @@
 local telescope_picker = require("util.telescope_picker")
+local buffer_util = require("util.buffer")
 
+-- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。
+-- 这样从特殊 buffer（例如 Neogit/terminal）触发任务时不会拿到无意义路径。
 local function search_params()
   local dir = vim.fn.getcwd()
-  if vim.bo.buftype == "" then
+  if buffer_util.is_normal_file(0) then
     local bufname = vim.api.nvim_buf_get_name(0)
-    if bufname ~= "" then
-      dir = vim.fn.fnamemodify(bufname, ":p:h")
-    end
+    dir = vim.fn.fnamemodify(bufname, ":p:h")
   end
 
   return {
@@ -27,7 +28,8 @@ local function setup_overseer_select()
   vim.ui._config_overseer_original_select = vim.ui._config_overseer_original_select or vim.ui.select
   local original_select = vim.ui._config_overseer_original_select
 
-  -- Overseer uses vim.ui.select for task templates and actions; route only those through Telescope.
+  -- Overseer 的模板和 action 都走 vim.ui.select；只拦截 kind=overseer*，
+  -- 其它插件仍使用原本的 vim.ui.select，避免全局 UI 行为被这个配置意外改写。
   vim.ui.select = function(items, opts, on_choice)
     if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
       telescope_picker.select(items, opts, on_choice, { fallback = original_select })
@@ -39,6 +41,7 @@ local function setup_overseer_select()
 end
 
 local function setup_failure_output(overseer)
+  -- 失败时自动打开输出，弥补任务列表默认收起时不容易看到错误详情的问题。
   overseer.add_template_hook({}, function(task_defn, util)
     util.add_component(task_defn, {
       "open_output",

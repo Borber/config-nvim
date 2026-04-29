@@ -1,6 +1,7 @@
 local M = {}
 
 local uv = vim.uv or vim.loop
+local buffer_util = require("util.buffer")
 local path_util = require("util.path")
 
 function M.normalize_path(path)
@@ -8,8 +9,12 @@ function M.normalize_path(path)
 end
 
 function M.dir_from_buffer(bufnr)
+  if bufnr == nil then
+    return nil
+  end
+
   bufnr = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
-  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= "" then
+  if not buffer_util.is_normal_file(bufnr) then
     return nil
   end
 

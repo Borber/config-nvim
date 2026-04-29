@@ -1,6 +1,14 @@
 -- 复制为 lua/config/local.lua 后填写本机私密配置。
 -- local.lua 已加入 .gitignore，不会被 Git 同步。
 return {
+  lsp = {
+    -- 不想在项目里放标记文件时，可以在这里按路径静音 LSP 诊断。
+    -- 跳转、补全、hover 仍然保留。
+    diagnostic_mute_roots = {
+      -- "/path/to/large/project",
+    },
+  },
+
   aicommits = {
     -- Codestral API key。不要把真实 key 写进 example 文件。
     api_key = "your-codestral-api-key",

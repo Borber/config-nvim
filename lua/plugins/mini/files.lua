@@ -1,7 +1,8 @@
 local M = {}
 local configured = false
 local buffer_util = require("util.buffer")
-local canonical_path = require("util.path").canonical
+local path_util = require("util.path")
+local canonical_path = path_util.canonical
 
 -- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。
 local enable_starter_open_key = false
@@ -14,7 +15,7 @@ local function build_branch_from_cwd(cwd, path)
 
   local normalized_cwd = canonical_path(cwd)
   local normalized_path = canonical_path(path)
-  local current_dir = vim.fn.isdirectory(path) == 1 and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
+  local current_dir = path_util.is_directory(path) and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
   local branch = { current_dir }
   local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
 
@@ -63,22 +64,6 @@ local function focus_file_entry(minifiles, directory_path, file_path)
   end
 end
 
-local function is_reusable_unnamed_buffer(win_id)
-  -- 启动页或空白新窗口通常是一个未命名、未修改、只有一行空内容的 buffer。
-  -- 这个占位可以直接复用为第一个真实文件 buffer。
-  return buffer_util.window_has_empty_unnamed(win_id)
-end
-
-local function is_reusable_directory_buffer(win_id)
-  -- :edit 目录会先留下一个目录 buffer，再由 mini.files 接管。
-  -- 选中真实文件时复用这个占位，避免目录名变成一个长期存在的 buffer。
-  return buffer_util.window_has_directory_placeholder(win_id)
-end
-
-local function is_reusable_target_window(win_id)
-  return is_reusable_unnamed_buffer(win_id) or is_reusable_directory_buffer(win_id)
-end
-
 local function open_path(path)
   require("mini.files").close()
   require("plugins.mini.visits").open_path(path)
@@ -125,7 +110,7 @@ local function open_entry()
   local state = minifiles.get_explorer_state()
   local target_win = state and state.target_window
 
-  if is_reusable_target_window(target_win) then
+  if buffer_util.window_has_reusable_placeholder(target_win) then
     -- 空白/目录占位 buffer 里打开文件时沿用当前窗口，保持启动后的第一次打开足够轻。
     minifiles.go_in({ close_on_file = true })
     return
@@ -154,7 +139,7 @@ local function open_files(root)
 
   minifiles.set_branch(branch, { depth_focus = #branch })
 
-  if vim.fn.filereadable(path) == 1 then
+  if path_util.is_file(path) then
     focus_file_entry(minifiles, branch[#branch], vim.fs.normalize(path))
   end
 end

@@ -27,12 +27,8 @@ end
 -- - 必须可修改、非只读、且当前确实有未保存改动
 -- - 必须已经有文件名，避免把无名临时 buffer 强行写盘
 local function autosave_normal_buffer(bufnr)
-  local target_bufnr, bo = buffer_util.normal_writable(bufnr)
+  local target_bufnr, bo = buffer_util.normal_writable_file(bufnr)
   if target_bufnr == nil or not bo.modified then
-    return
-  end
-
-  if vim.api.nvim_buf_get_name(target_bufnr) == "" then
     return
   end
 
