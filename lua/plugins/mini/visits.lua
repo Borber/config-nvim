@@ -2,17 +2,14 @@ local M = {}
 local configured = false
 
 local uv = vim.uv or vim.loop
+local path_util = require("util.path")
 local recent_paths = nil
 local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
 local recent_paths_limit = 100
 
 local function normalize_path(path)
   -- 转成绝对路径，避免同一个目录因为相对路径不同而在最近列表里重复出现。
-  if path == nil or path == "" then
-    return nil
-  end
-
-  return vim.fn.fnamemodify(path, ":p")
+  return path_util.absolute(path)
 end
 
 local function is_directory(path)

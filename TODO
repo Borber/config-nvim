@@ -1,2 +1,8 @@
 - [x] neogit 自动识别 git 仓库 类似 chromium/src 的情况
-- [ ] 语法高亮远不如vscode, 需要改进, 只有零星几个高亮, 特别是在 chromium 项目上, 的 C++ 代码上, 也许是因为项目太大了?
+
+## 下一步优化计划
+
+- [ ] 抽取通用 Telescope 选择器外壳, 先复用到 Overseer 和 Toggleterm 的 picker, 保留各自业务动作不变
+- [ ] 梳理 mini.sessions 的职责边界, 将 session 文件解析、buffer 过滤、Neogit 刷新拆成更小的内部 helper
+- [ ] 继续收口 path / buffer helper 的调用点, 确认没有重复判定重新散落到插件模块里
+- [ ] 为 starter、recent paths、mini.files、session restore 补一组最小 headless 行为验证, 防止后续简化误改交互边界

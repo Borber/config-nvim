@@ -1,13 +1,10 @@
 local M = {}
 
 local uv = vim.uv or vim.loop
+local path_util = require("util.path")
 
 function M.normalize_path(path)
-  if not path or path == "" or path:match("^%w[%w+.-]*://") then
-    return nil
-  end
-
-  return vim.fs.normalize(path)
+  return path_util.local_normalized(path)
 end
 
 function M.dir_from_buffer(bufnr)

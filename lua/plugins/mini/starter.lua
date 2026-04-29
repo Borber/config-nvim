@@ -1,5 +1,6 @@
 local M = {}
 local configured = false
+local buffer_util = require("util.buffer")
 
 local function current_recent_path()
   -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
@@ -66,16 +67,7 @@ end
 
 local function is_reusable_empty_buffer(buf_id)
   -- 手动打开 Starter 时复用清场后留下的空白占位，避免它在选中文件后残留成 [No Name]。
-  if not vim.api.nvim_buf_is_valid(buf_id) then
-    return false
-  end
-
-  if vim.api.nvim_buf_get_name(buf_id) ~= "" or vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
-    return false
-  end
-
-  return vim.api.nvim_buf_line_count(buf_id) == 1
-    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+  return buffer_util.is_empty_unnamed(buf_id)
 end
 
 local function save_buffer(buf_id)

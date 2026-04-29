@@ -1,5 +1,6 @@
 local M = {}
 local configured = false
+local buffer_util = require("util.buffer")
 local canonical_path = require("util.path").canonical
 
 -- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。
@@ -65,33 +66,13 @@ end
 local function is_reusable_unnamed_buffer(win_id)
   -- 启动页或空白新窗口通常是一个未命名、未修改、只有一行空内容的 buffer。
   -- 这个占位可以直接复用为第一个真实文件 buffer。
-  if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
-    return false
-  end
-
-  local buf_id = vim.api.nvim_win_get_buf(win_id)
-  if vim.api.nvim_buf_get_name(buf_id) ~= "" or vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
-    return false
-  end
-
-  return vim.api.nvim_buf_line_count(buf_id) == 1
-    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+  return buffer_util.window_has_empty_unnamed(win_id)
 end
 
 local function is_reusable_directory_buffer(win_id)
   -- :edit 目录会先留下一个目录 buffer，再由 mini.files 接管。
   -- 选中真实文件时复用这个占位，避免目录名变成一个长期存在的 buffer。
-  if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
-    return false
-  end
-
-  local buf_id = vim.api.nvim_win_get_buf(win_id)
-  local name = vim.api.nvim_buf_get_name(buf_id)
-
-  return vim.bo[buf_id].buftype == ""
-    and not vim.bo[buf_id].modified
-    and name ~= ""
-    and vim.fn.isdirectory(name) == 1
+  return buffer_util.window_has_directory_placeholder(win_id)
 end
 
 local function is_reusable_target_window(win_id)

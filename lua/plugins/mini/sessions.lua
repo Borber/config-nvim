@@ -1,5 +1,7 @@
 local M = {}
 local configured = false
+local buffer_util = require("util.buffer")
+local path_util = require("util.path")
 
 local function project_basename(path)
   local trimmed = path:gsub("[/\\]+$", "")
@@ -62,21 +64,7 @@ end
 
 local function canonical_path(path)
   -- session 文件里的路径和 buffer 路径来源不同，统一后才能稳定比较。
-  if path == nil or path == "" then
-    return nil
-  end
-
-  local expanded = vim.fn.expand(path)
-  if expanded == "" then
-    expanded = path
-  end
-
-  local normalized = vim.fs.normalize(vim.fn.fnamemodify(expanded, ":p")):gsub("\\", "/")
-  if #normalized > 3 then
-    normalized = normalized:gsub("/+$", "")
-  end
-
-  return normalized
+  return path_util.canonical_absolute(path)
 end
 
 local function session_line_path(line)
@@ -134,17 +122,7 @@ end
 
 local function is_blank_placeholder_buffer(buf_id)
   -- 无名空白 buffer 或尚未落盘的空文件占位，不应该写进项目 session。
-  local name = vim.api.nvim_buf_get_name(buf_id)
-  if name == "" then
-    return true
-  end
-
-  if vim.fn.filereadable(name) == 1 or not vim.api.nvim_buf_is_loaded(buf_id) or vim.bo[buf_id].modified then
-    return false
-  end
-
-  return vim.api.nvim_buf_line_count(buf_id) == 1
-    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+  return buffer_util.is_blank_placeholder(buf_id)
 end
 
 local function is_meaningful_buffer(buf_id)
@@ -257,25 +235,7 @@ local function startup_directory()
 end
 
 local function is_empty_directory_buffer(buf_id, directory)
-  if not vim.api.nvim_buf_is_valid(buf_id) or not vim.api.nvim_buf_is_loaded(buf_id) then
-    return false
-  end
-
-  if vim.bo[buf_id].buftype ~= "" or vim.bo[buf_id].modified then
-    return false
-  end
-
-  local name = vim.api.nvim_buf_get_name(buf_id)
-  if name == "" or vim.fn.isdirectory(name) ~= 1 then
-    return false
-  end
-
-  if canonical_path(name) ~= canonical_path(directory) then
-    return false
-  end
-
-  return vim.api.nvim_buf_line_count(buf_id) == 1
-    and vim.api.nvim_buf_get_lines(buf_id, 0, 1, false)[1] == ""
+  return buffer_util.is_directory_placeholder(buf_id, directory)
 end
 
 local function mark_startup_directory_buffer(directory)

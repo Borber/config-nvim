@@ -1,4 +1,5 @@
 local M = {}
+local buffer_util = require("util.buffer")
 
 -- 记录最近进入过的普通文件 buffer，供 Neogit、状态栏等特殊 buffer 场景回退使用。
 local last_file_bufnr
@@ -19,11 +20,11 @@ local function redraw()
 end
 
 function M.is_normal_file(bufnr)
-  if not bufnr or bufnr == 0 or not vim.api.nvim_buf_is_valid(bufnr) then
+  if not bufnr or bufnr == 0 then
     return false
   end
 
-  return vim.bo[bufnr].buftype == "" and vim.api.nvim_buf_get_name(bufnr) ~= ""
+  return buffer_util.is_normal_file(bufnr)
 end
 
 function M.track_current()
