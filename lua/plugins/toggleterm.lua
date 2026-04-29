@@ -12,6 +12,7 @@
 --   容、滚动位置都不会被触动。
 
 local api = vim.api
+local telescope_picker = require("util.telescope_picker")
 
 local function terminal_mod()
   return require("toggleterm.terminal")
@@ -146,43 +147,29 @@ local function pick_terminal()
     return
   end
 
-  local has_telescope, pickers = pcall(require, "telescope.pickers")
-  if not has_telescope then
-    -- Telescope 没加载时退回 toggleterm 自带选择器，保证命令仍然可用。
-    vim.cmd.TermSelect()
-    return
-  end
-
-  local finders      = require("telescope.finders")
-  local conf         = require("telescope.config").values
-  local actions      = require("telescope.actions")
-  local action_state = require("telescope.actions.state")
-  local themes       = require("telescope.themes")
-
-  pickers.new(themes.get_dropdown({
-    prompt_title  = "Terminals",
-    previewer     = false,
+  telescope_picker.dropdown({
+    prompt_title = "Terminals",
     layout_config = { width = 0.5, height = 0.45 },
-  }), {
-    finder = finders.new_table({
-      results = terms,
-      entry_maker = function(term)
-        local name    = term:_display_name()
-        local state   = term:is_open() and "open" or "hidden"
-        local dir     = term.direction or "?"
-        local display = string.format("%d  %-24s  [%s, %s]", term.id, name, dir, state)
-        return {
-          value   = term,
-          display = display,
-          ordinal = tostring(term.id) .. " " .. name .. " " .. dir,
-        }
-      end,
-    }),
-    sorter = conf.generic_sorter({}),
-    attach_mappings = function(bufnr, map)
+    results = terms,
+    fallback = function()
+      -- Telescope 没加载时退回 toggleterm 自带选择器，保证命令仍然可用。
+      vim.cmd.TermSelect()
+    end,
+    entry_maker = function(term)
+      local name = term:_display_name()
+      local state = term:is_open() and "open" or "hidden"
+      local dir = term.direction or "?"
+      local display = string.format("%d  %-24s  [%s, %s]", term.id, name, dir, state)
+      return {
+        value = term,
+        display = display,
+        ordinal = tostring(term.id) .. " " .. name .. " " .. dir,
+      }
+    end,
+    attach_mappings = function(bufnr, map, telescope)
       local function open_selected()
-        local entry = action_state.get_selected_entry()
-        actions.close(bufnr)
+        local entry = telescope.action_state.get_selected_entry()
+        telescope.actions.close(bufnr)
         if entry and entry.value then
           -- 被选中的终端如果当前是 hidden，也按相同布局规则打开
           with_custom_open_split(function()
@@ -192,20 +179,20 @@ local function pick_terminal()
       end
 
       local function shutdown_selected()
-        local entry = action_state.get_selected_entry()
+        local entry = telescope.action_state.get_selected_entry()
         if entry and entry.value then
           entry.value:shutdown()
-          actions.close(bufnr)
+          telescope.actions.close(bufnr)
           -- 关闭后重新打开选择器，方便连续清理多个终端。
           vim.schedule(pick_terminal)
         end
       end
 
-      actions.select_default:replace(open_selected)
+      telescope.actions.select_default:replace(open_selected)
       map({ "i", "n" }, "<C-x>", shutdown_selected)
       return true
     end,
-  }):find()
+  })
 end
 
 return {

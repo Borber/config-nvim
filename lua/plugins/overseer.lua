@@ -1,3 +1,5 @@
+local telescope_picker = require("util.telescope_picker")
+
 local function search_params()
   local dir = vim.fn.getcwd()
   if vim.bo.buftype == "" then
@@ -21,75 +23,6 @@ local function template_label(tmpl)
   return tmpl.name
 end
 
-local function telescope_select(items, opts, on_choice)
-  local has_telescope, pickers = pcall(require, "telescope.pickers")
-  if not has_telescope then
-    local original_select = vim.ui._config_overseer_original_select or vim.ui.select
-    original_select(items, opts, on_choice)
-    return
-  end
-
-  local finders = require("telescope.finders")
-  local conf = require("telescope.config").values
-  local actions = require("telescope.actions")
-  local action_state = require("telescope.actions.state")
-  local themes = require("telescope.themes")
-  local format_item = opts and opts.format_item or tostring
-  local entries = vim
-    .iter(items)
-    :enumerate()
-    :map(function(index, item)
-      return {
-        index = index,
-        value = item,
-        display = format_item(item),
-      }
-    end)
-    :totable()
-
-  pickers.new(themes.get_dropdown({
-    prompt_title = (opts and opts.prompt) or "Select",
-    previewer = false,
-    layout_config = {
-      width = 0.65,
-      height = 0.5,
-    },
-  }), {
-    finder = finders.new_table({
-      results = entries,
-      entry_maker = function(entry)
-        return {
-          value = entry.value,
-          index = entry.index,
-          display = entry.display,
-          ordinal = entry.display,
-        }
-      end,
-    }),
-    sorter = conf.generic_sorter({}),
-    attach_mappings = function(prompt_bufnr, map)
-      local function cancel()
-        actions.close(prompt_bufnr)
-        on_choice(nil)
-      end
-
-      actions.select_default:replace(function()
-        local entry = action_state.get_selected_entry()
-        actions.close(prompt_bufnr)
-        if entry then
-          on_choice(entry.value, entry.index)
-        else
-          on_choice(nil)
-        end
-      end)
-      map({ "i", "n" }, "<Esc>", cancel)
-      map({ "i", "n" }, "<C-c>", cancel)
-      map("n", "q", cancel)
-      return true
-    end,
-  }):find()
-end
-
 local function setup_overseer_select()
   vim.ui._config_overseer_original_select = vim.ui._config_overseer_original_select or vim.ui.select
   local original_select = vim.ui._config_overseer_original_select
@@ -97,7 +30,7 @@ local function setup_overseer_select()
   -- Overseer uses vim.ui.select for task templates and actions; route only those through Telescope.
   vim.ui.select = function(items, opts, on_choice)
     if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
-      telescope_select(items, opts, on_choice)
+      telescope_picker.select(items, opts, on_choice, { fallback = original_select })
       return
     end
 
@@ -138,7 +71,7 @@ local function run_task()
       return
     end
 
-    telescope_select(task_templates, {
+    telescope_picker.select(task_templates, {
       prompt = "Task",
       format_item = template_label,
     }, function(tmpl)
