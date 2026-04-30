@@ -33,7 +33,7 @@ opt.showmode = false           -- 不单独显示当前模式
 opt.termguicolors = true       -- 24 位真彩色
 opt.fileformats = { "unix", "dos" } -- 识别 LF/CRLF；新文件默认使用 LF
 opt.fillchars:append({ eob = " ", diff = " " }) -- 去掉 ~ 号，并隐藏 diff filler 横线
-opt.signcolumn = "yes"         -- 固定保留 sign 列，避免 Git/LSP 标记挤动文本
+opt.signcolumn = "yes"       -- 常驻一格 sign 列，避免诊断/书签出现时挤动文本
 opt.statuscolumn = "%s%=%l%{%v:lua.ConfigStatusColumn.git_sign()%}"
 opt.hidden = true              -- 切换缓冲区时保留未保存修改
 opt.autowriteall = true        -- 切换窗口等操作时自动保存
