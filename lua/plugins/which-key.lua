@@ -1,4 +1,5 @@
 local icons = {
+  bookmark = { icon = "", color = "yellow" },
   buffer = { icon = "󰈔", color = "cyan" },
   code = { icon = "", color = "orange" },
   explorer = { icon = "󰙅", color = "cyan" },
@@ -27,6 +28,7 @@ return {
       { "<leader>h", icon = icons.hunk, group = "hunk" },
       { "<leader>j", icon = { icon = "J", color = "green" }, group = "job" },
       { "<leader>k", icon = icons.keys, group = "keys" },
+      { "<leader>m", icon = icons.bookmark, group = "bookmark" },
       { "<leader>b", icon = icons.buffer, group = "buffer" },
       { "<leader>c", icon = icons.code, group = "code" },
       { "<leader>q", icon = icons.quit, group = "quit" },
