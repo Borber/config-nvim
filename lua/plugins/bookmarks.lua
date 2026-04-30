@@ -19,6 +19,33 @@ local function refresh_bookmarks()
   end)
 end
 
+local function configured_tree_width()
+  local config = vim.g.bookmarks_config or {}
+  local treeview = config.treeview or {}
+
+  return treeview.window_split_dimension or 50
+end
+
+local function keep_tree_width()
+  vim.schedule(function()
+    local ctx = vim.g.bookmark_tree_view_ctx
+    if not (ctx and ctx.win and vim.api.nvim_win_is_valid(ctx.win)) then
+      return
+    end
+
+    if ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf) and vim.api.nvim_win_get_buf(ctx.win) ~= ctx.buf then
+      return
+    end
+
+    vim.wo[ctx.win].winfixwidth = true
+
+    local width = configured_tree_width()
+    if vim.api.nvim_win_get_width(ctx.win) ~= width then
+      pcall(vim.api.nvim_win_set_width, ctx.win, width)
+    end
+  end)
+end
+
 local function activate_project_list(opts)
   opts = opts or {}
 
@@ -62,6 +89,10 @@ local function run_project_command(command, opts)
   return function()
     activate_project_list(opts)
     vim.cmd(command)
+
+    if command == "BookmarksTree" then
+      keep_tree_width()
+    end
   end
 end
 
@@ -95,6 +126,12 @@ local function setup_project_autocmds()
       activate_project_list({ create = false })
     end,
     desc = "Switch bookmarks list when cwd changes",
+  })
+
+  vim.api.nvim_create_autocmd({ "WinNew", "WinResized", "VimResized" }, {
+    group = group,
+    callback = keep_tree_width,
+    desc = "Keep bookmarks tree at its configured width",
   })
 end
 
