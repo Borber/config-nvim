@@ -1,5 +1,8 @@
-local telescope_picker = require("util.telescope_picker")
 local buffer_util = require("util.buffer")
+
+local function load_telescope_picker()
+  return require("util.telescope_picker")
+end
 
 -- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。
 -- 这样从特殊 buffer（例如 Neogit/terminal）触发任务时不会拿到无意义路径。
@@ -32,7 +35,7 @@ local function setup_overseer_select()
   -- 其它插件仍使用原本的 vim.ui.select，避免全局 UI 行为被这个配置意外改写。
   vim.ui.select = function(items, opts, on_choice)
     if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
-      telescope_picker.select(items, opts, on_choice, { fallback = original_select })
+      load_telescope_picker().select(items, opts, on_choice, { fallback = original_select })
       return
     end
 
@@ -76,7 +79,7 @@ local function run_task()
       return
     end
 
-    telescope_picker.select(task_templates, {
+    load_telescope_picker().select(task_templates, {
       prompt = "Task",
       format_item = template_label,
     }, function(tmpl)

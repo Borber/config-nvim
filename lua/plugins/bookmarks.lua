@@ -1,5 +1,3 @@
-local group = vim.api.nvim_create_augroup("config_bookmarks_project", { clear = true })
-
 local tree_icons = {
   bookmark = "◆",
   collapsed = "",
@@ -191,6 +189,8 @@ local function create_project_commands()
 end
 
 local function setup_project_autocmds()
+  local group = vim.api.nvim_create_augroup("config_bookmarks_project", { clear = true })
+
   -- VeryLazy 后插件才可用，延后一拍再尝试同步当前 cwd 的列表。
   vim.schedule(function()
     activate_project_list({ create = false })

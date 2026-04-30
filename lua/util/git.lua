@@ -4,7 +4,7 @@ local uv = vim.uv or vim.loop
 local buffer_util = require("util.buffer")
 local path_util = require("util.path")
 
-function M.normalize_path(path)
+local function normalize_path(path)
   return path_util.local_normalized(path)
 end
 
@@ -19,7 +19,7 @@ function M.dir_from_buffer(bufnr)
     return nil
   end
 
-  local name = M.normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local name = normalize_path(vim.api.nvim_buf_get_name(bufnr))
   if not name then
     return nil
   end
@@ -34,7 +34,7 @@ end
 
 function M.root_from(dir)
   -- 交给 git 自己解析 worktree/symlink/submodule，比手写向上查找 .git 更稳。
-  dir = M.normalize_path(dir)
+  dir = normalize_path(dir)
   if not dir then
     return nil
   end
@@ -50,10 +50,6 @@ function M.root_from(dir)
   end
 
   return vim.fs.normalize(root)
-end
-
-function M.root_from_buffer(bufnr)
-  return M.root_from(M.dir_from_buffer(bufnr))
 end
 
 return M

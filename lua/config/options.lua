@@ -84,8 +84,7 @@ if vim.fn.has("win32") == 1 then
   -- shellcmdflag 里显式把 PSStyle 输出设为 PlainText，避免 :! / makeprg
   -- 的结果带 ANSI 样式控制符，影响 quickfix 或命令输出阅读。
   vim.o.shell = "pwsh -NoLogo "
-  vim.o.shellcmdflag =
-    "-ExecutionPolicy RemoteSigned -Command $PSStyle.OutputRendering = 'PlainText';"
+  vim.o.shellcmdflag = "-NoProfile -ExecutionPolicy RemoteSigned -Command $PSStyle.OutputRendering = 'PlainText';"
   vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
   vim.o.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
   vim.o.shellquote = ""

@@ -4,20 +4,6 @@ local function min_cols(n)
   end
 end
 
-local function branch_name()
-  local ok, git_branch = pcall(require, "lualine.components.branch.git_branch")
-  if not ok then
-    return ""
-  end
-
-  pcall(git_branch.find_git_dir)
-  return git_branch.get_branch() or ""
-end
-
-local function show_branch()
-  return min_cols(100)() and branch_name() ~= ""
-end
-
 local os_icons = {
   Windows_NT = vim.fn.nr2char(0xf0372),
   Darwin = vim.fn.nr2char(0xf179),
@@ -78,7 +64,7 @@ return {
           "branch",
           icon = "",
           color = { gui = "bold" },
-          cond = show_branch,
+          cond = min_cols(100),
         }
       },
       lualine_c = {

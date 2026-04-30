@@ -4,8 +4,6 @@
 local augroup = vim.api.nvim_create_augroup
 local buffer_util = require("util.buffer")
 
-require("util.main_file").setup()
-
 local function strip_carriage_returns(bufnr)
   local target_bufnr, bo = buffer_util.normal_writable(bufnr)
   if target_bufnr == nil or bo.binary then

@@ -1,9 +1,8 @@
 local function default_neogit_cwd()
   local git = require("util.git")
-  local main_file = require("util.main_file")
   local cwd = vim.fn.getcwd()
-  -- 优先用当前/最近文件 buffer 推导仓库；Neogit 这类特殊 buffer 不再依赖原生 tab 继承上下文。
-  local dir = git.dir_from_buffer(main_file.current_buf()) or cwd
+  -- 调用时如果在真实文件 buffer，就用文件位置推导仓库；特殊 buffer 直接回退 cwd。
+  local dir = git.dir_from_buffer(0) or cwd
 
   return git.root_from(dir) or git.root_from(cwd) or dir
 end

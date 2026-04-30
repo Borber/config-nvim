@@ -1,5 +1,14 @@
 return {
   "sindrets/diffview.nvim",
+  cmd = {
+    "DiffviewClose",
+    "DiffviewFileHistory",
+    "DiffviewFocusFiles",
+    "DiffviewLog",
+    "DiffviewOpen",
+    "DiffviewRefresh",
+    "DiffviewToggleFiles",
+  },
   opts = function()
     -- 三个 Diffview 面板都用同一个关闭动作，保持 <C-x> 的退出手感一致。
     local close_diffview = function()

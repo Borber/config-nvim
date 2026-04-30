@@ -2,7 +2,7 @@ local repo = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h:h")
 vim.opt.runtimepath:append(repo)
 vim.opt.updatecount = 0
 
-local tmp_root = "/private/tmp/config-nvim-headless-" .. vim.fn.getpid()
+local tmp_root = vim.fn.tempname()
 vim.fn.delete(tmp_root, "rf")
 vim.fn.mkdir(tmp_root, "p")
 vim.env.XDG_DATA_HOME = tmp_root .. "/xdg-data"
@@ -272,7 +272,7 @@ function tests.session_restore_preserves_requested_cwd()
   assert_true(read_name:match("%.vim$") ~= nil, "session read should receive a session file name")
   assert_eq(read_opts.force, false, "session restore should not force by default")
   assert_eq(read_opts.verbose, false, "session restore should honor verbose=false")
-  assert_eq(vim.fn.getcwd(), project, "read_current should restore cwd after reading old sessions")
+  assert_eq(vim.fs.normalize(vim.fn.getcwd()), vim.fs.normalize(project), "read_current should restore cwd after reading old sessions")
   assert_eq(sessions.should_auto_restore(), false, "headless mode should not auto restore sessions")
 end
 

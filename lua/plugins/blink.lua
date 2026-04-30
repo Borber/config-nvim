@@ -58,6 +58,32 @@ local function preview_multiline_completion(item)
   return undo_text_edit, nil
 end
 
+local function cmdline_menu_position()
+  local ok, noice = pcall(require, "noice.api")
+  if ok then
+    local position = noice.get_cmdline_position()
+    if position and position.screenpos then
+      local row = position.screenpos.row - 1
+      if position.win and vim.api.nvim_win_is_valid(position.win) then
+        local win_config = vim.api.nvim_win_get_config(position.win)
+        if win_config.relative ~= "" then
+          row = row + 1
+        end
+      end
+
+      return { row, math.max(position.screenpos.col - 4, 0) }
+    end
+  end
+
+  local ui_position = vim.g.ui_cmdline_pos
+  if ui_position ~= nil then
+    return { ui_position[1] - 1, ui_position[2] }
+  end
+
+  local height = vim.o.cmdheight == 0 and 1 or vim.o.cmdheight
+  return { vim.o.lines - height, 0 }
+end
+
 return {
   "saghen/blink.cmp",
   version = "1.*",
@@ -113,6 +139,7 @@ return {
       menu = {
         border = require("util.float").border,
         winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+        cmdline_position = cmdline_menu_position,
       },
       -- 选中候选时自动打开右侧详情窗，LSP/普通补全沿用 blink 原生文档渲染。
       documentation = {
@@ -212,8 +239,9 @@ return {
       completion = {
         menu = {
           auto_show = true,
-          border = require("util.float").border,
-          winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+          draw = {
+            columns = { { "label", "label_description", gap = 1 } },
+          },
         },
         ghost_text = { enabled = true },
       },

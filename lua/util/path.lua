@@ -1,6 +1,6 @@
 local M = {}
 
-function M.is_uri(path)
+local function is_uri(path)
   return type(path) == "string" and path:match("^%w[%w+.-]*://") ~= nil
 end
 
@@ -22,7 +22,7 @@ end
 
 function M.local_normalized(path)
   -- 只接受本地文件路径；URI 交给对应插件处理，不参与本地路径比较。
-  if not path or path == "" or M.is_uri(path) then
+  if not path or path == "" or is_uri(path) then
     return nil
   end
 

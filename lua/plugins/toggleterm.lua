@@ -12,7 +12,10 @@
 --   容、滚动位置都不会被触动。
 
 local api = vim.api
-local telescope_picker = require("util.telescope_picker")
+
+local function load_telescope_picker()
+  return require("util.telescope_picker")
+end
 
 local function terminal_mod()
   return require("toggleterm.terminal")
@@ -149,7 +152,7 @@ local function pick_terminal()
 
   -- 终端选择器复用通用 Telescope 外壳，但保留 toggleterm 自己的业务动作：
   -- Enter 打开/聚焦终端，<C-x> 关闭选中终端并重新弹出列表。
-  telescope_picker.dropdown({
+  load_telescope_picker().dropdown({
     prompt_title = "Terminals",
     layout_config = { width = 0.5, height = 0.45 },
     results = terms,

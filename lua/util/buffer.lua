@@ -143,18 +143,18 @@ local function win_bufnr(win_id)
   return vim.api.nvim_win_get_buf(win_id)
 end
 
-function M.window_has_empty_unnamed(win_id)
+local function window_has_empty_unnamed(win_id)
   local bufnr = win_bufnr(win_id)
   return bufnr ~= nil and M.is_empty_unnamed(bufnr)
 end
 
-function M.window_has_directory_placeholder(win_id)
+local function window_has_directory_placeholder(win_id)
   local bufnr = win_bufnr(win_id)
   return bufnr ~= nil and M.is_directory_placeholder(bufnr)
 end
 
 function M.window_has_reusable_placeholder(win_id)
-  return M.window_has_empty_unnamed(win_id) or M.window_has_directory_placeholder(win_id)
+  return window_has_empty_unnamed(win_id) or window_has_directory_placeholder(win_id)
 end
 
 return M
