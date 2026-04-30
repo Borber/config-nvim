@@ -81,6 +81,7 @@ local function current_entry()
 end
 
 local function open_selected_entry()
+  -- Starter Open 的最终确认走 visits.open_path，这一步才记录 recent path 并切换项目。
   local _, entry = current_entry()
   if entry == nil then
     return

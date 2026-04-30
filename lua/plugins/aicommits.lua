@@ -34,7 +34,7 @@ return {
         picker = {
           width = 0.4,
           height = 0.3,
-          border = "rounded",
+          border = require("util.float").border,
         },
       },
       integrations = {

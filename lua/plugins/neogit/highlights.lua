@@ -21,8 +21,8 @@ function M.apply()
   local p = rose_pine_dawn
   local highlights = {
     NeogitNormal = { fg = p.text, bg = p.base },
-    NeogitNormalFloat = { fg = p.text, bg = p.surface },
-    NeogitFloatBorder = { fg = p.highlight_high, bg = p.surface },
+    NeogitNormalFloat = { fg = p.text, bg = p.base },
+    NeogitFloatBorder = { fg = p.highlight_high, bg = p.base },
     NeogitWinSeparator = { fg = p.highlight_high, bg = p.base },
     NeogitSignColumn = { fg = p.iris, bg = p.base },
     NeogitFoldColumn = { fg = p.muted, bg = p.base },

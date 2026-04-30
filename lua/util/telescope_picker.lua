@@ -1,4 +1,5 @@
 local M = {}
+local float = require("util.float")
 
 -- 懒加载 Telescope 的几个内部模块，调用方只需要判断是否可用。
 -- 这里集中处理 pcall，避免每个 picker 都重复写一套 require/fallback。
@@ -40,6 +41,7 @@ function M.dropdown(opts)
   telescope.pickers.new(telescope.themes.get_dropdown({
     prompt_title = opts.prompt_title or "Select",
     previewer = previewer,
+    borderchars = opts.borderchars or float.telescope_dropdown_borderchars(),
     layout_config = opts.layout_config or { width = 0.65, height = 0.5 },
   }), {
     finder = telescope.finders.new_table({

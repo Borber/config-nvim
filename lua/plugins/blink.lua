@@ -110,6 +110,10 @@ return {
         show_on_insert = true,
         show_in_snippet = false,
       },
+      menu = {
+        border = require("util.float").border,
+        winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+      },
       -- 选中候选时自动打开右侧详情窗，LSP/普通补全沿用 blink 原生文档渲染。
       documentation = {
         auto_show = true,
@@ -118,6 +122,8 @@ return {
         window = {
           desired_min_width = 48,
           desired_min_height = 12,
+          border = require("util.float").border,
+          winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder,EndOfBuffer:NormalFloat",
           max_width = 96,
           max_height = 24,
           direction_priority = {
@@ -176,6 +182,12 @@ return {
       -- 先执行自定义比较器，再回退到 blink 默认的精确度/分数排序。
       sorts = { prefer_plain_symbol_over_copilot, "exact", "score", "sort_text" },
     },
+    signature = {
+      window = {
+        border = require("util.float").border,
+        winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder",
+      },
+    },
     cmdline = {
       enabled = true,
       keymap = {
@@ -198,7 +210,11 @@ return {
         return {}
       end,
       completion = {
-        menu = { auto_show = true },
+        menu = {
+          auto_show = true,
+          border = require("util.float").border,
+          winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+        },
         ghost_text = { enabled = true },
       },
     },

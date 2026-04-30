@@ -18,6 +18,7 @@ local function project_name()
 end
 
 local function configure_sqlite_clib()
+  -- Windows 上 sqlite.lua 需要显式找到 dll；Scoop 路径只在未配置时作为本机默认值。
   if vim.g.sqlite_clib_path ~= nil or vim.fn.has("win32") == 0 then
     return
   end
@@ -26,6 +27,7 @@ local function configure_sqlite_clib()
 end
 
 local function refresh_bookmarks()
+  -- 切换项目列表后同步刷新 sign 和 tree，避免 UI 还显示上一个 cwd 的书签。
   pcall(function()
     require("bookmarks.sign").safe_refresh_signs()
   end)
@@ -50,6 +52,7 @@ local function compact_tree_gutter(win)
 end
 
 local function apply_tree_icons(buf)
+  -- 上游 tree 渲染会直接写入 buffer；这里在渲染完成后做一次轻量文本替换。
   if not (buf and vim.api.nvim_buf_is_valid(buf)) then
     return
   end
@@ -73,6 +76,7 @@ local function apply_tree_icons(buf)
 end
 
 local function patch_tree_icons()
+  -- render.refresh 是内部入口，必须幂等 patch，避免配置重载后多层包裹。
   local ok, render = pcall(require, "bookmarks.tree.render")
   if not ok or render._config_icon_patch then
     return
@@ -93,6 +97,7 @@ local function patch_tree_icons()
 end
 
 local function keep_tree_width()
+  -- tree 窗口可能被 split/resize 影响；下一轮事件循环再校正，确保 ctx 已更新。
   vim.schedule(function()
     local ctx = vim.g.bookmark_tree_view_ctx
     if not (ctx and ctx.win and vim.api.nvim_win_is_valid(ctx.win)) then
@@ -117,6 +122,7 @@ end
 local function activate_project_list(opts)
   opts = opts or {}
 
+  -- 每个 cwd 对应一个同名书签列表；不存在时按调用场景决定是否创建。
   local name = project_name()
   if name == nil then
     return nil
@@ -155,6 +161,7 @@ end
 
 local function run_project_command(command, opts)
   return function()
+    -- 所有书签命令先切到当前项目列表，避免手动命令误操作到别的项目。
     activate_project_list(opts)
     vim.cmd(command)
 
@@ -184,6 +191,7 @@ local function create_project_commands()
 end
 
 local function setup_project_autocmds()
+  -- VeryLazy 后插件才可用，延后一拍再尝试同步当前 cwd 的列表。
   vim.schedule(function()
     activate_project_list({ create = false })
   end)

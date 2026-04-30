@@ -5,6 +5,7 @@ local buffer_util = require("util.buffer")
 local last_file_bufnr
 
 local function is_floating_win(win)
+  -- 浮窗通常是 hover/picker/提示，不应改变“最近真实文件”的上下文。
   if not win or not vim.api.nvim_win_is_valid(win) then
     return false
   end
@@ -13,6 +14,7 @@ local function is_floating_win(win)
 end
 
 local function redraw()
+  -- 文件上下文会影响 lualine/tabline；延后刷新可避开窗口事件连发时的抖动。
   vim.schedule(function()
     pcall(vim.cmd, "redrawtabline")
     pcall(vim.cmd, "redrawstatus")
@@ -102,6 +104,7 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "BufDelete", "WinClosed" }, {
     group = group,
     callback = function()
+      -- 最近文件被删或窗口关闭后清空缓存，避免特殊 buffer 继续引用失效 bufnr。
       if not M.is_normal_file(last_file_bufnr) then
         last_file_bufnr = nil
       end

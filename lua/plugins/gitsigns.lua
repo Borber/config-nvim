@@ -1,7 +1,8 @@
 local function apply_gitsigns_highlights()
+  local bg = require("util.float").normal_bg() or "#faf4ed"
   local highlights = {
-    GitSignsPreviewBorder = { fg = "#cecacd", bg = "#fffaf3" },
-    GitSignsPreviewTitle = { fg = "#907aa9", bg = "#fffaf3", bold = true },
+    GitSignsPreviewBorder = { fg = "#cecacd", bg = bg },
+    GitSignsPreviewTitle = { fg = "#907aa9", bg = bg, bold = true },
     GitSignsCurrentLineBlame = { fg = "#9893a5", italic = true },
     GitSignsAddPreview = { fg = "#286983", bg = "#f1f7f3" },
     GitSignsDeletePreview = { fg = "#b4637a", bg = "#faecef" },
@@ -19,21 +20,6 @@ end
 local function preview_width()
   return math.min(96, math.max(1, vim.o.columns - 8))
 end
-
-local function preview_border()
-  local highlight = "GitSignsPreviewBorder"
-  return {
-    { "╭", highlight },
-    { "─", highlight },
-    { "╮", highlight },
-    { "│", highlight },
-    { "╯", highlight },
-    { "─", highlight },
-    { "╰", highlight },
-    { "│", highlight },
-  }
-end
-
 return {
   "lewis6991/gitsigns.nvim",
   event = { "BufReadPost", "BufNewFile" },
@@ -50,12 +36,13 @@ return {
     signs = {
       add          = { text = "┃" },
       change       = { text = "┃" },
-      delete       = { text = "" },
-      topdelete    = { text = "" },
+      delete       = { text = "╸"},
+      topdelete    = { text = "╸" },
       changedelete = { text = "┃" },
       untracked    = { text = "┃" },
     },
-    signcolumn = true,
+    signcolumn = false,
+    _statuscolumn = true,
     current_line_blame = true,
     current_line_blame_opts = {
       virt_text = true,
@@ -73,7 +60,7 @@ return {
       row = 1,
       col = 2,
       width = preview_width(),
-      border = preview_border(),
+      border = require("util.float").borderchars("GitSignsPreviewBorder"),
       title = { { " 󰊢 Gitsigns ", "GitSignsPreviewTitle" } },
       title_pos = "center",
       zindex = 50,

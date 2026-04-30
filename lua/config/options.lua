@@ -5,6 +5,23 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
 local opt = vim.opt
+if vim.fn.exists("&winborder") == 1 then
+  opt.winborder = require("util.float").border -- 默认让插件浮窗保持直角矩形边框。
+end
+local statuscolumn = {}
+
+-- 从 gitsigns 读取当前行标记，塞回自定义 statuscolumn 的行号右侧。
+function statuscolumn.git_sign()
+  local gitsigns = package.loaded.gitsigns
+  if not gitsigns then
+    return " "
+  end
+
+  local sign = gitsigns.statuscolumn():gsub("%s+$", "")
+  return sign ~= "" and sign or " "
+end
+
+_G.ConfigStatusColumn = statuscolumn
 
 opt.number = true              -- 显示行号
 opt.relativenumber = true     -- 相对行号
@@ -16,7 +33,8 @@ opt.showmode = false           -- 不单独显示当前模式
 opt.termguicolors = true       -- 24 位真彩色
 opt.fileformats = { "unix", "dos" } -- 识别 LF/CRLF；新文件默认使用 LF
 opt.fillchars:append({ eob = " ", diff = " " }) -- 去掉 ~ 号，并隐藏 diff filler 横线
-opt.signcolumn = "yes"        -- 固定保留 sign 列，避免 Git/LSP 标记挤动文本
+opt.signcolumn = "yes"         -- 固定保留 sign 列，避免 Git/LSP 标记挤动文本
+opt.statuscolumn = "%s%=%l%{%v:lua.ConfigStatusColumn.git_sign()%}"
 opt.hidden = true              -- 切换缓冲区时保留未保存修改
 opt.autowriteall = true        -- 切换窗口等操作时自动保存
 opt.undofile = true            -- 跨启动保留撤销历史

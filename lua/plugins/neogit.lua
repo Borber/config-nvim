@@ -75,6 +75,9 @@ return {
   },
   opts = {
     kind = "auto",
+    floating = {
+      border = require("util.float").border,
+    },
     graph_style = "unicode",
     signs = {
       hunk = { "", "" },

@@ -21,6 +21,9 @@ return {
   opts = {
     preset = "helix",
     delay = 0,
+    win = {
+      border = require("util.float").border,
+    },
     spec = {
       { "<leader>e", icon = icons.explorer, desc = "Explorer" },
       { "<leader>f", icon = icons.find, group = "find" },

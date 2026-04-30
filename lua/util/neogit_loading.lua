@@ -22,6 +22,7 @@ local function message(opts)
 end
 
 local function stop_active()
+  -- 同一时间只允许一个 loading 占位；停止时恢复窗口选项、timer 和临时 autocmd。
   if not active then
     return
   end
@@ -47,6 +48,7 @@ function M.start(opts, win)
 
   local target_win = win and vim.api.nvim_win_is_valid(win) and win or vim.api.nvim_get_current_win()
   local buf = vim.api.nvim_win_get_buf(target_win)
+  -- 只接管 Neogit 自己的空白/状态 buffer，避免误把普通文件内容替换成 loading 文案。
   if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) or not vim.bo[buf].filetype:match("^Neogit") then
     return function() end
   end
@@ -58,6 +60,7 @@ function M.start(opts, win)
   local tick = 1
 
   active = { group = group, signcolumn = signcolumn, timer = timer, win = target_win }
+  -- loading 期间隐藏 signcolumn，让居中文案不会被左侧列挤歪。
   vim.api.nvim_set_option_value("signcolumn", "no", { win = target_win })
 
   local function centered_lines(line)
@@ -73,6 +76,7 @@ function M.start(opts, win)
   end
 
   local function render()
+    -- timer 回调可能晚于窗口关闭或下一次 Neogit 打开，先确认仍是当前 active 实例。
     if not active or active.timer ~= timer then
       return
     end
@@ -88,6 +92,7 @@ function M.start(opts, win)
 
     local line = ("%s %s"):format(frames[tick], text)
     local readonly = vim.api.nvim_get_option_value("readonly", { buf = buf })
+    -- Neogit buffer 通常是不可改的；短暂打开 modifiable 只用于替换占位内容。
     vim.api.nvim_set_option_value("readonly", false, { buf = buf })
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, centered_lines(line))
@@ -101,6 +106,7 @@ function M.start(opts, win)
     end
   end
 
+  -- status refresh 或 popup filetype 出现时说明 Neogit 已经接管渲染，可以撤掉占位。
   vim.api.nvim_create_autocmd(opts[1] and "FileType" or "User", {
     group = group,
     pattern = opts[1] and "NeogitPopup" or "NeogitStatusRefreshed",
@@ -127,6 +133,7 @@ function M.start(opts, win)
     end)
   )
 
+  -- 防御性超时：Neogit 若没有发出完成事件，也不要让 timer 永久挂着。
   vim.defer_fn(stop, 60000)
   return stop
 end

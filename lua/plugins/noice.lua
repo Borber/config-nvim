@@ -54,6 +54,48 @@ return {
         size = {
           min_width = 30,
         },
+        border = require("util.float").noice_border(),
+        win_options = {
+          winhighlight = {
+            Normal = "NormalFloat",
+            FloatTitle = "FloatTitle",
+            FloatBorder = "FloatBorder",
+            IncSearch = "",
+            CurSearch = "",
+            Search = "",
+          },
+        },
+      },
+      cmdline_input = {
+        border = require("util.float").noice_border(),
+      },
+      popup = {
+        border = {
+          style = require("util.float").border,
+        },
+      },
+      hover = {
+        border = require("util.float").noice_border({ 0, 2 }),
+      },
+      mini = {
+        border = {
+          style = require("util.float").border,
+        },
+        win_options = {
+          winblend = 0,
+          winhighlight = {
+            Normal = "NormalFloat",
+            FloatBorder = "FloatBorder",
+            IncSearch = "",
+            CurSearch = "",
+            Search = "",
+          },
+        },
+      },
+      confirm = {
+        border = vim.tbl_extend("force", require("util.float").noice_border(), {
+          text = { top = " Confirm " },
+        }),
       },
     },
     messages = {
@@ -75,7 +117,7 @@ return {
       bottom_search = true,
       command_palette = false,
       long_message_to_split = true,
-      lsp_doc_border = false,
+      lsp_doc_border = true,
     },
   },
 }

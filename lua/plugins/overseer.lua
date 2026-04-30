@@ -140,10 +140,10 @@ return {
       max_height = { 20, 0.25 },
     },
     form = {
-      border = "rounded",
+      border = require("util.float").border,
     },
     task_win = {
-      border = "rounded",
+      border = require("util.float").border,
     },
   },
   config = function(_, opts)

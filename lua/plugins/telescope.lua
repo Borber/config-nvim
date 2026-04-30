@@ -68,10 +68,12 @@ return {
   },
   config = function()
     local actions = require("telescope.actions")
+    local float = require("util.float")
     local telescope = require("telescope")
 
     telescope.setup({
       defaults = {
+        borderchars = float.telescope_borderchars(),
         mappings = {
           i = {
             ["<Esc>"] = actions.close,
@@ -93,5 +95,6 @@ return {
     })
 
     pcall(telescope.load_extension, "fzf")
+    float.apply_highlights()
   end,
 }

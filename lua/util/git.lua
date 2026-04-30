@@ -9,6 +9,7 @@ function M.normalize_path(path)
 end
 
 function M.dir_from_buffer(bufnr)
+  -- Git 上下文只从真实文件 buffer 推导；Neogit/terminal/空白 buffer 交给调用方回退 cwd。
   if bufnr == nil then
     return nil
   end
@@ -32,6 +33,7 @@ function M.dir_from_buffer(bufnr)
 end
 
 function M.root_from(dir)
+  -- 交给 git 自己解析 worktree/symlink/submodule，比手写向上查找 .git 更稳。
   dir = M.normalize_path(dir)
   if not dir then
     return nil

@@ -233,7 +233,7 @@ return {
         spacing = 2,
         severity = { min = vim.diagnostic.severity.WARN },
       },
-      float = { border = "rounded", source = "if_many" },
+      float = { border = require("util.float").border, source = "if_many" },
     })
 
     -- 所有 server 共享的默认 capabilities：直接复用 blink.cmp 给出的能力声明，
@@ -287,7 +287,9 @@ return {
           end
 
           -- 基础 LSP 跳转：定义、声明、类型定义、引用和实现分开保留。
-          map("n", "K", vim.lsp.buf.hover, "LSP hover")
+          map("n", "K", function()
+            vim.lsp.buf.hover({ border = require("util.float").border })
+          end, "LSP hover")
           map("n", "gd", vim.lsp.buf.definition, "Goto definition")
           -- C/C++ 等语言里声明和定义经常分离：gD 去声明，gd 去实现/定义。
           map("n", "gD", vim.lsp.buf.declaration, "Goto declaration")
