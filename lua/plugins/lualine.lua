@@ -4,6 +4,18 @@ local function min_cols(n)
   end
 end
 
+local os_icons = {
+  Windows_NT = vim.fn.nr2char(0xf0372),
+  Darwin = vim.fn.nr2char(0xf179),
+  Linux = vim.fn.nr2char(0xf17c),
+}
+
+local function os_icon()
+  local uv = vim.uv or vim.loop
+  local system = uv.os_uname().sysname
+  return os_icons[system] or "?"
+end
+
 local mode_labels = {
   NORMAL = "N",
   ["O-PENDING"] = "O",
@@ -53,18 +65,21 @@ return {
           icon = "",
           color = { gui = "bold" },
           cond = min_cols(100),
-        },
+        }
+      },
+      lualine_c = {
         {
           "diagnostics",
           sources = { "nvim_diagnostic" },
           symbols = { error = " ", warn = " ", info = " " },
           cond = min_cols(120),
-        },
+        }
       },
-      lualine_c = {},
       lualine_x = {},
       lualine_y = { { "filetype", cond = min_cols(80) } },
-      lualine_z = { { "progress", cond = min_cols(120) }  },
+      lualine_z = {
+        { os_icon },
+      },
     },
     inactive_sections = {
       lualine_a = {},
