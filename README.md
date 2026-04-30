@@ -6,6 +6,7 @@
 
 - Neovim 0.11+
 - `git`
+- Windows 下使用 bookmarks 时建议通过 Scoop 安装 `sqlite-dll`，配置会自动使用 `~/scoop/apps/sqlite-dll/current/sqlite3.dll`
 - `tree-sitter`：`nvim-treesitter` 使用 `main` 分支，需要本机有 `tree-sitter` 命令
 - 可选：`rg`、`fd`、`cmake`，用于 Telescope / fzf-native 等插件获得更好体验
 
@@ -54,6 +55,12 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 `:Neogit` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
 需要手动指定仓库时，仍然可以使用 Neogit 原生参数，例如 `:Neogit cwd=/path/to/repo`。
+
+## 界面约定
+
+- lualine statusline 使用紧凑模式标签，例如 `N`、`I`、`V`、`T`，主状态区保留 branch、diagnostics、filetype 和 progress。
+- 顶部 tabline 左侧保留独立 Vim 图标区，buffer 列表只显示简洁名称，并用 `●` 标记已修改 buffer。
+- gitsigns 在 signcolumn 中显示新增/变更线，也用 `` 明确标记删除和顶部删除。
 
 ## Headless 验证
 

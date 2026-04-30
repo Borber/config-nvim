@@ -17,6 +17,14 @@ local function project_name()
   return cwd ~= "" and cwd or nil
 end
 
+local function configure_sqlite_clib()
+  if vim.g.sqlite_clib_path ~= nil or vim.fn.has("win32") == 0 then
+    return
+  end
+
+  vim.g.sqlite_clib_path = vim.fn.expand("~/scoop/apps/sqlite-dll/current/sqlite3.dll")
+end
+
 local function refresh_bookmarks()
   pcall(function()
     require("bookmarks.sign").safe_refresh_signs()
@@ -198,6 +206,7 @@ end
 return {
   "LintaoAmons/bookmarks.nvim",
   event = "VeryLazy",
+  init = configure_sqlite_clib,
   cmd = {
     "BookmarkRebindOrphanNode",
     "BookmarksCommands",

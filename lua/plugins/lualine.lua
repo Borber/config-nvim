@@ -4,6 +4,30 @@ local function min_cols(n)
   end
 end
 
+local mode_labels = {
+  NORMAL = "N",
+  ["O-PENDING"] = "O",
+  VISUAL = "V",
+  ["V-LINE"] = "VL",
+  ["V-BLOCK"] = "VB",
+  SELECT = "S",
+  ["S-LINE"] = "SL",
+  ["S-BLOCK"] = "SB",
+  INSERT = "I",
+  REPLACE = "R",
+  ["V-REPLACE"] = "VR",
+  COMMAND = "C",
+  EX = "EX",
+  MORE = "M",
+  CONFIRM = "CF",
+  SHELL = "SH",
+  TERMINAL = "T",
+}
+
+local function short_mode(mode)
+  return mode_labels[mode] or mode:sub(1, 1)
+end
+
 return {
   "nvim-lualine/lualine.nvim",
   event = "VeryLazy",
@@ -17,31 +41,35 @@ return {
       disabled_filetypes = { statusline = { "ministarter" } },
     },
     sections = {
-      lualine_a = { "mode" },
-      lualine_b = {
-        { "branch",      cond = min_cols(100) },
-        { "diagnostics", cond = min_cols(120) },
-      },
-      lualine_c = {
+      lualine_a = {
         {
-          function()
-            return require("util.main_file").status_name()
-          end,
-          shorting_target = 40,
+          "mode",
+          fmt = short_mode,
         },
       },
-      lualine_x = { { "filetype", cond = min_cols(80) } },
-      lualine_y = { { "progress", cond = min_cols(120) } },
-      lualine_z = { "location" },
+      lualine_b = {
+        {
+          "branch",
+          icon = "",
+          color = { gui = "bold" },
+          cond = min_cols(100),
+        },
+        {
+          "diagnostics",
+          sources = { "nvim_diagnostic" },
+          symbols = { error = " ", warn = " ", info = " " },
+          cond = min_cols(120),
+        },
+      },
+      lualine_c = {},
+      lualine_x = {},
+      lualine_y = { { "filetype", cond = min_cols(80) } },
+      lualine_z = { { "progress", cond = min_cols(120) }  },
     },
     inactive_sections = {
       lualine_a = {},
       lualine_b = {},
-      lualine_c = {
-        function()
-          return require("util.main_file").status_name()
-        end,
-      },
+      lualine_c = {},
       lualine_x = { "location" },
       lualine_y = {},
       lualine_z = {},
@@ -59,14 +87,14 @@ return {
       lualine_b = {
         {
           "buffers",
-          mode = 2,
+          mode = 0,
           show_modified_status = true,
           max_length = function()
             return vim.o.columns
           end,
           symbols = {
             modified = " ●",
-            alternate_file = "#",
+            alternate_file = "",
             directory = "",
           },
         },
