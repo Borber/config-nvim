@@ -3,7 +3,6 @@ local configured = false
 local path_util = require("util.path")
 local session_buffers = require("plugins.mini.sessions.buffers")
 local session_file = require("plugins.mini.sessions.session_file")
-local session_neogit = require("plugins.mini.sessions.neogit")
 
 local function project_basename(path)
   return path_util.basename(path) or "session"
@@ -122,9 +121,6 @@ function M.setup()
       pre = {
         read = close_transient_windows,
         write = close_transient_windows,
-      },
-      post = {
-        read = session_neogit.refresh_status_windows,
       },
     },
     verbose = {
