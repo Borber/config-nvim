@@ -1,4 +1,11 @@
 local group = vim.api.nvim_create_augroup("config_bookmarks_project", { clear = true })
+
+local tree_icons = {
+  bookmark = "◆",
+  collapsed = "",
+  expanded = "",
+}
+
 local function project_name()
   local cwd = vim.fn.getcwd()
   local name = vim.fn.fnamemodify(cwd, ":t")
@@ -26,6 +33,57 @@ local function configured_tree_width()
   return treeview.window_split_dimension or 50
 end
 
+local function compact_tree_gutter(win)
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].signcolumn = "no"
+  vim.wo[win].foldcolumn = "0"
+  vim.wo[win].statuscolumn = ""
+end
+
+local function apply_tree_icons(buf)
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local changed = false
+
+  for index, line in ipairs(lines) do
+    local updated = line:gsub("^(%s*)▾", "%1" .. tree_icons.expanded, 1)
+    updated = updated:gsub("^(%s*)▸", "%1" .. tree_icons.collapsed, 1)
+
+    if updated ~= line then
+      lines[index] = updated
+      changed = true
+    end
+  end
+
+  if changed then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  end
+end
+
+local function patch_tree_icons()
+  local ok, render = pcall(require, "bookmarks.tree.render")
+  if not ok or render._config_icon_patch then
+    return
+  end
+
+  local refresh = render.refresh
+  render.refresh = function(...)
+    local result = refresh(...)
+    local ctx = vim.g.bookmark_tree_view_ctx
+
+    if ctx then
+      apply_tree_icons(ctx.buf)
+    end
+
+    return result
+  end
+  render._config_icon_patch = true
+end
+
 local function keep_tree_width()
   vim.schedule(function()
     local ctx = vim.g.bookmark_tree_view_ctx
@@ -37,6 +95,8 @@ local function keep_tree_width()
       return
     end
 
+    compact_tree_gutter(ctx.win)
+    apply_tree_icons(ctx.buf)
     vim.wo[ctx.win].winfixwidth = true
 
     local width = configured_tree_width()
@@ -102,7 +162,7 @@ local function bookmark_tree_label(bookmark)
     name = "[Untitled]"
   end
 
-  return "○ " .. name
+  return tree_icons.bookmark .. " " .. name
 end
 
 local function create_project_commands()
@@ -183,6 +243,7 @@ return {
       end,
     },
     treeview = {
+      active_list_icon = "✦ ",
       render_bookmark = bookmark_tree_label,
       window_split_dimension = 50,
     },
@@ -197,6 +258,7 @@ return {
   },
   config = function(_, opts)
     require("bookmarks").setup(opts)
+    patch_tree_icons()
     create_project_commands()
     setup_project_autocmds()
   end,
