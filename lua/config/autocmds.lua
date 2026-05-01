@@ -4,6 +4,41 @@
 local augroup = vim.api.nvim_create_augroup
 local buffer_util = require("util.buffer")
 
+-- 类似 FilePost，但额外要求 UI 已经进入，避免启动页/空 buffer 过早触发文件型 UI 插件。
+local file_post_group = "config_file_post"
+local file_post_fired = false
+local ui_entered = false
+
+local function fire_config_file_post(bufnr)
+  if file_post_fired or not ui_entered or not buffer_util.is_normal_file(bufnr) then
+    return
+  end
+
+  file_post_fired = true
+  vim.g.config_file_posted = true
+
+  -- 只在首个真实文件出现后广播一次，给 gitsigns/todo-comments 这类文件型插件做延后加载。
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = "ConfigFilePost",
+    modeline = false,
+    data = { buf = bufnr },
+  })
+
+  pcall(vim.api.nvim_del_augroup_by_name, file_post_group)
+end
+
+vim.api.nvim_create_autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
+  group = augroup(file_post_group, { clear = true }),
+  callback = function(event)
+    if event.event == "UIEnter" then
+      ui_entered = true
+    end
+
+    fire_config_file_post(event.buf)
+  end,
+  desc = "Emit ConfigFilePost after UI enters a real file buffer",
+})
+
 local function strip_carriage_returns(bufnr)
   local target_bufnr, bo = buffer_util.normal_writable(bufnr)
   if target_bufnr == nil or bo.binary then

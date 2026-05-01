@@ -40,6 +40,64 @@ local function short_mode(mode)
   return mode_labels[mode] or mode:sub(1, 1)
 end
 
+-- lualine 的 branch 组件初始化时只看当前 buffer；启动页/目录占位 buffer 会让缓存先变空。
+local function branch_probe_buffer()
+  local buffer_util = require("util.buffer")
+  local current = vim.api.nvim_get_current_buf()
+
+  if buffer_util.is_normal_file(current) then
+    return current
+  end
+
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if buffer_util.is_normal_file(bufnr) then
+      return bufnr
+    end
+  end
+end
+
+local function refresh_branch_statusline()
+  local ok, git_branch = pcall(require, "lualine.components.branch.git_branch")
+  if not ok then
+    return
+  end
+
+  local bufnr = branch_probe_buffer()
+  if bufnr ~= nil then
+    -- 用真实文件 buffer 的上下文刷新 git_dir，否则首次打开仓库时要等 BufEnter 才能看到分支。
+    pcall(vim.api.nvim_buf_call, bufnr, git_branch.find_git_dir)
+  else
+    pcall(git_branch.find_git_dir)
+  end
+
+  pcall(function()
+    require("lualine").refresh({
+      scope = "tabpage",
+      place = { "statusline" },
+      trigger = "autocmd",
+      force = true,
+    })
+  end)
+end
+
+local function setup_branch_refresh()
+  local group = vim.api.nvim_create_augroup("ConfigLualineBranchRefresh", { clear = true })
+
+  -- ConfigFilePost 可能早于 VeryLazy，也可能晚于 lualine；两边都兜住才能稳定刷新首次状态栏。
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "ConfigFilePost",
+    callback = function()
+      vim.schedule(refresh_branch_statusline)
+    end,
+    desc = "Refresh lualine branch after first real file",
+  })
+
+  if vim.g.config_file_posted then
+    vim.schedule(refresh_branch_statusline)
+  end
+end
+
 return {
   "nvim-lualine/lualine.nvim",
   event = "VeryLazy",
@@ -65,7 +123,7 @@ return {
           icon = "",
           color = { gui = "bold" },
           cond = min_cols(100),
-        }
+        },
       },
       lualine_c = {
         {
@@ -73,7 +131,7 @@ return {
           sources = { "nvim_diagnostic" },
           symbols = { error = " ", warn = " ", info = " " },
           cond = min_cols(120),
-        }
+        },
       },
       lualine_x = {},
       lualine_y = { { "filetype", cond = min_cols(80) } },
@@ -121,4 +179,8 @@ return {
     },
     extensions = { "lazy", "quickfix", "man" },
   },
+  config = function(_, opts)
+    require("lualine").setup(opts)
+    setup_branch_refresh()
+  end,
 }

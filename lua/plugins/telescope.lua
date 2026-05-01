@@ -72,17 +72,21 @@ return {
     local telescope = require("telescope")
 
     telescope.setup({
-      defaults = {
-        borderchars = float.telescope_borderchars(),
+      defaults = vim.tbl_deep_extend("force", float.telescope_defaults(), {
         mappings = {
           i = {
             ["<Esc>"] = actions.close,
+            -- Telescope prompt 有自己的 buffer-local 映射，显式保留全局习惯里的 Alt 上下移动。
+            ["<M-j>"] = actions.move_selection_next,
+            ["<M-k>"] = actions.move_selection_previous,
           },
           n = {
             ["<Esc>"] = actions.close,
+            ["<M-j>"] = actions.move_selection_next,
+            ["<M-k>"] = actions.move_selection_previous,
           },
         },
-      },
+      }),
       extensions = {
         fzf = {
           -- 用 fzf-native 替换默认排序器，文件和文本搜索都会更快。

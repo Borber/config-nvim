@@ -106,6 +106,61 @@ function M.noice_border(padding)
 end
 
 -- 把插件自己的高亮组链接到统一浮窗高亮，减少重复配色定义。
+local function winhighlight(groups)
+  local parts = {}
+
+  for from, to in pairs(groups) do
+    table.insert(parts, from .. ":" .. to)
+  end
+
+  table.sort(parts)
+  return table.concat(parts, ",")
+end
+
+function M.float_winhighlight(extra)
+  -- 普通说明/预览浮窗统一走 NormalFloat，插件只需要按需补额外高亮映射。
+  return winhighlight(vim.tbl_extend("force", {
+    FloatBorder = "FloatBorder",
+    FloatTitle = "FloatTitle",
+    Normal = "NormalFloat",
+    Search = "None",
+  }, extra or {}))
+end
+
+function M.menu_winhighlight(extra)
+  -- 补全/选择菜单统一复用 Pmenu/PmenuSel，避免各插件菜单选中态各自发散。
+  return winhighlight(vim.tbl_extend("force", {
+    CursorLine = "PmenuSel",
+    FloatBorder = "FloatBorder",
+    Normal = "Pmenu",
+    Search = "None",
+  }, extra or {}))
+end
+
+function M.title(text, group)
+  return { { " " .. text .. " ", group or "FloatTitle" } }
+end
+
+function M.telescope_defaults()
+  -- Telescope 默认项集中在这里，保证主 picker 和自定义 picker 的边框/前缀/布局一致。
+  return {
+    borderchars = M.telescope_borderchars(),
+    entry_prefix = "   ",
+    layout_config = {
+      height = 0.8,
+      horizontal = {
+        preview_width = 0.55,
+        prompt_position = "top",
+      },
+      width = 0.87,
+    },
+    prompt_prefix = " " .. vim.fn.nr2char(0xf002) .. "  ",
+    selection_caret = " " .. vim.fn.nr2char(0xf105) .. " ",
+    sorting_strategy = "ascending",
+    winblend = 0,
+  }
+end
+
 local function link(group, target)
   vim.api.nvim_set_hl(0, group, { link = target })
 end
@@ -118,13 +173,19 @@ function M.apply_highlights()
   end
 
   local comment = highlight("Comment")
+  local cursor_line = highlight("CursorLine")
+  local identifier = highlight("Identifier")
+  local visual = highlight("Visual")
+  local selection_bg = cursor_line.bg or visual.bg or normal.bg
   local border_fg = highlight("FloatBorder").fg or comment.fg or normal.fg
+  local accent_fg = identifier.fg or border_fg
 
   vim.api.nvim_set_hl(0, "NormalFloat", { fg = normal.fg, bg = normal.bg })
   vim.api.nvim_set_hl(0, "FloatBorder", { fg = border_fg, bg = normal.bg })
   vim.api.nvim_set_hl(0, "FloatTitle", { fg = border_fg, bg = normal.bg })
   vim.api.nvim_set_hl(0, "FloatFooter", { fg = border_fg, bg = normal.bg })
   vim.api.nvim_set_hl(0, "Pmenu", { fg = normal.fg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "PmenuSel", { fg = normal.fg, bg = selection_bg, bold = true })
   vim.api.nvim_set_hl(0, "PmenuSbar", { bg = normal.bg })
   vim.api.nvim_set_hl(0, "PmenuThumb", { bg = border_fg })
 
@@ -159,10 +220,16 @@ function M.apply_highlights()
   link("TelescopePromptTitle", "FloatTitle")
   link("TelescopeResultsTitle", "FloatTitle")
   link("TelescopePreviewTitle", "FloatTitle")
+  vim.api.nvim_set_hl(0, "TelescopeSelection", { fg = normal.fg, bg = selection_bg, bold = true })
+  vim.api.nvim_set_hl(0, "TelescopeMatching", { fg = accent_fg, bg = normal.bg, bold = true })
+  vim.api.nvim_set_hl(0, "TelescopePromptPrefix", { fg = accent_fg, bg = normal.bg })
 
   link("WhichKeyNormal", "NormalFloat")
   link("WhichKeyBorder", "FloatBorder")
   link("WhichKeyTitle", "FloatTitle")
+
+  link("GitSignsPreviewBorder", "FloatBorder")
+  link("GitSignsPreviewTitle", "FloatTitle")
 end
 
 return M

@@ -59,29 +59,34 @@ local function preview_multiline_completion(item)
 end
 
 local function cmdline_menu_position()
-  local ok, noice = pcall(require, "noice.api")
-  if ok then
-    local position = noice.get_cmdline_position()
-    if position and position.screenpos then
-      local row = position.screenpos.row - 1
-      if position.win and vim.api.nvim_win_is_valid(position.win) then
-        local win_config = vim.api.nvim_win_get_config(position.win)
-        if win_config.relative ~= "" then
-          row = row + 1
-        end
-      end
+  local cmdtype = vim.fn.getcmdtype()
+  local is_search = cmdtype == "/" or cmdtype == "?"
 
-      return { row, math.max(position.screenpos.col - 4, 0) }
+  -- Noice 是命令行位置的唯一来源；取不到位置就直接报错，避免静默猜错补全菜单坐标。
+  local position = require("noice.api").get_cmdline_position()
+  assert(position and position.screenpos, "Noice cmdline position is unavailable")
+
+  local row = position.screenpos.row - 1
+  if is_search then
+    row = math.max(row, 0)
+  elseif position.win and vim.api.nvim_win_is_valid(position.win) then
+    local win_config = vim.api.nvim_win_get_config(position.win)
+    if win_config.relative ~= "" then
+      row = row + 1
     end
   end
 
-  local ui_position = vim.g.ui_cmdline_pos
-  if ui_position ~= nil then
-    return { ui_position[1] - 1, ui_position[2] }
+  return { row, math.max(position.screenpos.col - 4, 0) }
+end
+
+local function cmdline_menu_direction()
+  local cmdtype = vim.fn.getcmdtype()
+  if cmdtype == "/" or cmdtype == "?" then
+    -- 搜索命令行在底部，补全菜单优先向上展开，避免遮挡 lualine。
+    return { "n", "s" }
   end
 
-  local height = vim.o.cmdheight == 0 and 1 or vim.o.cmdheight
-  return { vim.o.lines - height, 0 }
+  return { "s", "n" }
 end
 
 return {
@@ -138,7 +143,8 @@ return {
       },
       menu = {
         border = require("util.float").border,
-        winhighlight = "Normal:Pmenu,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+        direction_priority = cmdline_menu_direction,
+        winhighlight = require("util.float").menu_winhighlight(),
         cmdline_position = cmdline_menu_position,
       },
       -- 选中候选时自动打开右侧详情窗，LSP/普通补全沿用 blink 原生文档渲染。
@@ -150,7 +156,9 @@ return {
           desired_min_width = 48,
           desired_min_height = 12,
           border = require("util.float").border,
-          winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder,EndOfBuffer:NormalFloat",
+          winhighlight = require("util.float").float_winhighlight({
+            EndOfBuffer = "NormalFloat",
+          }),
           max_width = 96,
           max_height = 24,
           direction_priority = {
@@ -212,7 +220,7 @@ return {
     signature = {
       window = {
         border = require("util.float").border,
-        winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder",
+        winhighlight = require("util.float").float_winhighlight(),
       },
     },
     cmdline = {
