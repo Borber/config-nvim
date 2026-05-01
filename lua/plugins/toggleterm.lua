@@ -24,20 +24,19 @@ end
 --- 仿 ui.lua 里的 local create_term_buf_if_needed：把 term 的 buffer 塞进当前窗口。
 local function attach_term_buf(term)
   local win = api.nvim_get_current_win()
-  local bufnr = (term.bufnr and api.nvim_buf_is_valid(term.bufnr))
-    and term.bufnr
-    or api.nvim_create_buf(false, false)
+  local bufnr = (term.bufnr and api.nvim_buf_is_valid(term.bufnr)) and term.bufnr or api.nvim_create_buf(false, false)
   api.nvim_win_set_buf(win, bufnr)
   term.window, term.bufnr = win, bufnr
-  if term.__set_options then term:__set_options() end
+  if term.__set_options then
+    term:__set_options()
+  end
   api.nvim_set_current_buf(bufnr)
 end
 
 local function find_same_direction_open_win(direction)
   -- 同方向终端共享同一块区域：水平终端横向分列，垂直终端纵向分行。
   for _, t in ipairs(terminal_mod().get_all(false)) do
-    if t:is_open() and t.direction == direction and t.window
-      and api.nvim_win_is_valid(t.window) then
+    if t:is_open() and t.direction == direction and t.window and api.nvim_win_is_valid(t.window) then
       return t.window
     end
   end
@@ -61,8 +60,8 @@ local function custom_open_split(size, term)
 
   if same_win then
     -- 有同方向终端：在它里面切一刀
-    local cfg_ok, config = pcall(require, "toggleterm.config")
-    if cfg_ok and config.get("persist_size") and ui.save_window_size then
+    local config = require("toggleterm.config")
+    if config.get("persist_size") and ui.save_window_size then
       ui.save_window_size(term.direction, same_win)
     end
     api.nvim_set_current_win(same_win)
@@ -95,7 +94,9 @@ local function with_custom_open_split(callback)
   ui.open_split = custom_open_split
   local ok, err = pcall(callback)
   ui.open_split = orig
-  if not ok then error(err) end
+  if not ok then
+    error(err)
+  end
 end
 
 local function open_new(direction)
@@ -156,10 +157,6 @@ local function pick_terminal()
     prompt_title = "Terminals",
     layout_config = { width = 0.5, height = 0.45 },
     results = terms,
-    fallback = function()
-      -- Telescope 没加载时退回 toggleterm 自带选择器，保证命令仍然可用。
-      vim.cmd.TermSelect()
-    end,
     entry_maker = function(term)
       local name = term:_display_name()
       local state = term:is_open() and "open" or "hidden"
@@ -202,17 +199,17 @@ end
 
 return {
   "akinsho/toggleterm.nvim",
-  version      = "*",
+  version = "*",
   dependencies = { "nvim-telescope/telescope.nvim" },
-  cmd          = { "ToggleTerm", "TermExec", "TermSelect", "ToggleTermSetName" },
+  cmd = { "ToggleTerm", "TermExec", "TermSelect", "ToggleTermSetName" },
   keys = {
-    { "<leader>tt",      toggle_default,         desc = "Toggle terminal",           mode = "n" },
-    { "<leader>th",      open_new("horizontal"), desc = "New terminal (horizontal)", mode = "n" },
-    { "<leader>tv",      open_new("vertical"),   desc = "New terminal (vertical)",   mode = "n" },
-    { "<leader>to",      pick_terminal,          desc = "Pick terminal",             mode = "n" },
-    { "<leader>tr",      rename_terminal,        desc = "Rename terminal",           mode = "n" },
-    { "<C-x>",           hide_current,           desc = "Hide current terminal",     mode = "t" },
-    { "<C-S-x>",         shutdown_current,       desc = "Shutdown current terminal", mode = "t" },
+    { "<leader>tt", toggle_default, desc = "Toggle terminal", mode = "n" },
+    { "<leader>th", open_new("horizontal"), desc = "New terminal (horizontal)", mode = "n" },
+    { "<leader>tv", open_new("vertical"), desc = "New terminal (vertical)", mode = "n" },
+    { "<leader>to", pick_terminal, desc = "Pick terminal", mode = "n" },
+    { "<leader>tr", rename_terminal, desc = "Rename terminal", mode = "n" },
+    { "<C-x>", hide_current, desc = "Hide current terminal", mode = "t" },
+    { "<C-S-x>", shutdown_current, desc = "Shutdown current terminal", mode = "t" },
   },
   opts = {
     size = function(term)
@@ -225,13 +222,15 @@ return {
       end
     end,
     shade_terminals = false,
-    persist_mode    = false,
-    persist_size    = true,
+    persist_mode = false,
+    persist_size = true,
     start_in_insert = true,
-    auto_scroll     = true,
-    hide_numbers    = true,
+    auto_scroll = true,
+    hide_numbers = true,
     insert_mappings = false,
-    close_on_exit   = false,
-    on_open         = function() vim.cmd("startinsert") end,
+    close_on_exit = false,
+    on_open = function()
+      vim.cmd("startinsert")
+    end,
   },
 }

@@ -98,7 +98,7 @@ return {
       },
     })
 
-    pcall(telescope.load_extension, "fzf")
+    telescope.load_extension("fzf")
     float.apply_highlights()
   end,
 }

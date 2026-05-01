@@ -47,6 +47,7 @@ function M.has_meaningful_buffers(path)
 
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok then
+    vim.notify("Failed to read session file: " .. path, vim.log.levels.ERROR)
     return false
   end
 
@@ -78,6 +79,7 @@ function M.sanitize(path, meaningful_paths)
   -- 保留非路径行，移除指向目录/空白占位/失效文件的 buffer 行。
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok then
+    vim.notify("Failed to sanitize session file: " .. path, vim.log.levels.ERROR)
     return false
   end
 
@@ -114,7 +116,12 @@ function M.sanitize(path, meaningful_paths)
   end
 
   local write_ok, result = pcall(vim.fn.writefile, filtered, path)
-  return write_ok and result == 0
+  if not write_ok or result ~= 0 then
+    vim.notify("Failed to write sanitized session file: " .. path, vim.log.levels.ERROR)
+    return false
+  end
+
+  return true
 end
 
 return M

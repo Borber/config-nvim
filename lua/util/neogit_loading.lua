@@ -39,7 +39,10 @@ local function stop_active()
     current.timer:close()
   end
 
-  pcall(vim.api.nvim_del_augroup_by_id, current.group)
+  local ok, err = pcall(vim.api.nvim_del_augroup_by_id, current.group)
+  if not ok then
+    vim.notify("Failed to clear Neogit loading autocmds: " .. tostring(err), vim.log.levels.ERROR)
+  end
 end
 
 function M.start(opts, win)
@@ -81,11 +84,7 @@ function M.start(opts, win)
       return
     end
 
-    if
-      not vim.api.nvim_win_is_valid(target_win)
-      or not vim.api.nvim_buf_is_valid(buf)
-      or not vim.api.nvim_buf_is_loaded(buf)
-    then
+    if not vim.api.nvim_win_is_valid(target_win) or not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
       stop_active()
       return
     end
@@ -122,7 +121,7 @@ function M.start(opts, win)
   })
 
   render()
-  pcall(vim.cmd, "redraw!")
+  vim.cmd("redraw!")
 
   timer:start(
     120,

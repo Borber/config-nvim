@@ -1,16 +1,9 @@
 local M = {}
 local float = require("util.float")
 
--- 懒加载 Telescope 的几个内部模块，调用方只需要判断是否可用。
--- 这里集中处理 pcall，避免每个 picker 都重复写一套 require/fallback。
 local function load_telescope()
-  local ok, pickers = pcall(require, "telescope.pickers")
-  if not ok then
-    return nil
-  end
-
   return {
-    pickers = pickers,
+    pickers = require("telescope.pickers"),
     finders = require("telescope.finders"),
     config = require("telescope.config").values,
     actions = require("telescope.actions"),
@@ -20,44 +13,41 @@ local function load_telescope()
 end
 
 -- 通用 dropdown 外壳：负责 Telescope 的 finder/sorter/布局装配。
--- 业务模块只传 results、entry_maker 和按键动作；Telescope 不可用时执行 fallback。
+-- 业务模块只传 results、entry_maker 和按键动作；Telescope 不可用时直接暴露错误。
 function M.dropdown(opts)
   opts = opts or {}
 
   local telescope = load_telescope()
-  if telescope == nil then
-    if opts.fallback then
-      opts.fallback()
-    end
-
-    return false
-  end
-
   local previewer = opts.previewer
   if previewer == nil then
     previewer = false
   end
 
-  telescope.pickers.new(telescope.themes.get_dropdown({
-    prompt_title = opts.prompt_title or "Select",
-    previewer = previewer,
-    borderchars = opts.borderchars or float.telescope_dropdown_borderchars(),
-    layout_config = opts.layout_config or { width = 0.65, height = 0.5 },
-  }), {
-    finder = telescope.finders.new_table({
-      results = opts.results or {},
-      entry_maker = opts.entry_maker,
-    }),
-    sorter = opts.sorter or telescope.config.generic_sorter({}),
-    attach_mappings = function(prompt_bufnr, map)
-      if opts.attach_mappings == nil then
-        return true
-      end
+  telescope.pickers
+    .new(
+      telescope.themes.get_dropdown({
+        prompt_title = opts.prompt_title or "Select",
+        previewer = previewer,
+        borderchars = opts.borderchars or float.telescope_dropdown_borderchars(),
+        layout_config = opts.layout_config or { width = 0.65, height = 0.5 },
+      }),
+      {
+        finder = telescope.finders.new_table({
+          results = opts.results or {},
+          entry_maker = opts.entry_maker,
+        }),
+        sorter = opts.sorter or telescope.config.generic_sorter({}),
+        attach_mappings = function(prompt_bufnr, map)
+          if opts.attach_mappings == nil then
+            return true
+          end
 
-      local result = opts.attach_mappings(prompt_bufnr, map, telescope)
-      return result == nil and true or result
-    end,
-  }):find()
+          local result = opts.attach_mappings(prompt_bufnr, map, telescope)
+          return result == nil and true or result
+        end,
+      }
+    )
+    :find()
 
   return true
 end
@@ -85,10 +75,6 @@ function M.select(items, opts, on_choice, picker_opts)
     prompt_title = opts.prompt or "Select",
     layout_config = picker_opts.layout_config,
     results = entries,
-    fallback = function()
-      local fallback_select = picker_opts.fallback or vim.ui.select
-      fallback_select(items, opts, on_choice)
-    end,
     entry_maker = function(entry)
       return {
         value = entry.value,

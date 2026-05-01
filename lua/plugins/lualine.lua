@@ -57,27 +57,22 @@ local function branch_probe_buffer()
 end
 
 local function refresh_branch_statusline()
-  local ok, git_branch = pcall(require, "lualine.components.branch.git_branch")
-  if not ok then
-    return
-  end
+  local git_branch = require("lualine.components.branch.git_branch")
 
   local bufnr = branch_probe_buffer()
   if bufnr ~= nil then
     -- 用真实文件 buffer 的上下文刷新 git_dir，否则首次打开仓库时要等 BufEnter 才能看到分支。
-    pcall(vim.api.nvim_buf_call, bufnr, git_branch.find_git_dir)
+    vim.api.nvim_buf_call(bufnr, git_branch.find_git_dir)
   else
-    pcall(git_branch.find_git_dir)
+    git_branch.find_git_dir()
   end
 
-  pcall(function()
-    require("lualine").refresh({
-      scope = "tabpage",
-      place = { "statusline" },
-      trigger = "autocmd",
-      force = true,
-    })
-  end)
+  require("lualine").refresh({
+    scope = "tabpage",
+    place = { "statusline" },
+    trigger = "autocmd",
+    force = true,
+  })
 end
 
 local function setup_branch_refresh()

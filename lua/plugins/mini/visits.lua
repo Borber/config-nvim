@@ -45,6 +45,7 @@ local function load_recent_paths()
 
   recent_paths = {}
   if not ok or type(decoded) ~= "table" then
+    vim.notify("Recent paths store is invalid: " .. recent_paths_store, vim.log.levels.ERROR)
     return recent_paths
   end
 
@@ -140,9 +141,7 @@ local function close_current_starter()
     return
   end
 
-  pcall(function()
-    require("mini.starter").close(buf_id)
-  end)
+  require("mini.starter").close(buf_id)
 end
 
 local function format_path_name(path)

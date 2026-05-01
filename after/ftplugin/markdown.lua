@@ -57,7 +57,35 @@ end
 map("n", "K", open_markdown_target, "Open markdown link")
 map({ "n", "x" }, "<localleader>mx", "<Plug>(MarkdownPlusToggleCheckbox)", "Toggle checkbox")
 
-local undo = "silent! nunmap <buffer> K"
-  .. " | silent! nunmap <buffer> <localleader>mx"
-  .. " | silent! xunmap <buffer> <localleader>mx"
-  vim.b.undo_ftplugin = vim.b.undo_ftplugin and (vim.b.undo_ftplugin .. " | " .. undo) or undo
+local function has_buffer_keymap(bufnr, mode, lhs)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+
+  for _, keymap in ipairs(vim.api.nvim_buf_get_keymap(bufnr, mode)) do
+    if keymap.lhs == lhs then
+      return true
+    end
+  end
+
+  return false
+end
+
+function _G.ConfigMarkdownUndoFtplugin(bufnr)
+  -- ftplugin 可能被重复加载；映射本来不存在时跳过，真实删除失败才通知。
+  for _, map_spec in ipairs({
+    { mode = "n", lhs = "K" },
+    { mode = "n", lhs = "<localleader>mx" },
+    { mode = "x", lhs = "<localleader>mx" },
+  }) do
+    if has_buffer_keymap(bufnr, map_spec.mode, map_spec.lhs) then
+      local ok, err = pcall(vim.keymap.del, map_spec.mode, map_spec.lhs, { buffer = bufnr })
+      if not ok then
+        vim.notify("Failed to remove markdown mapping " .. map_spec.lhs .. ": " .. tostring(err), vim.log.levels.ERROR)
+      end
+    end
+  end
+end
+
+local undo = ("lua _G.ConfigMarkdownUndoFtplugin(%d)"):format(vim.api.nvim_get_current_buf())
+vim.b.undo_ftplugin = vim.b.undo_ftplugin and (vim.b.undo_ftplugin .. " | " .. undo) or undo

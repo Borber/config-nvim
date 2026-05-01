@@ -35,7 +35,7 @@ local function setup_overseer_select()
   -- 其它插件仍使用原本的 vim.ui.select，避免全局 UI 行为被这个配置意外改写。
   vim.ui.select = function(items, opts, on_choice)
     if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
-      load_telescope_picker().select(items, opts, on_choice, { fallback = original_select })
+      load_telescope_picker().select(items, opts, on_choice)
       return
     end
 

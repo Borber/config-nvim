@@ -43,22 +43,15 @@ local servers = {
 }
 
 local function enable_inlay_hints(bufnr)
-  -- 不同 Neovim 小版本的 inlay_hint API 曾有差异，用 pcall 保持兼容。
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
-    pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })
+    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
   end
 end
 
 local function diagnostic_jump(count)
-  -- Neovim 0.11+ 使用 diagnostic.jump；旧版本回退到 goto_next/goto_prev。
   return function()
-    if vim.diagnostic.jump ~= nil then
-      vim.diagnostic.jump({ count = count, float = true })
-      return
-    end
-
-    local fallback = count > 0 and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
-    fallback({ float = true })
+    assert(vim.diagnostic.jump ~= nil, "vim.diagnostic.jump is required")
+    vim.diagnostic.jump({ count = count, float = true })
   end
 end
 

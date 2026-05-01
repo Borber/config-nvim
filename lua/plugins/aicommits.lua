@@ -1,8 +1,6 @@
 local function local_aicommits_config()
-  local ok, local_config = pcall(require, "config.local")
-  if not ok or type(local_config) ~= "table" then
-    return {}
-  end
+  local local_config = require("config.local")
+  assert(type(local_config) == "table", "config.local must return a table")
 
   return local_config.aicommits or {}
 end

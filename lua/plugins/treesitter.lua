@@ -74,7 +74,7 @@ local function start_configured_parser(bufnr)
 
   -- nvim-treesitter main 分支更接近 parser 管理器；这里显式启动高亮，
   -- 避免大项目里只落到传统 syntax 的零散高亮状态。
-  pcall(vim.treesitter.start, bufnr, lang)
+  vim.treesitter.start(bufnr, lang)
 end
 
 return {

@@ -47,8 +47,8 @@ local function strip_carriage_returns(bufnr)
 
   local view = vim.fn.winsaveview()
 
-  pcall(vim.api.nvim_buf_call, target_bufnr, function()
-    vim.cmd([[silent! keepjumps keeppatterns %s/\r//ge]])
+  vim.api.nvim_buf_call(target_bufnr, function()
+    vim.cmd([[keepjumps keeppatterns %s/\r//ge]])
   end)
 
   vim.fn.winrestview(view)
@@ -65,11 +65,15 @@ local function autosave_normal_buffer(bufnr)
     return
   end
 
-  pcall(vim.api.nvim_buf_call, target_bufnr, function()
+  local ok, err = pcall(vim.api.nvim_buf_call, target_bufnr, function()
     -- 用 :update 而不是 :write：只有内容真的变更时才写盘。
     -- silent 避免在频繁切窗/失焦时打扰命令行区域。
     vim.cmd("silent update")
   end)
+
+  if not ok then
+    vim.notify("Autosave failed: " .. tostring(err), vim.log.levels.ERROR)
+  end
 end
 
 -- 严格 autosave：覆盖几类最常见的“离开当前编辑上下文”场景

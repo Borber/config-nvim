@@ -60,15 +60,13 @@ local function delete_current_session(opts)
   local ok, result = pcall(vim.fn.delete, path)
   if ok and result == 0 and opts and opts.verbose then
     vim.notify("Removed empty session", vim.log.levels.INFO)
-  elseif (not ok or result ~= 0) and opts and opts.verbose then
-    vim.notify("Failed to remove empty session", vim.log.levels.WARN)
+  elseif not ok or result ~= 0 then
+    vim.notify("Failed to remove empty session: " .. path, vim.log.levels.ERROR)
   end
 end
 
 local function close_transient_windows()
-  pcall(function()
-    require("mini.files").close()
-  end)
+  require("mini.files").close()
 end
 
 local function is_headless()
@@ -144,7 +142,7 @@ function M.setup()
       end
 
       if M.should_auto_restore() then
-        M.read_current({ notify = false, verbose = false })
+        M.read_current({ verbose = false })
       end
     end,
     desc = "Restore current project session",
@@ -259,18 +257,13 @@ function M.write_current(opts)
   end
 
   if not ok then
-    if opts.verbose then
-      vim.notify(err, vim.log.levels.WARN)
-    end
-
+    vim.notify("Failed to write session: " .. tostring(err), vim.log.levels.ERROR)
     return
   end
 
   if not session_file.sanitize(current_session_path(), paths) then
     delete_current_session(opts)
-    if opts.verbose then
-      vim.notify("No meaningful buffers to save in session", vim.log.levels.INFO)
-    end
+    vim.notify("Failed to sanitize current session", vim.log.levels.ERROR)
   end
 end
 
@@ -297,7 +290,10 @@ function M.read_current(opts)
     })
   end)
 
-  pcall(vim.api.nvim_set_current_dir, directory)
+  local restore_ok, restore_err = pcall(vim.api.nvim_set_current_dir, directory)
+  if not restore_ok and opts.notify ~= false then
+    vim.notify("Failed to restore cwd after session read: " .. tostring(restore_err), vim.log.levels.ERROR)
+  end
 
   if not ok and opts.notify ~= false then
     notify_read_error(err)

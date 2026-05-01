@@ -70,21 +70,23 @@ local function save_buffer(buf_id)
     return
   end
 
-  pcall(vim.api.nvim_buf_call, buf_id, function()
+  local ok, err = pcall(vim.api.nvim_buf_call, buf_id, function()
     vim.cmd("silent write")
   end)
+
+  if not ok then
+    vim.notify("Failed to save buffer before opening starter: " .. tostring(err), vim.log.levels.ERROR)
+  end
 end
 
 local function delete_buffer(buf_id)
   save_buffer(buf_id)
 
-  local ok, bufremove = pcall(require, "mini.bufremove")
-  if ok then
-    pcall(bufremove.delete, buf_id, false)
-    return
+  local bufremove = require("mini.bufremove")
+  local ok, err = pcall(bufremove.delete, buf_id, false)
+  if not ok then
+    vim.notify("Failed to delete buffer before opening starter: " .. tostring(err), vim.log.levels.ERROR)
   end
-
-  pcall(vim.api.nvim_buf_delete, buf_id, { force = false })
 end
 
 local function hide_hidden_empty_placeholders()
@@ -107,9 +109,7 @@ local function prepare_starter()
   -- 真正进入 Starter 前先保存当前项目并清场，让下一次 Open 像刚启动一样干净。
   require("plugins.mini.sessions").write_current({ verbose = false })
 
-  pcall(function()
-    require("mini.files").close()
-  end)
+  require("mini.files").close()
 
   for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
     if is_clearable_buffer(buf_id) then
@@ -117,7 +117,10 @@ local function prepare_starter()
     end
   end
 
-  pcall(vim.cmd, "silent! only")
+  local ok, err = pcall(vim.cmd, "silent only")
+  if not ok then
+    vim.notify("Failed to keep only starter window: " .. tostring(err), vim.log.levels.ERROR)
+  end
   hide_hidden_empty_placeholders()
 end
 

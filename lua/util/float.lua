@@ -20,10 +20,8 @@ local function char(name)
   return vim.fn.nr2char(border_codepoints[name])
 end
 
--- 安全读取高亮组；配色尚未加载或组不存在时回落为空表。
 local function highlight(name)
-  local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
-  return ok and hl or {}
+  return vim.api.nvim_get_hl(0, { name = name, link = false })
 end
 
 -- 暴露当前 Normal 背景色，给各插件浮窗复用统一底色。

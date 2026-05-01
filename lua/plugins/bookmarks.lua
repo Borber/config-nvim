@@ -25,13 +25,26 @@ local function configure_sqlite_clib()
 end
 
 local function refresh_bookmarks()
-  -- 切换项目列表后同步刷新 sign 和 tree，避免 UI 还显示上一个 cwd 的书签。
-  pcall(function()
-    require("bookmarks.sign").safe_refresh_signs()
-  end)
-  pcall(function()
-    require("bookmarks.tree.operate").refresh()
-  end)
+  -- 切换项目列表后总是刷新 sign；tree 只有窗口真实存在时才刷新。
+  require("bookmarks.sign").safe_refresh_signs()
+
+  local ctx = vim.g.bookmark_tree_view_ctx
+  if ctx == nil then
+    return
+  end
+
+  if not (ctx.win and vim.api.nvim_win_is_valid(ctx.win) and ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf)) then
+    vim.g.bookmark_tree_view_ctx = nil
+    vim.notify("Bookmarks tree context is stale; skipped tree refresh", vim.log.levels.WARN)
+    return
+  end
+
+  if not (ctx.lines_ctx and ctx.lines_ctx.root_id) then
+    vim.notify("Bookmarks tree context is not ready; skipped tree refresh", vim.log.levels.WARN)
+    return
+  end
+
+  require("bookmarks.tree.operate").refresh()
 end
 
 local function configured_tree_width()
@@ -75,8 +88,8 @@ end
 
 local function patch_tree_icons()
   -- render.refresh 是内部入口，必须幂等 patch，避免配置重载后多层包裹。
-  local ok, render = pcall(require, "bookmarks.tree.render")
-  if not ok or render._config_icon_patch then
+  local render = require("bookmarks.tree.render")
+  if render._config_icon_patch then
     return
   end
 
@@ -112,7 +125,10 @@ local function keep_tree_width()
 
     local width = configured_tree_width()
     if vim.api.nvim_win_get_width(ctx.win) ~= width then
-      pcall(vim.api.nvim_win_set_width, ctx.win, width)
+      local ok, err = pcall(vim.api.nvim_win_set_width, ctx.win, width)
+      if not ok then
+        vim.notify("Failed to resize bookmarks tree: " .. tostring(err), vim.log.levels.ERROR)
+      end
     end
   end)
 end

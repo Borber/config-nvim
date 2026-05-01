@@ -14,11 +14,8 @@ local function local_lsp_config()
     return local_config
   end
 
-  local ok, config = pcall(require, "config.local")
-  if not ok or type(config) ~= "table" then
-    local_config = {}
-    return local_config
-  end
+  local config = require("config.local")
+  assert(type(config) == "table", "config.local must return a table")
 
   local_config = config.lsp or {}
   return local_config
