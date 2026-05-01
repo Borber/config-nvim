@@ -1,24 +1,49 @@
 local M = {}
 
-local frames = { "⣾", "⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽" }
+-- 复用 Noice LSP progress 的轻量盲文帧，让 Neogit 占位动画和消息系统气质一致。
+local frames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+local message = "Loading Neogit..."
+local ns = vim.api.nvim_create_namespace("ConfigNeogitLoading")
+local border = require("util.float").borderchars()
 local active
 
-local function repo_name(opts)
-  local cwd = opts.cwd
-  if cwd and not opts.no_expand then
-    cwd = vim.fn.expand(cwd)
-  end
-
-  local name = cwd and vim.fn.fnamemodify(cwd, ":t") or "repository"
-  return name ~= "" and name or cwd or "repository"
+-- Noice 很晚才加载时也能渲染；等 Noice 高亮存在后再自动贴近它的 progress 配色。
+local function highlight(group, fallback)
+  return vim.fn.hlexists(group) == 1 and group or fallback
 end
 
-local function message(opts)
-  if opts[1] then
-    return ("Opening Neogit %s in %s"):format(opts[1], repo_name(opts))
+-- 按 Noice progress 的思路保留分段文本，方便分别给 spinner 和文案上色。
+local function content_chunks(tick)
+  return {
+    { frames[tick] .. " ", highlight("NoiceLspProgressSpinner", "Constant") },
+    { message, highlight("NoiceLspProgressTitle", "NonText") },
+  }
+end
+
+-- buffer 内容只能写纯文本，高亮信息单独通过 extmark 套回去。
+local function join_chunks(chunks)
+  local text = {}
+
+  for _, chunk in ipairs(chunks) do
+    table.insert(text, chunk[1])
   end
 
-  return ("Loading Neogit status in %s"):format(repo_name(opts))
+  return table.concat(text)
+end
+
+-- 返回下一个列位置，调用方可以连续给多个片段铺高亮。
+local function add_highlight(buf, row, start_col, text, group)
+  if text == "" then
+    return start_col
+  end
+
+  local end_col = start_col + #text
+  vim.api.nvim_buf_set_extmark(buf, ns, row, start_col, {
+    end_col = end_col,
+    hl_group = group,
+  })
+
+  return end_col
 end
 
 local function stop_active()
@@ -29,6 +54,10 @@ local function stop_active()
 
   local current = active
   active = nil
+
+  if current.buf and vim.api.nvim_buf_is_valid(current.buf) then
+    vim.api.nvim_buf_clear_namespace(current.buf, ns, 0, -1)
+  end
 
   if vim.api.nvim_win_is_valid(current.win) then
     vim.api.nvim_set_option_value("signcolumn", current.signcolumn, { win = current.win })
@@ -59,23 +88,73 @@ function M.start(opts, win)
   local signcolumn = vim.api.nvim_get_option_value("signcolumn", { win = target_win })
   local group = vim.api.nvim_create_augroup("ConfigNeogitLoading", { clear = true })
   local timer = assert(vim.uv.new_timer())
-  local text = message(opts)
   local tick = 1
 
-  active = { group = group, signcolumn = signcolumn, timer = timer, win = target_win }
+  active = { buf = buf, group = group, signcolumn = signcolumn, timer = timer, win = target_win }
   -- loading 期间隐藏 signcolumn，让居中文案不会被左侧列挤歪。
   vim.api.nvim_set_option_value("signcolumn", "no", { win = target_win })
 
-  local function centered_lines(line)
+  -- 生成居中占位内容；窗口太小时退回无边框单行，避免布局被边框撑坏。
+  local function centered_box(chunks)
     local height = math.max(1, vim.api.nvim_win_get_height(target_win))
     local width = math.max(1, vim.api.nvim_win_get_width(target_win))
-    local row = math.max(1, math.ceil(height / 2))
-    local padding = math.max(0, math.floor((width - vim.fn.strdisplaywidth(line)) / 2))
     local lines = vim.fn["repeat"]({ "" }, height)
 
-    lines[row] = string.rep(" ", padding) .. line
+    if height < 3 or width < 12 then
+      local line = join_chunks(chunks)
+      local row = math.max(1, math.ceil(height / 2))
+      local padding = math.max(0, math.floor((width - vim.fn.strdisplaywidth(line)) / 2))
+      lines[row] = string.rep(" ", padding) .. line
 
-    return lines
+      return lines, {
+        middle = row - 1,
+        content_col = padding,
+        chunks = chunks,
+      }
+    end
+
+    local content = join_chunks(chunks)
+    local inner_width = vim.fn.strdisplaywidth(content) + 2
+    local top = border[1] .. string.rep(border[2], inner_width) .. border[3]
+    local middle = border[8] .. " " .. content .. " " .. border[4]
+    local bottom = border[7] .. string.rep(border[6], inner_width) .. border[5]
+    local row = math.max(1, math.min(math.ceil(height / 2) - 1, height - 2))
+    local padding = math.max(0, math.floor((width - vim.fn.strdisplaywidth(top)) / 2))
+    local prefix = string.rep(" ", padding)
+
+    lines[row] = prefix .. top
+    lines[row + 1] = prefix .. middle
+    lines[row + 2] = prefix .. bottom
+
+    return lines,
+      {
+        top = row - 1,
+        middle = row,
+        bottom = row + 1,
+        prefix_col = #prefix,
+        content_col = #prefix + #border[8] + 1,
+        top_line = top,
+        middle_line = middle,
+        bottom_line = bottom,
+        chunks = chunks,
+      }
+  end
+
+  -- 每次重绘都先清理旧 extmark，避免 spinner 切帧后残留旧高亮范围。
+  local function apply_highlights(layout)
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+
+    if layout.top then
+      add_highlight(buf, layout.top, layout.prefix_col, layout.top_line, "FloatBorder")
+      add_highlight(buf, layout.middle, layout.prefix_col, border[8], "FloatBorder")
+      add_highlight(buf, layout.middle, layout.prefix_col + #layout.middle_line - #border[4], border[4], "FloatBorder")
+      add_highlight(buf, layout.bottom, layout.prefix_col, layout.bottom_line, "FloatBorder")
+    end
+
+    local col = layout.content_col
+    for _, chunk in ipairs(layout.chunks) do
+      col = add_highlight(buf, layout.middle, col, chunk[1], chunk[2])
+    end
   end
 
   local function render()
@@ -89,12 +168,14 @@ function M.start(opts, win)
       return
     end
 
-    local line = ("%s %s"):format(frames[tick], text)
+    local chunks = content_chunks(tick)
+    local lines, layout = centered_box(chunks)
     local readonly = vim.api.nvim_get_option_value("readonly", { buf = buf })
     -- Neogit buffer 通常是不可改的；短暂打开 modifiable 只用于替换占位内容。
     vim.api.nvim_set_option_value("readonly", false, { buf = buf })
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, centered_lines(line))
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    apply_highlights(layout)
     vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
     vim.api.nvim_set_option_value("readonly", readonly, { buf = buf })
   end
@@ -124,8 +205,8 @@ function M.start(opts, win)
   vim.cmd("redraw!")
 
   timer:start(
-    120,
-    120,
+    80,
+    80,
     vim.schedule_wrap(function()
       tick = tick % #frames + 1
       render()

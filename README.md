@@ -4,7 +4,7 @@
 
 ## 依赖
 
-- Neovim 0.11+
+- Neovim 0.12+
 - `git`
 - Windows 下使用 bookmarks 时建议通过 Scoop 安装 `sqlite-dll`，配置会自动使用 `~/scoop/apps/sqlite-dll/current/sqlite3.dll`
 - `tree-sitter`：`nvim-treesitter` 使用 `main` 分支，需要本机有 `tree-sitter` 命令

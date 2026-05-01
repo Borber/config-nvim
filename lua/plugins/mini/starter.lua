@@ -1,6 +1,7 @@
 local M = {}
 local configured = false
 local buffer_util = require("util.buffer")
+local starter_refresh_after_lazy = false
 
 local function current_recent_path()
   -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
@@ -105,6 +106,35 @@ local function home_directory()
   return vim.uv.os_homedir() or vim.fn.expand("~")
 end
 
+local function startup_footer()
+  local ok, stats = pcall(function()
+    return require("lazy").stats()
+  end)
+
+  if not ok or type(stats) ~= "table" then
+    return ""
+  end
+
+  local startuptime = stats.startuptime or 0
+  starter_refresh_after_lazy = startuptime <= 0
+
+  if startuptime <= 0 then
+    return ("Loaded %d/%d plugins"):format(stats.loaded or 0, stats.count or 0)
+  end
+
+  local ms = math.floor(startuptime * 100 + 0.5) / 100
+  return ("Loaded %d/%d plugins in %.2f ms"):format(stats.loaded or 0, stats.count or 0, ms)
+end
+
+local function refresh_starter_after_lazy()
+  if not starter_refresh_after_lazy or vim.bo.filetype ~= "ministarter" then
+    return
+  end
+
+  starter_refresh_after_lazy = false
+  require("mini.starter").refresh()
+end
+
 local function prepare_starter()
   -- 真正进入 Starter 前先保存当前项目并清场，让下一次 Open 像刚启动一样干净。
   require("plugins.mini.sessions").write_current({ verbose = false })
@@ -140,7 +170,7 @@ local function ensure_setup(autoopen)
   starter.setup({
     autoopen = autoopen == true,
     header = "",
-    footer = "",
+    footer = startup_footer,
     items = {
       visits.recent_paths_section(5),
       {
@@ -186,6 +216,14 @@ local function ensure_setup(autoopen)
     pattern = "MiniStarterOpened",
     callback = function(args)
       attach_starter_mappings(args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf())
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("User", {
+    group = vim.api.nvim_create_augroup("ConfigMiniStarterLazyStats", { clear = true }),
+    pattern = "LazyVimStarted",
+    callback = function()
+      vim.schedule(refresh_starter_after_lazy)
     end,
   })
 end

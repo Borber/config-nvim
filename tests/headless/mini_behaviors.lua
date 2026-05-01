@@ -139,6 +139,9 @@ function tests.starter_hides_hidden_empty_placeholders()
       return true
     end,
   }
+  package.loaded["mini.bufremove"] = {
+    delete = function() end,
+  }
   package.loaded["mini.starter"] = {
     setup = function() end,
     gen_hook = {
