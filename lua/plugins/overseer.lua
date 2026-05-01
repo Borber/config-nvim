@@ -33,14 +33,14 @@ local function setup_overseer_select()
 
   -- Overseer 的模板和 action 都走 vim.ui.select；只拦截 kind=overseer*，
   -- 其它插件仍使用原本的 vim.ui.select，避免全局 UI 行为被这个配置意外改写。
-  vim.ui.select = function(items, opts, on_choice)
+  rawset(vim.ui, "select", function(items, opts, on_choice)
     if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
       load_telescope_picker().select(items, opts, on_choice)
       return
     end
 
     original_select(items, opts, on_choice)
-  end
+  end)
 end
 
 local function setup_failure_output(overseer)

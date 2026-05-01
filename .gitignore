@@ -1,4 +1,6 @@
 lazy-lock.json
 .ace-tool/
+.luarc.json
+.lua-ls-check/
 nvim.log
 lua/config/local.lua

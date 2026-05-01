@@ -106,7 +106,7 @@ end
 
 local function open_entry()
   local minifiles, entry = current_entry()
-  if entry == nil then
+  if minifiles == nil or entry == nil then
     return
   end
 

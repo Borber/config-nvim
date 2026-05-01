@@ -56,6 +56,7 @@ opt.smartcase = true           -- 搜索词含大写时改为区分大小写
 opt.hlsearch = true            -- 高亮搜索结果
 opt.incsearch = true           -- 输入搜索词时即时跳转匹配
 opt.scrolloff = 999            -- 尽量让光标行保持在窗口中间
+opt.jumpoptions:append("view") -- 返回跳转列表/标记/标签栈位置时尽量恢复原窗口视图
 
 -- 使用更稳定的 diff 算法，并在行内变更较多时保持更好的对齐效果。
 opt.diffopt:append({ "algorithm:histogram", "indent-heuristic", "linematch:60" })

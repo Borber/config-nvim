@@ -40,8 +40,12 @@ vim.api.nvim_create_autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
 })
 
 local function strip_carriage_returns(bufnr)
-  local target_bufnr, bo = buffer_util.normal_writable(bufnr)
-  if target_bufnr == nil or bo.binary then
+  local target_bufnr = buffer_util.normal_writable(bufnr)
+  if target_bufnr == nil then
+    return
+  end
+
+  if vim.bo[target_bufnr].binary then
     return
   end
 
@@ -60,8 +64,12 @@ end
 -- - 必须可修改、非只读、且当前确实有未保存改动
 -- - 必须已经有文件名，避免把无名临时 buffer 强行写盘
 local function autosave_normal_buffer(bufnr)
-  local target_bufnr, bo = buffer_util.normal_writable_file(bufnr)
-  if target_bufnr == nil or not bo.modified then
+  local target_bufnr = buffer_util.normal_writable_file(bufnr)
+  if target_bufnr == nil then
+    return
+  end
+
+  if not vim.bo[target_bufnr].modified then
     return
   end
 

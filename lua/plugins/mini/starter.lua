@@ -6,6 +6,10 @@ local starter_refresh_after_lazy = false
 local function current_recent_path()
   -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
   local content = require("mini.starter").get_content()
+  if content == nil then
+    return nil
+  end
+
   local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
   local content_line = content[cursor_line]
 
@@ -147,7 +151,9 @@ local function prepare_starter()
     end
   end
 
-  local ok, err = pcall(vim.cmd, "silent only")
+  local ok, err = pcall(function()
+    vim.cmd("silent only")
+  end)
   if not ok then
     vim.notify("Failed to keep only starter window: " .. tostring(err), vim.log.levels.ERROR)
   end

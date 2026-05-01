@@ -78,7 +78,12 @@ local function startup_directory()
     return nil
   end
 
-  local path = vim.fn.fnamemodify(vim.fn.argv(0), ":p")
+  local argv0 = vim.fn.argv(0)
+  if type(argv0) ~= "string" then
+    return nil
+  end
+
+  local path = vim.fn.fnamemodify(argv0, ":p")
   if not path_util.is_directory(path) then
     return nil
   end
