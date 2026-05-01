@@ -32,7 +32,20 @@ opt.showcmdloc = "statusline"  -- 在状态栏显示命令提示
 opt.showmode = false           -- 不单独显示当前模式
 opt.termguicolors = true       -- 24 位真彩色
 opt.fileformats = { "unix", "dos" } -- 识别 LF/CRLF；新文件默认使用 LF
-opt.fillchars:append({ eob = " ", diff = " " }) -- 去掉 ~ 号，并隐藏 diff filler 横线
+opt.fillchars:append({
+  eob = " ",    -- 去掉 ~ 号
+  diff = " ",   -- 隐藏 diff filler 横线
+})
+opt.foldlevelstart = 99        -- 新窗口默认全展开，LSP 折叠不自动收拢
+opt.foldtext = "v:lua.ConfigFoldText()"
+-- 自定义折叠行文本：行数 + 首行内容。
+function _G.ConfigFoldText()
+  local line = vim.fn.getline(vim.v.foldstart)
+  local count = vim.v.foldend - vim.v.foldstart + 1
+  local text = line:gsub("\t", "    "):gsub("%s+", " "):gsub("^%s*", "")
+  local lines = count == 1 and "line" or "lines"
+  return " ◇ " .. count .. " " .. lines .. " ◇ " .. text
+end
 opt.signcolumn = "yes"       -- 常驻一格 sign 列，避免诊断/书签出现时挤动文本
 opt.statuscolumn = "%s%=%l%{%v:lua.ConfigStatusColumn.git_sign()%}"
 opt.hidden = true              -- 切换缓冲区时保留未保存修改

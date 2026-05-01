@@ -94,7 +94,7 @@ return {
   version = "1.*",
   event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
-    "L3MON4D3/LuaSnip",
+    { "rafamadriz/friendly-snippets", lazy = true },
     "fang2hou/blink-copilot",
     {
       -- 关闭 Copilot 自带面板和内联建议，统一走 blink 的候选菜单。
@@ -169,7 +169,7 @@ return {
       },
     },
     snippets = {
-      preset = "luasnip",
+      preset = "default",
     },
     sources = {
       default = { "lsp", "copilot", "path", "buffer" },

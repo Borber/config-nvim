@@ -1,7 +1,7 @@
 local M = {}
 local configured = false
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 local path_util = require("util.path")
 local recent_paths = nil
 local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"

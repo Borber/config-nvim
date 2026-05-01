@@ -140,6 +140,11 @@ return {
           enable_inlay_hints(event.buf)
         end
 
+        if client and client:supports_method("textDocument/foldingRange") then
+          vim.wo.foldmethod = "expr"
+          vim.wo.foldexpr = "v:lua.vim.lsp.foldexpr()"
+        end
+
         if vim.bo[event.buf].filetype == "markdown" then
           -- markdown 主要依赖 Treesitter/补全，不绑 LSP 跳转键，避免普通写作时误触。
           return

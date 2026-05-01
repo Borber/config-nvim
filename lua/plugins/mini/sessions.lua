@@ -111,8 +111,6 @@ function M.setup()
   -- cwd 由当前选择的目录决定；session 只负责恢复 buffer，不再抢项目目录。
   vim.opt.sessionoptions = {
     "buffers",
-    "folds",
-    "help",
     "localoptions",
   }
 

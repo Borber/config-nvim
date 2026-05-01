@@ -6,7 +6,7 @@ local function ps_quote(value)
 end
 
 local function os_name()
-  local uv = vim.uv or vim.loop
+  local uv = vim.uv
   return uv.os_uname().sysname
 end
 

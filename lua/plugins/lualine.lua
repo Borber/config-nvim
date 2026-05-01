@@ -11,7 +11,7 @@ local os_icons = {
 }
 
 local function os_icon()
-  local uv = vim.uv or vim.loop
+  local uv = vim.uv
   local system = uv.os_uname().sysname
   return os_icons[system] or "?"
 end

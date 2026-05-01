@@ -1,6 +1,6 @@
 local M = {}
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 local buffer_util = require("util.buffer")
 local path_util = require("util.path")
 
