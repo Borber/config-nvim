@@ -57,6 +57,20 @@ return {
       end,
       desc = "Recent files",
     },
+    {
+      "<leader>fH",
+      function()
+        require("telescope.builtin").command_history(require("telescope.themes").get_dropdown({
+          -- previewer = false,
+          borderchars = require("util.float").telescope_dropdown_borderchars(),
+          layout_config = {
+            width = 0.4,
+            height = 0.45,
+          },
+        }))
+      end,
+      desc = "Command history",
+    },
   },
   dependencies = {
     "nvim-lua/plenary.nvim",
