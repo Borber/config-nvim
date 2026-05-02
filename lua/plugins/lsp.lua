@@ -1,5 +1,5 @@
--- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API
--- mason-lspconfig v2 的 automatic_enable 会自动调用 vim.lsp.enable
+-- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API。
+-- Mason 只负责安装检查和手动管理，延迟到首屏之后再加载。
 
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
@@ -21,108 +21,188 @@ local function telescope_lsp_picker(name)
   end
 end
 
-return {
-  "neovim/nvim-lspconfig",
-  event = { "BufReadPre", "BufNewFile" },
-  dependencies = {
-    { "williamboman/mason.nvim", opts = {} },
-    "williamboman/mason-lspconfig.nvim",
-  },
-  config = function()
-    local lsp_registry = require("lsp")
-    local servers = lsp_registry.servers()
-    local diagnostics = require("plugins.lsp.diagnostics")
-
-    -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。
-    -- 这样能减少日常编辑时的视觉噪音，但不会丢失诊断信息。
-    vim.diagnostic.config({
-      severity_sort = true,
-      signs = true,
-      underline = true,
-      update_in_insert = false,
-      virtual_text = {
-        prefix = "●",
-        source = false,
-        spacing = 2,
-        severity = { min = vim.diagnostic.severity.WARN },
+local function lsp_capabilities()
+  -- 复制 blink.cmp 暴露的 LSP completion capabilities，避免 LSP 启动时反向加载整个补全插件。
+  return vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
+    textDocument = {
+      completion = {
+        completionItem = {
+          snippetSupport = true,
+          commitCharactersSupport = false,
+          documentationFormat = { "markdown", "plaintext" },
+          deprecatedSupport = true,
+          preselectSupport = false,
+          tagSupport = { valueSet = { 1 } },
+          insertReplaceSupport = true,
+          resolveSupport = {
+            properties = {
+              "documentation",
+              "detail",
+              "additionalTextEdits",
+              "command",
+              "data",
+            },
+          },
+          insertTextModeSupport = {
+            valueSet = { 1 },
+          },
+          labelDetailsSupport = true,
+        },
+        completionList = {
+          itemDefaults = {
+            "commitCharacters",
+            "editRange",
+            "insertTextFormat",
+            "insertTextMode",
+            "data",
+          },
+        },
+        contextSupport = true,
+        insertTextMode = 1,
       },
-      float = { border = require("util.float").border, source = "if_many" },
-    })
+    },
+  })
+end
 
-    -- 所有 server 共享的默认 capabilities：直接复用 blink.cmp 给出的能力声明，
-    -- 与补全菜单实际支持的特性（snippet/resolve/labelDetails 等）保持一致。
-    vim.lsp.config("*", {
-      capabilities = require("blink.cmp").get_lsp_capabilities(nil, true),
-    })
+local function mason_lspconfig_opts()
+  return {
+    ensure_installed = require("lsp").names(),
+    automatic_enable = false,
+  }
+end
 
-    for name, cfg in pairs(servers) do
-      vim.lsp.config(name, cfg)
+local function schedule_mason_lspconfig()
+  if #vim.api.nvim_list_uis() == 0 then
+    return
+  end
+
+  vim.defer_fn(function()
+    if vim.v.exiting ~= vim.NIL then
+      return
     end
 
-    require("mason-lspconfig").setup({
-      ensure_installed = lsp_registry.names(),
-      automatic_enable = true,
-    })
+    pcall(function()
+      require("lazy").load({ plugins = { "mason-lspconfig.nvim" } })
+    end)
+  end, 1000)
+end
 
-    vim.api.nvim_create_autocmd("LspAttach", {
-      group = vim.api.nvim_create_augroup("ConfigLspAttach", { clear = true }),
-      callback = function(event)
-        local client = vim.lsp.get_client_by_id(event.data.client_id)
+return {
+  {
+    "williamboman/mason.nvim",
+    cmd = {
+      "Mason",
+      "MasonInstall",
+      "MasonLog",
+      "MasonUninstall",
+      "MasonUninstallAll",
+      "MasonUpdate",
+    },
+    opts = {},
+  },
+  {
+    "williamboman/mason-lspconfig.nvim",
+    cmd = { "LspInstall", "LspUninstall" },
+    dependencies = { "williamboman/mason.nvim" },
+    opts = mason_lspconfig_opts,
+  },
+  {
+    "neovim/nvim-lspconfig",
+    event = "VeryLazy",
+    config = function()
+      local lsp_registry = require("lsp")
+      local servers = lsp_registry.servers()
+      local diagnostics = require("plugins.lsp.diagnostics")
 
-        diagnostics.wrap_handlers(client)
+      -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。
+      -- 这样能减少日常编辑时的视觉噪音，但不会丢失诊断信息。
+      vim.diagnostic.config({
+        severity_sort = true,
+        signs = true,
+        underline = true,
+        update_in_insert = false,
+        virtual_text = {
+          prefix = "●",
+          source = false,
+          spacing = 2,
+          severity = { min = vim.diagnostic.severity.WARN },
+        },
+        float = { border = require("util.float").border, source = "if_many" },
+      })
 
-        if client and diagnostics.muted(event.buf, client) then
-          diagnostics.reset(client.id, event.buf)
-        end
+      -- 所有 server 共享的默认 capabilities：保持 blink.cmp 的 completion 能力声明，
+      -- 但不在 LSP 启动阶段加载补全插件本体。
+      vim.lsp.config("*", {
+        capabilities = lsp_capabilities(),
+      })
 
-        if client and client:supports_method("textDocument/inlayHint") then
-          enable_inlay_hints(event.buf)
-        end
+      for name, cfg in pairs(servers) do
+        vim.lsp.config(name, cfg)
+      end
 
-        if vim.bo[event.buf].filetype == "markdown" then
-          -- markdown 主要依赖 Treesitter/补全，不绑 LSP 跳转键，避免普通写作时误触。
-          return
-        end
+      vim.lsp.enable(lsp_registry.names())
+      schedule_mason_lspconfig()
 
-        vim.schedule(function()
-          if not vim.api.nvim_buf_is_valid(event.buf) then
+      vim.api.nvim_create_autocmd("LspAttach", {
+        group = vim.api.nvim_create_augroup("ConfigLspAttach", { clear = true }),
+        callback = function(event)
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+          diagnostics.wrap_handlers(client)
+
+          if client and diagnostics.muted(event.buf, client) then
+            diagnostics.reset(client.id, event.buf)
+          end
+
+          if client and client:supports_method("textDocument/inlayHint") then
+            enable_inlay_hints(event.buf)
+          end
+
+          if vim.bo[event.buf].filetype == "markdown" then
+            -- markdown 主要依赖 Treesitter/补全，不绑 LSP 跳转键，避免普通写作时误触。
             return
           end
 
-          local map = function(mode, lhs, rhs, desc, opts)
-            local keymap_opts = vim.tbl_extend("force", {
-              buffer = event.buf,
-              desc = desc,
-              silent = true,
-            }, opts or {})
+          vim.schedule(function()
+            if not vim.api.nvim_buf_is_valid(event.buf) then
+              return
+            end
 
-            vim.keymap.set(mode, lhs, rhs, keymap_opts)
-          end
+            local map = function(mode, lhs, rhs, desc, opts)
+              local keymap_opts = vim.tbl_extend("force", {
+                buffer = event.buf,
+                desc = desc,
+                silent = true,
+              }, opts or {})
 
-          -- 基础 LSP 跳转：定义、声明、类型定义、引用和实现分开保留。
-          map("n", "K", function()
-            vim.lsp.buf.hover({ border = require("util.float").border })
-          end, "LSP hover")
-          map("n", "gd", vim.lsp.buf.definition, "Goto definition")
-          -- C/C++ 等语言里声明和定义经常分离：gD 去声明，gd 去实现/定义。
-          map("n", "gD", vim.lsp.buf.declaration, "Goto declaration")
-          -- gy 用来看变量/表达式背后的类型定义，适合强类型项目里追类型来源。
-          map("n", "gy", vim.lsp.buf.type_definition, "Goto type definition")
-          map("n", "grr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References")
-          map("n", "gri", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation")
-          -- 修改类动作统一放在 <leader>c 下：rename 改符号名，code action 做快速修复/重构。
-          map("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
-          map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-          -- 查找类入口统一放在 <leader>f 下；Trouble 承担诊断列表，Telescope 承担符号列表。
-          map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
-          map("n", "<leader>fD", "<Cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>", "Workspace diagnostics")
-          map("n", "<leader>fs", telescope_lsp_picker("lsp_document_symbols"), "Document symbols")
-          map("n", "<leader>fS", telescope_lsp_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
-          -- 诊断跳转保留原生 [d/]d 手感，并在跳转后弹出诊断浮窗。
-          map("n", "]d", diagnostic_jump(1), "Next diagnostic")
-          map("n", "[d", diagnostic_jump(-1), "Previous diagnostic")
-        end)
-      end,
-    })
-  end,
+              vim.keymap.set(mode, lhs, rhs, keymap_opts)
+            end
+
+            -- 基础 LSP 跳转：定义、声明、类型定义、引用和实现分开保留。
+            map("n", "K", function()
+              vim.lsp.buf.hover({ border = require("util.float").border })
+            end, "LSP hover")
+            map("n", "gd", vim.lsp.buf.definition, "Goto definition")
+            -- C/C++ 等语言里声明和定义经常分离：gD 去声明，gd 去实现/定义。
+            map("n", "gD", vim.lsp.buf.declaration, "Goto declaration")
+            -- gy 用来看变量/表达式背后的类型定义，适合强类型项目里追类型来源。
+            map("n", "gy", vim.lsp.buf.type_definition, "Goto type definition")
+            map("n", "grr", "<Cmd>Trouble lsp_references toggle focus=true win.position=right<CR>", "References")
+            map("n", "gri", "<Cmd>Trouble lsp_implementations toggle focus=true win.position=right<CR>", "Goto implementation")
+            -- 修改类动作统一放在 <leader>c 下：rename 改符号名，code action 做快速修复/重构。
+            map("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
+            map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+            -- 查找类入口统一放在 <leader>f 下；Trouble 承担诊断列表，Telescope 承担符号列表。
+            map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
+            map("n", "<leader>fD", "<Cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>", "Workspace diagnostics")
+            map("n", "<leader>fs", telescope_lsp_picker("lsp_document_symbols"), "Document symbols")
+            map("n", "<leader>fS", telescope_lsp_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
+            -- 诊断跳转保留原生 [d/]d 手感，并在跳转后弹出诊断浮窗。
+            map("n", "]d", diagnostic_jump(1), "Next diagnostic")
+            map("n", "[d", diagnostic_jump(-1), "Previous diagnostic")
+          end)
+        end,
+      })
+    end,
+  },
 }

@@ -1,6 +1,6 @@
 return {
   "luukvbaal/statuscol.nvim",
-  event = "User ConfigFilePost",
+  event = "VeryLazy",
   opts = function()
     local builtin = require("statuscol.builtin")
 

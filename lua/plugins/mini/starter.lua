@@ -3,6 +3,7 @@ local configured = false
 local buffer_util = require("libs.buffer")
 local icons = require("libs.icons")
 local delayed_content_ready = false
+local hidden_statusline
 
 local function current_recent_path()
   -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
@@ -45,6 +46,47 @@ local function attach_starter_mappings(buf_id)
     buffer = buf_id,
     desc = "Delete recent path",
     silent = true,
+  })
+end
+
+local function restore_starter_statusline()
+  if hidden_statusline == nil then
+    return
+  end
+
+  vim.o.laststatus = hidden_statusline
+  hidden_statusline = nil
+
+  local ok, lualine = pcall(require, "lualine")
+  if ok and type(lualine.refresh) == "function" then
+    pcall(lualine.refresh, {
+      scope = "tabpage",
+      place = { "statusline" },
+      trigger = "autocmd",
+      force = true,
+    })
+  end
+end
+
+local function hide_starter_statusline(buf_id)
+  if not vim.api.nvim_buf_is_valid(buf_id) then
+    return
+  end
+
+  if hidden_statusline == nil then
+    hidden_statusline = vim.o.laststatus
+  end
+
+  vim.o.laststatus = 0
+
+  vim.api.nvim_create_autocmd({ "BufLeave", "BufWipeout" }, {
+    group = vim.api.nvim_create_augroup("ConfigMiniStarterStatusline", { clear = false }),
+    buffer = buf_id,
+    once = true,
+    callback = function()
+      vim.schedule(restore_starter_statusline)
+    end,
+    desc = "Restore statusline after starter",
   })
 end
 
@@ -242,7 +284,9 @@ local function ensure_setup(autoopen)
     group = vim.api.nvim_create_augroup("ConfigMiniStarterMappings", { clear = true }),
     pattern = "MiniStarterOpened",
     callback = function(args)
-      attach_starter_mappings(args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf())
+      local buf_id = args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf()
+      attach_starter_mappings(buf_id)
+      hide_starter_statusline(buf_id)
     end,
   })
 

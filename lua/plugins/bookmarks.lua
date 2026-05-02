@@ -214,7 +214,7 @@ end
 
 return {
   "LintaoAmons/bookmarks.nvim",
-  event = "User ConfigFilePost",
+  event = "VeryLazy",
   init = configure_sqlite_clib,
   cmd = {
     "BookmarkRebindOrphanNode",

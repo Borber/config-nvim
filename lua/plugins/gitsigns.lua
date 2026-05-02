@@ -31,8 +31,8 @@ end
 
 return {
   "lewis6991/gitsigns.nvim",
-  -- 等 UI 和真实文件都准备好后再加载，避免启动页/目录占位 buffer 触发 git 探测。
-  event = "User ConfigFilePost",
+  -- 首屏先让文件可见；git sign 和 blame 信息在 VeryLazy 后补上。
+  event = "VeryLazy",
   init = function()
     local group = vim.api.nvim_create_augroup("UserGitsignsHighlights", { clear = true })
     vim.api.nvim_create_autocmd("ColorScheme", {

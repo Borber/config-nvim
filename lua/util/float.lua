@@ -175,6 +175,8 @@ function M.apply_highlights()
   local identifier = highlight("Identifier")
   local visual = highlight("Visual")
   local selection_bg = cursor_line.bg or visual.bg or normal.bg
+  local tab_bg = cursor_line.bg or normal.bg
+  local tab_active_bg = visual.bg or cursor_line.bg or normal.bg
   local border_fg = highlight("FloatBorder").fg or comment.fg or normal.fg
   local accent_fg = identifier.fg or border_fg
 
@@ -205,6 +207,25 @@ function M.apply_highlights()
   link("NoiceMini", "NormalFloat")
   link("NoiceConfirm", "NormalFloat")
   link("NoiceConfirmBorder", "FloatBorder")
+
+  vim.api.nvim_set_hl(0, "LazyNormal", { fg = normal.fg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyBackdrop", { bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyH1", { fg = accent_fg, bg = normal.bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyH2", { fg = border_fg, bg = normal.bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyButton", { fg = normal.fg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyButtonActive", { fg = normal.fg, bg = selection_bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazySpecial", { fg = accent_fg, bg = normal.bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyProgressDone", { fg = accent_fg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyProgressTodo", { fg = comment.fg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyTab", { fg = normal.fg, bg = tab_bg })
+  vim.api.nvim_set_hl(0, "LazyTabKey", { fg = accent_fg, bg = tab_bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyTabSep", { fg = tab_bg, bg = normal.bg })
+  vim.api.nvim_set_hl(0, "LazyTabActive", { fg = normal.fg, bg = tab_active_bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyTabActiveKey", { fg = accent_fg, bg = tab_active_bg, bold = true })
+  vim.api.nvim_set_hl(0, "LazyTabActiveSep", { fg = tab_active_bg, bg = normal.bg })
+  link("LazyDimmed", "Comment")
+  link("LazyProp", "Comment")
+  link("LazyTaskOutput", "NormalFloat")
 
   link("TelescopeNormal", "NormalFloat")
   link("TelescopePromptNormal", "NormalFloat")

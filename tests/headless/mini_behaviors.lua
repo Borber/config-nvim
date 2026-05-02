@@ -179,6 +179,49 @@ function tests.starter_hides_hidden_empty_placeholders()
   end
 end
 
+function tests.starter_hides_statusline_until_leave()
+  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "lualine")
+
+  package.loaded["plugins.mini.visits"] = {
+    setup = function() end,
+    recent_paths_section = function()
+      return function()
+        return {}
+      end
+    end,
+    open_path = function() end,
+  }
+  package.loaded["mini.starter"] = {
+    setup = function() end,
+    gen_hook = {
+      aligning = function()
+        return function() end
+      end,
+    },
+  }
+
+  local original_laststatus = vim.o.laststatus
+  vim.o.laststatus = 3
+
+  require("plugins.mini.starter").setup()
+
+  vim.cmd("silent! enew!")
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = "MiniStarterOpened",
+    modeline = false,
+  })
+
+  assert_eq(vim.o.laststatus, 0, "starter should hide the bottom statusline")
+
+  vim.cmd("silent! enew!")
+  vim.wait(100, function()
+    return vim.o.laststatus == 3
+  end)
+
+  assert_eq(vim.o.laststatus, 3, "leaving starter should restore the previous statusline setting")
+  vim.o.laststatus = original_laststatus
+end
+
 function tests.mini_files_opens_from_root_and_focuses_current_branch()
   reset_modules("plugins.mini.files")
 
@@ -283,6 +326,7 @@ local test_order = {
   "recent_paths_are_unique_ordered_and_removable",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
+  "starter_hides_statusline_until_leave",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
   "session_restore_preserves_requested_cwd",
