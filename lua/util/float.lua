@@ -232,12 +232,27 @@ function M.apply_highlights()
   -- 折叠行：注释色 + 斜体，融入 Normal 底色，安静地标记折叠区域。
   vim.api.nvim_set_hl(0, "Folded", {
     fg = comment.fg,
-    bg = normal.bg,
     italic = true,
   })
   vim.api.nvim_set_hl(0, "CursorLineFold", {
     fg = comment.fg,
     bg = cursor_line.bg or normal.bg,
+    italic = true,
+  })
+  vim.api.nvim_set_hl(0, "ConfigFoldPrefix", {
+    fg = accent_fg,
+    bold = true,
+  })
+  vim.api.nvim_set_hl(0, "ConfigFoldMuted", {
+    fg = comment.fg,
+  })
+  vim.api.nvim_set_hl(0, "ConfigFoldPreview", {
+    fg = comment.fg,
+    italic = true,
+  })
+  vim.api.nvim_set_hl(0, "ConfigFoldTail", {
+    fg = accent_fg,
+    bold = true,
     italic = true,
   })
 end

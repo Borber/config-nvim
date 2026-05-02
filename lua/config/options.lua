@@ -38,14 +38,51 @@ opt.fillchars:append({
   diff = " ",   -- 隐藏 diff filler 横线
 })
 opt.foldlevelstart = 99        -- 新窗口默认全展开，LSP 折叠不自动收拢
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 opt.foldtext = "v:lua.ConfigFoldText()"
--- 自定义折叠行文本：行数 + 首行内容。
+local fold_prefix = "◇ "
+local fold_prefix_width = vim.fn.strdisplaywidth(fold_prefix)
+
+local function fold_start_text()
+  -- 只按当前实际 fold 范围取首行，避免 LSP fold 边界和 Treesitter node 尾部预览不一致。
+  return { { vim.fn.getline(vim.v.foldstart), "" } }
+end
+
+local function add_fold_prefix(parts)
+  local first = parts[1]
+  if type(first) ~= "table" or type(first[1]) ~= "string" then
+    table.insert(parts, 1, { fold_prefix, "ConfigFoldPrefix" })
+    return parts
+  end
+
+  local leading = first[1]:match("^ *") or ""
+  local indent = leading:sub(1, math.max(#leading - fold_prefix_width, 0))
+  first[1] = first[1]:sub(#leading + 1)
+
+  if indent ~= "" then
+    table.insert(parts, 1, { indent, first[2] or "" })
+    table.insert(parts, 2, { fold_prefix, "ConfigFoldPrefix" })
+    return parts
+  end
+
+  table.insert(parts, 1, { fold_prefix, "ConfigFoldPrefix" })
+  return parts
+end
+
+-- 自定义折叠行文本：保留首行位置，只在行尾补预览和高亮行数。
 function _G.ConfigFoldText()
-  local line = vim.fn.getline(vim.v.foldstart)
-  local count = vim.v.foldend - vim.v.foldstart + 1
-  local text = line:gsub("\t", "    "):gsub("%s+", " "):gsub("^%s*", "")
-  local lines = count == 1 and "line" or "lines"
-  return " ◇ " .. count .. " " .. lines .. " ◇ " .. text
+  local hidden_count = vim.v.foldend - vim.v.foldstart
+  local parts = add_fold_prefix(fold_start_text())
+
+  local end_text = vim.trim(vim.fn.getline(vim.v.foldend))
+  if end_text ~= "" then
+    table.insert(parts, { " ⋯ ", "ConfigFoldMuted" })
+    table.insert(parts, { end_text, "ConfigFoldPreview" })
+  end
+
+  table.insert(parts, { "   ↙ [" .. hidden_count .. " lines hidden]", "ConfigFoldTail" })
+  return parts
 end
 opt.signcolumn = "yes"       -- 常驻一格 sign 列，避免诊断/书签出现时挤动文本
 opt.statuscolumn = "%s%=%l%{%v:lua.ConfigStatusColumn.git_sign()%}"

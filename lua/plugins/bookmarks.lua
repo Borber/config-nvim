@@ -1,8 +1,4 @@
-local tree_icons = {
-  bookmark = "◆",
-  collapsed = "",
-  expanded = "",
-}
+local ic = require("util.icons")
 
 local function project_name()
   local name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
@@ -59,8 +55,8 @@ local function apply_tree_icons(buf)
   local changed = false
 
   for index, line in ipairs(lines) do
-    local updated = line:gsub("^(%s*)▾", "%1" .. tree_icons.expanded, 1)
-    updated = updated:gsub("^(%s*)▸", "%1" .. tree_icons.collapsed, 1)
+    local updated = line:gsub("^(%s*)▾", "%1" .. ic.tree.expanded, 1)
+    updated = updated:gsub("^(%s*)▸", "%1" .. ic.tree.collapsed, 1)
 
     if updated ~= line then
       lines[index] = updated
@@ -178,7 +174,7 @@ local function bookmark_tree_label(bookmark)
     name = "[Untitled]"
   end
 
-  return tree_icons.bookmark .. " " .. name
+  return ic.tree.bookmark .. " " .. name
 end
 
 local function create_project_commands()
@@ -256,7 +252,7 @@ return {
     },
     signs = {
       mark = {
-        icon = "",
+        icon = ic.ui.bookmark,
         color = "#e0af68",
         line_bg = "NONE",
       },
@@ -265,7 +261,7 @@ return {
       end,
     },
     treeview = {
-      active_list_icon = "✦ ",
+      active_list_icon = ic.tree.active .. " ",
       render_bookmark = bookmark_tree_label,
       window_split_dimension = 50,
     },

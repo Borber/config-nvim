@@ -3,6 +3,7 @@ local configured = false
 
 local uv = vim.uv
 local path_util = require("util.path")
+local ic = require("util.icons")
 local recent_paths = nil
 local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
 local recent_paths_limit = 100
@@ -145,7 +146,7 @@ local function close_current_starter()
 end
 
 local function format_path_name(path)
-  local icon = is_directory(path) and "󰉋" or "󰈔"
+  local icon = is_directory(path) and ic.basic.dir or ic.basic.file
   local name = path_name(path)
 
   return string.format("%s  %s  %s", name, path, icon)

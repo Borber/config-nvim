@@ -4,17 +4,7 @@ local function min_cols(n)
   end
 end
 
-local os_icons = {
-  Windows_NT = vim.fn.nr2char(0xf0372),
-  Darwin = vim.fn.nr2char(0xf179),
-  Linux = vim.fn.nr2char(0xf17c),
-}
-
-local function os_icon()
-  local uv = vim.uv
-  local system = uv.os_uname().sysname
-  return os_icons[system] or "?"
-end
+local ic = require("util.icons")
 
 local mode_labels = {
   NORMAL = "N",
@@ -115,7 +105,7 @@ return {
       lualine_b = {
         {
           "branch",
-          icon = "",
+          icon = ic.git.branch,
           color = { gui = "bold" },
           cond = min_cols(100),
         },
@@ -124,14 +114,14 @@ return {
         {
           "diagnostics",
           sources = { "nvim_diagnostic" },
-          symbols = { error = " ", warn = " ", info = " " },
+          symbols = { error = ic.lsp.error, warn = ic.lsp.warn, info = ic.lsp.info },
           cond = min_cols(120),
         },
       },
       lualine_x = {},
       lualine_y = { { "filetype", cond = min_cols(80) } },
       lualine_z = {
-        { os_icon },
+        { ic.os_icon },
       },
     },
     inactive_sections = {
@@ -147,7 +137,7 @@ return {
       lualine_a = {
         {
           function()
-            return ""
+            return ic.ui.vim
           end,
           padding = { left = 1, right = 1 },
         },
@@ -161,9 +151,9 @@ return {
             return vim.o.columns
           end,
           symbols = {
-            modified = " ●",
+            modified = " " .. ic.basic.modified,
             alternate_file = "",
-            directory = "",
+            directory = ic.basic.dir,
           },
         },
       },

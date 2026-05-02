@@ -1,16 +1,17 @@
+local ic = require("util.icons")
 local icons = {
-  bookmark = { icon = "", color = "yellow" },
-  buffer = { icon = "󰈔", color = "cyan" },
-  code = { icon = "", color = "orange" },
-  explorer = { icon = "󰙅", color = "cyan" },
-  find = { icon = "", color = "green" },
-  git = { icon = "", color = "orange" },
-  hunk = { icon = "", color = "yellow" },
-  keys = { icon = "", color = "purple" },
-  markdown = { icon = "", color = "blue" },
-  quit = { icon = "󰈆", color = "red" },
-  session = { icon = "", color = "azure" },
-  terminal = { icon = "", color = "red" },
+  bookmark = { icon = ic.ui.bookmark, color = "yellow" },
+  buffer = { icon = ic.basic.file, color = "cyan" },
+  code = { icon = ic.ui.code, color = "orange" },
+  explorer = { icon = ic.ui.explorer, color = "cyan" },
+  find = { icon = ic.search.find, color = "green" },
+  git = { icon = ic.git.icon, color = "orange" },
+  hunk = { icon = ic.ui.hunk, color = "yellow" },
+  keys = { icon = ic.ui.keys, color = "purple" },
+  markdown = { icon = ic.ui.markdown, color = "blue" },
+  quit = { icon = ic.ui.quit, color = "red" },
+  session = { icon = ic.ui.session, color = "azure" },
+  terminal = { icon = ic.ui.terminal, color = "red" },
 }
 
 return {
