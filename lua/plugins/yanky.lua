@@ -1,13 +1,26 @@
 return {
   "gbprod/yanky.nvim",
-  event = "User ConfigFilePost",
+  event = "User ConfigUiReady",
+  init = function()
+    require("util.sqlite").configure_clib()
+  end,
   keys = {
-    { "<leader>p", function() require("telescope").extensions.yank_history.yank_history() end, desc = "Yank history" },
+    {
+      "<leader>p",
+      function()
+        require("telescope").extensions.yank_history.yank_history()
+      end,
+      desc = "Yank history",
+    },
+  },
+  dependencies = {
+    "kkharji/sqlite.lua",
   },
   opts = {
     ring = {
-      history_length = 50,
-      storage = "memory",
+      history_length = 10000,
+      storage = "sqlite",
+      storage_path = vim.fn.stdpath("data") .. "/databases/yanky.db",
     },
     highlight = {
       on_put = true,

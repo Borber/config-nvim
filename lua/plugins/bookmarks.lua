@@ -7,15 +7,6 @@ local function project_name()
   return name ~= "" and name or nil
 end
 
-local function configure_sqlite_clib()
-  -- Windows 上 sqlite.lua 需要显式找到 dll；Scoop 路径只在未配置时作为本机默认值。
-  if vim.g.sqlite_clib_path ~= nil or vim.fn.has("win32") == 0 then
-    return
-  end
-
-  vim.g.sqlite_clib_path = vim.fn.expand("~/scoop/apps/sqlite-dll/current/sqlite3.dll")
-end
-
 local function refresh_bookmarks()
   -- 切换项目列表后总是刷新 sign；tree 只有窗口真实存在时才刷新。
   require("bookmarks.sign").safe_refresh_signs()
@@ -222,7 +213,9 @@ end
 
 return {
   "LintaoAmons/bookmarks.nvim",
-  init = configure_sqlite_clib,
+  init = function()
+    require("util.sqlite").configure_clib()
+  end,
   cmd = {
     "BookmarkRebindOrphanNode",
     "BookmarksCommands",
