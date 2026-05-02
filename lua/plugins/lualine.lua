@@ -85,7 +85,7 @@ end
 
 return {
   "nvim-lualine/lualine.nvim",
-  event = "User ConfigFilePost",
+  lazy = false,
   opts = {
     options = {
       theme = "auto",
