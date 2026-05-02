@@ -1,12 +1,3 @@
-local icons = {
-  -- 统一用 codepoint 生成 glyph，避免源文件里直接混入不稳定的 Nerd Font 字符。
-  author = vim.fn.nr2char(0xf007),
-  blame = vim.fn.nr2char(0xe729),
-  delete = vim.fn.nr2char(0x2578),
-  sign = vim.fn.nr2char(0x2503),
-  title = vim.fn.nr2char(0xf2a2),
-}
-
 local function apply_gitsigns_highlights()
   local highlights = {
     GitSignsCurrentLineBlame = { fg = "#9893a5", italic = true },
@@ -32,9 +23,10 @@ end
 return {
   "lewis6991/gitsigns.nvim",
   -- 首个真实文件出现后再加载，starter 首屏不需要 git sign；blame 仍保持手动开启。
-  event = "User ConfigFilePost",
+  event = "User ConfigUiReady",
   opts = function()
     local float = require("util.float")
+    local icons = require("libs.icons").git
 
     return {
       signs = {

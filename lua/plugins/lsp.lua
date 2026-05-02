@@ -92,7 +92,7 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    event = "User ConfigFilePost",
+    event = "User ConfigUiReady",
     config = function()
       local lsp_registry = require("lsp")
       local servers = lsp_registry.servers()

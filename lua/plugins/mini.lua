@@ -33,7 +33,7 @@ return {
       require("plugins.mini.trailspace").setup()
 
       require("mini.indentscope").setup({
-        symbol = "│",
+        symbol = require("libs.icons").basic.indent,
         draw = {
           delay = 50,
           animation = require("mini.indentscope").gen_animation.none(),

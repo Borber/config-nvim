@@ -28,6 +28,11 @@ M.git = {
   icon = "",
   branch = "󰘬",
   commit = "󰜘",
+  author = "",
+  blame = "",
+  delete = "╸",
+  sign = "┃",
+  title = "",
   staged = "",
   added = "",
   deleted = "",
@@ -76,9 +81,9 @@ M.ui = {
 
 -- OS 图标
 M.os = {
-  Windows_NT = vim.fn.nr2char(0xf0372),
-  Darwin = vim.fn.nr2char(0xf179),
-  Linux = vim.fn.nr2char(0xf17c),
+  Windows_NT = "󰍲",
+  Darwin = "",
+  Linux = "",
 }
 
 -- OS 检测（缓存结果，避免每次 statusline 刷新都调用 os_uname）
