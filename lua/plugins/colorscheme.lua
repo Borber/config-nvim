@@ -6,6 +6,11 @@ return {
   config = function()
     local float = require("util.float")
 
+    local function apply_highlights()
+      float.apply_highlights()
+      vim.api.nvim_set_hl(0, "CursorLineNr", { fg = "#286983", bold = true })
+    end
+
     require("rose-pine").setup({
       variant = "dawn",
       dark_variant = "dawn",
@@ -16,11 +21,11 @@ return {
     })
 
     vim.api.nvim_create_autocmd("ColorScheme", {
-      group = vim.api.nvim_create_augroup("ConfigFloatAppearance", { clear = true }),
-      callback = float.apply_highlights,
+      group = vim.api.nvim_create_augroup("ConfigThemeAppearance", { clear = true }),
+      callback = apply_highlights,
     })
 
     vim.cmd("colorscheme rose-pine-dawn")
-    float.apply_highlights()
+    apply_highlights()
   end,
 }
