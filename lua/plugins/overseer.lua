@@ -23,7 +23,11 @@ local function template_label(tmpl)
 end
 
 local function setup_overseer_select()
-  vim.ui._config_overseer_original_select = vim.ui._config_overseer_original_select or vim.ui.select
+  if vim.ui._config_overseer_patched then
+    return
+  end
+
+  vim.ui._config_overseer_original_select = vim.ui.select
   local original_select = vim.ui._config_overseer_original_select
 
   -- Overseer 的模板和 action 都走 vim.ui.select；只拦截 kind=overseer*，
@@ -36,6 +40,8 @@ local function setup_overseer_select()
 
     original_select(items, opts, on_choice)
   end)
+
+  vim.ui._config_overseer_patched = true
 end
 
 local function setup_failure_output(overseer)

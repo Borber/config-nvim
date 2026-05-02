@@ -1,3 +1,7 @@
+-- ============================================
+-- Git 上下文推导工具
+-- 从 buffer/目录推导 git root，供 Neogit/Gitsigns 等使用。
+-- ============================================
 local M = {}
 
 local buffer_util = require("libs.buffer")

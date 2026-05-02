@@ -1,3 +1,8 @@
+-- ============================================
+-- Starter 启动页
+-- 项目切换入口：展示最近路径、快捷动作，
+-- 支持 session 保存/恢复和 buffer 清场。
+-- ============================================
 local M = {}
 local configured = false
 local buffer_util = require("libs.buffer")

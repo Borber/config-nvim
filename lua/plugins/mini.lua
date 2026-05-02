@@ -32,6 +32,26 @@ return {
       require("mini.splitjoin").setup()
       require("plugins.mini.trailspace").setup()
 
+      require("mini.indentscope").setup({
+        symbol = "│",
+        draw = {
+          delay = 50,
+          animation = require("mini.indentscope").gen_animation.none(),
+        },
+        options = {
+          try_as_border = true,
+        },
+      })
+
+      -- indentscope 对特殊 buffer 无意义，按 filetype/buftype 禁用。
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("ConfigIndentscopeDisable", { clear = true }),
+        pattern = { "help", "lazy", "mason", "ministarter", "Trouble", "toggleterm", "neogit*" },
+        callback = function()
+          vim.b.miniindentscope_disable = true
+        end,
+      })
+
       require("mini.surround").setup({
         mappings = {
           add = "msa",

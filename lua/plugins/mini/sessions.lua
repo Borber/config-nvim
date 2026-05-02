@@ -1,3 +1,8 @@
+-- ============================================
+-- 项目 Session 管理
+-- 自动保存/恢复 buffer 布局，按 cwd hash 隔离，
+-- Home 目录使用 Starter 入口代替 session。
+-- ============================================
 local M = {}
 local configured = false
 local path_util = require("libs.path")

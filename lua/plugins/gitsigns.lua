@@ -31,8 +31,8 @@ end
 
 return {
   "lewis6991/gitsigns.nvim",
-  -- 目录启动时也尽早准备好 git sign；blame 仍保持手动开启，避免后台 git 查询抢首轮交互。
-  event = "VeryLazy",
+  -- 首个真实文件出现后再加载，starter 首屏不需要 git sign；blame 仍保持手动开启。
+  event = "User ConfigFilePost",
   opts = function()
     local float = require("util.float")
 

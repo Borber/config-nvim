@@ -1,3 +1,8 @@
+-- ============================================
+-- 浮窗外观统一管理
+-- 集中定义边框字符、winhighlight、配色方案，
+-- 保证 Telescope / Noice / Lazy / LSP 等浮窗风格一致。
+-- ============================================
 local M = {}
 
 M.border = "single"
@@ -275,6 +280,11 @@ function M.apply_highlights()
     fg = accent_fg,
     bold = true,
     italic = true,
+  })
+
+  -- mini.indentscope：使用比注释色更浅的线条，安静地标示当前作用域。
+  vim.api.nvim_set_hl(0, "MiniIndentscopeSymbol", {
+    fg = border_fg,
   })
 end
 

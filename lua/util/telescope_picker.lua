@@ -1,3 +1,8 @@
+-- ============================================
+-- Telescope Picker 通用封装
+-- 提供符合 vim.ui.select 协议的 dropdown picker，
+-- 供 Overseer / Session / LSP 等模块复用。
+-- ============================================
 local M = {}
 
 local function load_telescope()

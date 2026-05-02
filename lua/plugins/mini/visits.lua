@@ -1,3 +1,8 @@
+-- ============================================
+-- 最近路径管理
+-- 记录用户打开过的文件/目录路径，供 Starter 展示，
+-- 同时提供 open_path 统一入口（切 cwd → 恢复 session）。
+-- ============================================
 local M = {}
 local configured = false
 
@@ -50,6 +55,15 @@ local function write_recent_paths()
   vim.fn.writefile({ vim.json.encode(recent_paths) }, recent_paths_store)
 end
 
+-- 延迟写入：聚合短时间内的多次路径变更，避免频繁磁盘 IO。
+local write_timer = nil
+local function schedule_write()
+  if write_timer then
+    write_timer:stop()
+  end
+  write_timer = vim.defer_fn(write_recent_paths, 1000)
+end
+
 local function push_recent_path(path)
   local resolved_path = canonical_path(path)
   if resolved_path == nil or not path_exists(resolved_path) then
@@ -71,7 +85,7 @@ local function push_recent_path(path)
     table.remove(paths)
   end
 
-  write_recent_paths()
+  schedule_write()
 end
 
 local function remove_recent_path(path)
@@ -92,7 +106,7 @@ local function remove_recent_path(path)
   end
 
   if removed then
-    write_recent_paths()
+    schedule_write()
   end
 
   return removed
@@ -163,6 +177,18 @@ function M.setup()
     group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
     once = true,
     callback = record_startup_paths,
+  })
+
+  -- 退出前立即刷盘，防止 timer 还没触发就关闭了 Neovim。
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = vim.api.nvim_create_augroup("ConfigRecentPathsFlush", { clear = true }),
+    callback = function()
+      if write_timer then
+        write_timer:stop()
+        write_timer = nil
+      end
+      write_recent_paths()
+    end,
   })
 end
 

@@ -65,7 +65,7 @@ end, { silent = true, desc = "Terminal new (external)" })
 -- 配置开发工具
 -- ============================================
 
-local reload_namespaces = { "config", "custom", "libs", "lsp", "plugins", "util" }
+local reload_namespaces = { "config", "libs", "lsp", "plugins", "util" }
 
 local function in_reload_namespace(name, namespace)
   return name == namespace or name:sub(1, #namespace + 1) == namespace .. "."

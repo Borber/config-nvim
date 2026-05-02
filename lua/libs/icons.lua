@@ -81,11 +81,15 @@ M.os = {
   Linux = vim.fn.nr2char(0xf17c),
 }
 
--- OS 检测
+-- OS 检测（缓存结果，避免每次 statusline 刷新都调用 os_uname）
+local cached_os_icon
 function M.os_icon()
-  local uv = vim.uv
-  local system = uv.os_uname().sysname
-  return M.os[system] or "?"
+  if cached_os_icon then
+    return cached_os_icon
+  end
+  local system = vim.uv.os_uname().sysname
+  cached_os_icon = M.os[system] or "?"
+  return cached_os_icon
 end
 
 return M
