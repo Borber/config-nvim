@@ -1,4 +1,4 @@
-local ic = require("util.icons")
+local ic = require("libs.icons")
 
 local function project_name()
   local name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")

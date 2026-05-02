@@ -1,5 +1,5 @@
 local M = {}
-local path_util = require("util.path")
+local path_util = require("libs.path")
 
 function M.canonical_path(path)
   -- session 文件里的路径和 buffer 路径来源不同，统一后才能稳定比较。

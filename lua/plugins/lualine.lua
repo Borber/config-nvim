@@ -4,7 +4,7 @@ local function min_cols(n)
   end
 end
 
-local ic = require("util.icons")
+local ic = require("libs.icons")
 
 local mode_labels = {
   NORMAL = "N",
@@ -32,7 +32,7 @@ end
 
 -- lualine 的 branch 组件初始化时只看当前 buffer；启动页/目录占位 buffer 会让缓存先变空。
 local function branch_probe_buffer()
-  local buffer_util = require("util.buffer")
+  local buffer_util = require("libs.buffer")
   local current = vim.api.nvim_get_current_buf()
 
   if buffer_util.is_normal_file(current) then

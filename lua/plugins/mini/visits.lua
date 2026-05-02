@@ -2,8 +2,8 @@ local M = {}
 local configured = false
 
 local uv = vim.uv
-local path_util = require("util.path")
-local ic = require("util.icons")
+local path_util = require("libs.path")
+local ic = require("libs.icons")
 local recent_paths = nil
 local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
 local recent_paths_limit = 100

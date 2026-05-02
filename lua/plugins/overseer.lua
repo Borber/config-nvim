@@ -1,4 +1,4 @@
-local buffer_util = require("util.buffer")
+local buffer_util = require("libs.buffer")
 local telescope_picker = require("util.telescope_picker")
 
 -- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。

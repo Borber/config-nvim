@@ -1,5 +1,5 @@
 local M = {}
-local path_util = require("util.path")
+local path_util = require("libs.path")
 
 -- 把传入的 bufnr 规整成一个有效的 buffer 编号，0 / nil 视为当前 buffer。
 local function resolve_bufnr(bufnr)
@@ -18,7 +18,7 @@ function M.resolve(bufnr)
   return resolve_bufnr(bufnr)
 end
 
--- 判断 buffer 是否为“可写的普通文件 buffer”：
+-- 判断 buffer 是否为"可写的普通文件 buffer"：
 -- 必须有效、非特殊 buftype（terminal/help/quickfix 等）、可修改且非只读。
 -- 返回 (bufnr, bo) 方便调用方继续读其它 buffer 选项；不是则返回 nil。
 function M.normal_writable(bufnr)
@@ -116,7 +116,7 @@ function M.is_directory_placeholder(bufnr, directory)
 end
 
 function M.is_blank_placeholder(bufnr)
-  -- 区分“尚未落盘的空占位”和真实文件：前者不应该进入 session/buffer 列表。
+  -- 区分"尚未落盘的空占位"和真实文件：前者不应该进入 session/buffer 列表。
   bufnr = resolve_bufnr(bufnr)
   if bufnr == nil then
     return false

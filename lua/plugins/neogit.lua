@@ -1,5 +1,5 @@
 local function default_neogit_cwd()
-  local git = require("util.git")
+  local git = require("libs.git")
   local cwd = vim.fn.getcwd()
   -- 调用时如果在真实文件 buffer，就用文件位置推导仓库；特殊 buffer 直接回退 cwd。
   local dir = git.dir_from_buffer(0) or cwd
@@ -35,7 +35,7 @@ local function open_neogit(args)
     end
 
     require("neogit").open(opts)
-    require("util.neogit_loading").start(opts)
+    require("custom.neogit_loading").start(opts)
   end
 end
 

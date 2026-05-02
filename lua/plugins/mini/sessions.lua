@@ -1,6 +1,6 @@
 local M = {}
 local configured = false
-local path_util = require("util.path")
+local path_util = require("libs.path")
 local session_buffers = require("plugins.mini.sessions.buffers")
 local session_file = require("plugins.mini.sessions.session_file")
 

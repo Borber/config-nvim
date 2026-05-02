@@ -1,8 +1,8 @@
 local M = {}
 
 local uv = vim.uv
-local buffer_util = require("util.buffer")
-local path_util = require("util.path")
+local buffer_util = require("libs.buffer")
+local path_util = require("libs.path")
 
 local function normalize_path(path)
   return path_util.local_normalized(path)

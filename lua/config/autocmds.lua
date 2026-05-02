@@ -2,7 +2,7 @@
 -- 全局 autocmd
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
-local buffer_util = require("util.buffer")
+local buffer_util = require("libs.buffer")
 
 -- 类似 FilePost，但额外要求 UI 已经进入，避免启动页/空 buffer 过早触发文件型 UI 插件。
 local file_post_group = "config_file_post"

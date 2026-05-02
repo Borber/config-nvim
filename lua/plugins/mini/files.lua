@@ -1,7 +1,7 @@
 local M = {}
 local configured = false
-local buffer_util = require("util.buffer")
-local path_util = require("util.path")
+local buffer_util = require("libs.buffer")
+local path_util = require("libs.path")
 local canonical_path = path_util.canonical
 
 -- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。

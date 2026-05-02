@@ -1,7 +1,7 @@
 local M = {}
 local configured = false
 
-local buffer_util = require("util.buffer")
+local buffer_util = require("libs.buffer")
 
 function M.setup()
   if configured then

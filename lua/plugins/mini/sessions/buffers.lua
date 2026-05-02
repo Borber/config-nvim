@@ -1,6 +1,6 @@
 local M = {}
-local buffer_util = require("util.buffer")
-local path_util = require("util.path")
+local buffer_util = require("libs.buffer")
+local path_util = require("libs.path")
 local session_file = require("plugins.mini.sessions.session_file")
 
 local function is_meaningful(buf_id)

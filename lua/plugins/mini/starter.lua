@@ -1,6 +1,6 @@
 local M = {}
 local configured = false
-local buffer_util = require("util.buffer")
+local buffer_util = require("libs.buffer")
 local starter_refresh_after_lazy = false
 
 local function current_recent_path()

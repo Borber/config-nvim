@@ -1,4 +1,4 @@
-local ic = require("util.icons")
+local ic = require("libs.icons")
 local icons = {
   bookmark = { icon = ic.ui.bookmark, color = "yellow" },
   buffer = { icon = ic.basic.file, color = "cyan" },
