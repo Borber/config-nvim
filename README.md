@@ -29,7 +29,7 @@
 | UI | noice.nvim（命令行 / 消息浮窗）、lualine.nvim（状态栏 / tabline）、render-markdown.nvim、markdown-plus.nvim |
 | 书签 | bookmarks.nvim（按项目自动切换列表） |
 | Treesitter | nvim-treesitter（main 分支）+ treesitter-context |
-| 导航 | hop.nvim（按单词 / 行跳转） |
+| 导航 | hop.nvim（普通文件按词跳转，部分特殊界面跨窗口按行跳转） |
 | 按键 | which-key.nvim、hawtkeys.nvim、hardtime.nvim（按键习惯提示） |
 | Neovide | neov-ime.nvim（IME 管理） |
 
@@ -169,7 +169,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>ft` | 搜索 TODO 注释 |
 | `]t` / `[t` | 下一个 / 上一个 TODO 注释 |
 | `[c` | 跳转到 Treesitter 上下文 |
-| `s` | hop.nvim 按单词跳转 |
+| `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行；Neogit 未暂存/未跟踪文件行会优先 stage |
 | `<leader>ka` / `<leader>kd` / `<leader>kh` | hawtkeys 全量键位 / 重复键位 / 建议 |
 | `<leader>kr` / `<leader>kt` | hardtime 报告 / 切换 |
 | `<leader>qq` / `<leader>qw` / `<leader>qQ` | 退出 / 保存退出 / 强制退出 |

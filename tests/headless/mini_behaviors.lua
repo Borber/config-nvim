@@ -20,6 +20,14 @@ local function assert_true(value, message)
   end
 end
 
+local function normal_map(buf_id, lhs)
+  for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf_id, "n")) do
+    if map.lhs == lhs then
+      return map
+    end
+  end
+end
+
 local function reset_modules(...)
   for _, name in ipairs({ ... }) do
     package.loaded[name] = nil
@@ -34,6 +42,10 @@ local function write_file(path, lines)
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   local ok = vim.fn.writefile(lines or { "x" }, path)
   assert_eq(ok, 0, "writefile should succeed: " .. path)
+end
+
+local function hop_action()
+  return require("plugins.hop").keys[1][2]
 end
 
 local tests = {}
@@ -287,6 +299,255 @@ function tests.mini_files_hides_reusable_target_placeholder()
   assert_eq(vim.bo[placeholder].buflisted, false, "mini.files should hide reusable empty target placeholders")
 end
 
+function tests.mini_files_does_not_install_local_hop_mapping()
+  reset_modules("plugins.mini.files", "mini.files")
+
+  local buf_id = vim.api.nvim_create_buf(false, true)
+
+  package.loaded["mini.files"] = {
+    setup = function() end,
+  }
+
+  require("plugins.mini.files").setup()
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = "MiniFilesBufferCreate",
+    data = { buf_id = buf_id },
+    modeline = false,
+  })
+
+  assert_eq(normal_map(buf_id, "s"), nil, "mini.files buffer should not install local Hop mapping")
+end
+
+function tests.mini_files_focus_tracks_entered_directory_window()
+  reset_modules("plugins.mini.files", "mini.files")
+
+  local project = temp_path("focus-project")
+  local src = vim.fs.joinpath(project, "src")
+  local preview = vim.fs.joinpath(src, "auth")
+  vim.fn.mkdir(preview, "p")
+
+  vim.cmd("silent! only")
+
+  local project_buf = vim.api.nvim_create_buf(false, true)
+  local preview_buf = vim.api.nvim_create_buf(false, true)
+
+  local project_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(project_win, project_buf)
+  vim.cmd("vsplit")
+  local preview_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(preview_win, preview_buf)
+
+  local requested_depths = {}
+  local state = {
+    branch = { project, src, preview },
+    depth_focus = 2,
+    windows = {
+      { win_id = project_win, path = project },
+      { win_id = preview_win, path = preview },
+    },
+  }
+
+  package.loaded["mini.files"] = {
+    setup = function() end,
+    get_explorer_state = function()
+      return state
+    end,
+    set_branch = function(_, opts)
+      table.insert(requested_depths, opts.depth_focus)
+      state.depth_focus = opts.depth_focus
+    end,
+  }
+
+  require("plugins.mini.files").setup()
+
+  vim.api.nvim_set_current_win(project_win)
+  assert_eq(requested_depths[#requested_depths], 1, "entering parent directory window should update focus depth")
+
+  state.depth_focus = 2
+  vim.api.nvim_set_current_win(preview_win)
+  assert_eq(requested_depths[#requested_depths], 3, "entering preview directory window should update focus depth")
+end
+
+function tests.hop_global_mapping_uses_words_in_normal_file_buffer()
+  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_regex")
+
+  vim.cmd("silent! enew!")
+  vim.bo.buftype = ""
+  vim.bo.filetype = "lua"
+  vim.bo.modifiable = true
+
+  local word_opts
+
+  package.loaded["hop"] = {
+    opts = {},
+    hint_words = function(opts)
+      word_opts = opts
+    end,
+    hint_with_regex = function()
+      error("normal file buffers should not use line hints")
+    end,
+  }
+
+  hop_action()()
+
+  assert_eq(word_opts.multi_windows, false, "normal file HopWord should stay in the current window")
+end
+
+function tests.hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer()
+  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_regex")
+
+  vim.cmd("silent! enew!")
+  vim.bo.filetype = "minifiles"
+
+  local jump_target = {
+    window = vim.api.nvim_get_current_win(),
+    cursor = { row = 2, col = 0 },
+  }
+  local opts_used
+  local handled_target
+  local moved_target
+
+  package.loaded["hop.jump_regex"] = {
+    by_line_start = function()
+      return "line-start-regex"
+    end,
+  }
+  package.loaded["hop"] = {
+    opts = {
+      keys = "asdf",
+      jump_on_sole_occurrence = false,
+      dim_unmatched = false,
+    },
+    hint_words = function()
+      error("special buffers should not use HopWord")
+    end,
+    hint_with_regex = function(regex, opts, callback)
+      assert_eq(regex, "line-start-regex", "Hop mapping should use line hints")
+      opts_used = opts
+      callback(jump_target)
+    end,
+    move_cursor_to = function(jump_target)
+      moved_target = jump_target
+    end,
+  }
+
+  require("plugins.hop.line_jump").register(function(target)
+    handled_target = target
+    return true
+  end)
+
+  hop_action()()
+
+  assert_eq(opts_used.multi_windows, true, "Hop mapping should keep cross-window hints in normal mode")
+  assert_eq(handled_target, jump_target, "Hop mapping should let registered handlers consume line jumps")
+  assert_eq(moved_target, nil, "handled line jump should not also move with Hop")
+end
+
+function tests.mini_files_hop_line_jump_opens_preview_file()
+  reset_modules("plugins.mini.files", "mini.files")
+
+  local file = temp_path("hop-preview-open", "main.lua")
+  write_file(file, { "one", "two", "three" })
+
+  local preview_win = vim.api.nvim_get_current_win()
+  local closed_files = false
+
+  package.loaded["mini.files"] = {
+    get_explorer_state = function()
+      return {
+        windows = {
+          { win_id = preview_win, path = file },
+        },
+      }
+    end,
+    close = function()
+      closed_files = true
+      return true
+    end,
+  }
+
+  local handled = require("plugins.mini.files").handle_hop_line_jump({
+    window = preview_win,
+    cursor = { row = 2, col = 0 },
+  })
+
+  assert_true(handled, "mini.files should handle file preview line jumps")
+  assert_true(closed_files, "preview line jump should close mini.files before opening file")
+  assert_eq(vim.fs.normalize(vim.api.nvim_buf_get_name(0)), vim.fs.normalize(file), "preview line jump should open file")
+  assert_eq(vim.api.nvim_win_get_cursor(0)[1], 2, "preview line jump should keep selected line")
+end
+
+function tests.neogit_status_s_stages_only_stageable_file_rows()
+  reset_modules("plugins.neogit", "neogit.buffers.status", "plugins.hop")
+
+  vim.cmd("silent! enew!")
+  local status_buf = vim.api.nvim_get_current_buf()
+  local selection = {
+    section = { name = "unstaged" },
+    item = { name = "main.lua" },
+  }
+  local cursor = {
+    file = { name = "main.lua" },
+    hunk = nil,
+  }
+  local staged = false
+  local hopped = false
+
+  local status = {
+    buffer = {
+      handle = status_buf,
+      ui = {
+        get_selection = function()
+          return selection
+        end,
+        get_cursor_location = function()
+          return cursor
+        end,
+      },
+    },
+    _action = function(_, name)
+      assert_eq(name, "n_stage", "Neogit s should reuse the normal stage action")
+      return function()
+        staged = true
+      end
+    end,
+  }
+
+  package.loaded["neogit.buffers.status"] = {
+    instance = function()
+      return status
+    end,
+  }
+  package.loaded["plugins.hop"] = {
+    hint_by_context = function()
+      hopped = true
+    end,
+  }
+
+  local map = require("plugins.neogit").opts.mappings.status.s
+  local function assert_s_behavior(expected_stage, message)
+    staged = false
+    hopped = false
+
+    map()
+
+    assert_eq(staged, expected_stage, message)
+    assert_eq(hopped, not expected_stage, message .. " should use the opposite Hop fallback")
+  end
+
+  assert_s_behavior(true, "s on an unstaged file row should stage it")
+
+  selection.section.name = "untracked"
+  assert_s_behavior(true, "s on an untracked file row should stage it")
+
+  cursor.hunk = { name = "hunk" }
+  assert_s_behavior(false, "s inside a file hunk should not stage")
+
+  cursor.hunk = nil
+  selection.section.name = "staged"
+  assert_s_behavior(false, "s outside stageable sections should not stage")
+end
+
 function tests.session_restore_preserves_requested_cwd()
   reset_modules("plugins.mini.sessions")
 
@@ -329,6 +590,12 @@ local test_order = {
   "starter_hides_statusline_until_leave",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
+  "mini_files_does_not_install_local_hop_mapping",
+  "mini_files_focus_tracks_entered_directory_window",
+  "hop_global_mapping_uses_words_in_normal_file_buffer",
+  "hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer",
+  "mini_files_hop_line_jump_opens_preview_file",
+  "neogit_status_s_stages_only_stageable_file_rows",
   "session_restore_preserves_requested_cwd",
 }
 

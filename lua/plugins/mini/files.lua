@@ -6,6 +6,7 @@ local canonical_path = path_util.canonical
 
 -- Starter 的 Open 复用 mini.files 做选择器；只有这个入口启用 <S-CR> 切换项目/文件上下文。
 local enable_starter_open_key = false
+local syncing_focused_window = false
 
 -- 从 cwd 向下构造分支，直到当前文件或目录所在的位置。
 local function build_branch_from_cwd(cwd, path)
@@ -69,8 +70,36 @@ local function open_path(path)
   require("plugins.mini.visits").open_path(path)
 end
 
-local function current_entry()
-  local minifiles = require("mini.files")
+local function window_path(windows, win_id)
+  if windows == nil then
+    return
+  end
+
+  for _, window in ipairs(windows) do
+    if window.win_id == win_id then
+      return window.path
+    end
+  end
+end
+
+local function open_file(minifiles, path, line)
+  if minifiles.close() == false then
+    return
+  end
+
+  -- buffer-first：用 :edit 保留空白占位 buffer 的编号，已打开文件仍留在 buffer 列表里。
+  vim.cmd("edit " .. vim.fn.fnameescape(path))
+
+  if line == nil then
+    return
+  end
+
+  local target_line = math.min(math.max(line, 1), vim.api.nvim_buf_line_count(0))
+  vim.api.nvim_win_set_cursor(0, { target_line, 0 })
+end
+
+local function current_entry(minifiles)
+  minifiles = minifiles or require("mini.files")
   local entry = minifiles.get_fs_entry()
 
   if entry == nil then
@@ -104,6 +133,45 @@ local function hide_reusable_target_placeholder(minifiles)
   vim.bo[target_buf].buflisted = false
 end
 
+local function sync_focus_to_current_window()
+  if syncing_focused_window then
+    return
+  end
+
+  local minifiles = package.loaded["mini.files"]
+  if minifiles == nil or type(minifiles.get_explorer_state) ~= "function" then
+    return
+  end
+
+  local state = minifiles.get_explorer_state()
+  if state == nil or state.windows == nil or state.branch == nil then
+    return
+  end
+
+  local current_path = window_path(state.windows, vim.api.nvim_get_current_win())
+
+  if not path_util.is_directory(current_path) then
+    return
+  end
+
+  local target_depth
+  local normalized_current_path = canonical_path(current_path)
+  for depth, branch_path in ipairs(state.branch) do
+    if canonical_path(branch_path) == normalized_current_path then
+      target_depth = depth
+      break
+    end
+  end
+
+  if target_depth == nil or target_depth == state.depth_focus then
+    return
+  end
+
+  syncing_focused_window = true
+  pcall(minifiles.set_branch, state.branch, { depth_focus = target_depth })
+  syncing_focused_window = false
+end
+
 local function open_entry()
   local minifiles, entry = current_entry()
   if minifiles == nil or entry == nil then
@@ -122,12 +190,7 @@ local function open_entry()
     return
   end
 
-  if minifiles.close() == false then
-    return
-  end
-
-  -- buffer-first：用 :edit 保留空白占位 buffer 的编号，已打开文件仍留在 buffer 列表里。
-  vim.cmd("edit " .. vim.fn.fnameescape(entry.path))
+  open_file(minifiles, entry.path)
 end
 
 local function open_files(root)
@@ -171,6 +234,8 @@ function M.setup()
     },
   })
 
+  require("plugins.hop.line_jump").register(M.handle_hop_line_jump)
+
   local group = vim.api.nvim_create_augroup("ConfigMiniFiles", { clear = true })
 
   vim.api.nvim_create_autocmd("User", {
@@ -207,15 +272,6 @@ function M.setup()
         desc = "Open entry",
         silent = true,
       })
-
-      -- mini.files 里每一行就是一个文件项，s 改为按行跳转。
-      vim.keymap.set("n", "s", function()
-        require("hop").hint_lines()
-      end, {
-        buffer = buf_id,
-        desc = "Hop hint lines",
-        silent = true,
-      })
     end,
   })
 
@@ -225,6 +281,11 @@ function M.setup()
     callback = function()
       enable_starter_open_key = false
     end,
+  })
+
+  vim.api.nvim_create_autocmd("WinEnter", {
+    group = group,
+    callback = sync_focus_to_current_window,
   })
 end
 
@@ -248,6 +309,23 @@ function M.open(path)
   require("mini.files").close()
   enable_starter_open_key = true
   open_files(root)
+end
+
+function M.handle_hop_line_jump(jump_target)
+  local minifiles = package.loaded["mini.files"]
+  if minifiles == nil or type(minifiles.get_explorer_state) ~= "function" then
+    return false
+  end
+
+  local state = minifiles.get_explorer_state()
+  local path = window_path(state and state.windows, jump_target.window)
+  if not path_util.is_file(path) then
+    return false
+  end
+
+  -- Hop 到文件预览行时，直接打开真实文件并保留目标行号。
+  open_file(minifiles, path, jump_target.cursor.row)
+  return true
 end
 
 return M

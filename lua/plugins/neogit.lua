@@ -57,40 +57,47 @@ local fold_signs = {
   open = vim.fn.nr2char(0xf47c),
 }
 
-local function hint_neogit_lines()
-  -- Neogit status 是列表界面，`s` 在这里用来按行快速跳转。
-  require("hop").hint_lines()
+local function current_status_buffer()
+  local ok, status = pcall(require, "neogit.buffers.status")
+  if not ok then
+    return
+  end
+
+  local instance_ok, instance = pcall(status.instance, vim.fn.getcwd(0))
+  if not instance_ok or instance == nil or instance.buffer == nil then
+    return
+  end
+
+  if instance.buffer.handle ~= vim.api.nvim_get_current_buf() then
+    return
+  end
+
+  return instance
 end
 
-local function find_popup_action_group(builder, heading)
-  for _, group in ipairs(builder.state.actions) do
-    if group[1] and group[1].heading == heading then
-      return group
-    end
-  end
+local stageable_sections = {
+  unstaged = true,
+  untracked = true,
+}
+
+-- 用 Neogit 的 UI 元数据判断当前位置，避免靠显示文本猜 section。
+local function on_stageable_file(status)
+  local selection = status.buffer.ui:get_selection()
+  local section = selection.section
+  local cursor = status.buffer.ui:get_cursor_location()
+
+  return selection.item ~= nil and section ~= nil and stageable_sections[section.name] and cursor ~= nil and cursor.file ~= nil and cursor.hunk == nil
 end
 
-local function apply_help_popup_actions(builder)
-  -- Help popup 的动作列表是 Neogit 内部硬编码的，需要同步移除废弃入口。
-  local applying_changes = find_popup_action_group(builder, "Applying changes")
-  if applying_changes then
-    for index = #applying_changes, 1, -1 do
-      if applying_changes[index].description == "Stage unstaged" then
-        table.remove(applying_changes, index)
-      end
-    end
+local function stage_file_or_hop()
+  local status = current_status_buffer()
+  if status ~= nil and on_stageable_file(status) then
+    -- 只在可 stage 的文件行复用 Neogit 原生 stage；hunk/标题/其它区域交回 Hop。
+    status:_action("n_stage")()
+    return
   end
 
-  local essential_commands = find_popup_action_group(builder, "Essential commands")
-  if essential_commands and not builder.state.keys.s then
-    -- 这里补上自定义函数映射的可见说明，避免只改键位但 help 面板不显示。
-    builder.state.keys.s = true
-    table.insert(essential_commands, 2, {
-      keys = { "s" },
-      description = "Hop line",
-      callback = hint_neogit_lines,
-    })
-  end
+  require("plugins.hop").hint_by_context()
 end
 
 return {
@@ -143,9 +150,7 @@ return {
     },
     mappings = {
       status = {
-        -- `S` 接管单项 stage，`s` 留给 Hop；批量 stage 仍保留在 `<c-s>`。
-        s = hint_neogit_lines,
-        S = "Stage",
+        s = stage_file_or_hop,
       },
     },
     commit_editor = {
@@ -167,7 +172,6 @@ return {
       kind = "auto",
     },
     builders = {
-      NeogitHelpPopup = apply_help_popup_actions,
       NeogitCommitPopup = function(builder)
         -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
         -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
