@@ -1,8 +1,11 @@
 local M = {}
 local configured = false
 local path_util = require("libs.path")
-local session_buffers = require("plugins.mini.sessions.buffers")
-local session_file = require("plugins.mini.sessions.session_file")
+local canonical_path = path_util.canonical
+
+local function session_file()
+  return require("plugins.mini.sessions.session_file")
+end
 
 local function project_basename(path)
   return path_util.basename(path) or "session"
@@ -15,7 +18,7 @@ local function session_slug(text)
 end
 
 local function current_directory()
-  return vim.fs.normalize(vim.fn.getcwd())
+  return canonical_path(vim.fn.getcwd())
 end
 
 local function current_session_name()
@@ -34,7 +37,7 @@ local function current_directory_is_home()
     return false
   end
 
-  return current_directory() == vim.fs.normalize(home)
+  return current_directory() == canonical_path(home)
 end
 
 local function current_session_disabled_message()
@@ -47,13 +50,13 @@ end
 
 local function current_session_path()
   local directory = require("mini.sessions").config.directory
-  return vim.fs.normalize(vim.fs.joinpath(directory, current_session_name()))
+  return canonical_path(vim.fs.joinpath(directory, current_session_name()))
 end
 
 local function delete_current_session(opts)
   -- 过滤后没有可恢复文件时，删除旧 session，避免下次又恢复到空壳状态。
   local path = current_session_path()
-  if vim.uv.fs_stat(path) == nil then
+  if not path_util.exists(path) then
     return
   end
 
@@ -91,7 +94,7 @@ local function startup_directory()
     return nil
   end
 
-  return vim.fs.normalize(path)
+  return canonical_path(path)
 end
 
 local function notify_read_error(err)
@@ -138,7 +141,7 @@ function M.setup()
       local directory = startup_directory()
       if directory ~= nil then
         vim.api.nvim_set_current_dir(directory)
-        session_buffers.mark_startup_directory_placeholder(directory)
+        require("plugins.mini.sessions.buffers").mark_startup_directory_placeholder(directory)
       end
 
       if M.should_auto_restore() then
@@ -201,7 +204,7 @@ function M.has_current()
   end
 
   local path = current_session_path()
-  if session_file.has_meaningful_buffers(path) then
+  if session_file().has_meaningful_buffers(path) then
     return true
   end
 
@@ -229,6 +232,7 @@ function M.write_current(opts)
     return
   end
 
+  local session_buffers = require("plugins.mini.sessions.buffers")
   local paths, first_buf = session_buffers.meaningful_paths()
   if not session_buffers.has_meaningful_paths(paths) then
     -- 当前项目没有真实文件 buffer 时，旧 session 也一起清掉。
@@ -261,7 +265,7 @@ function M.write_current(opts)
     return
   end
 
-  if not session_file.sanitize(current_session_path(), paths) then
+  if not session_file().sanitize(current_session_path(), paths) then
     delete_current_session(opts)
     vim.notify("Failed to sanitize current session", vim.log.levels.ERROR)
   end

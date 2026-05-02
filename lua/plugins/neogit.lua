@@ -58,13 +58,9 @@ local fold_signs = {
 }
 
 local function current_status_buffer()
-  local ok, status = pcall(require, "neogit.buffers.status")
-  if not ok then
-    return
-  end
-
-  local instance_ok, instance = pcall(status.instance, vim.fn.getcwd(0))
-  if not instance_ok or instance == nil or instance.buffer == nil then
+  local status = require("neogit.buffers.status")
+  local instance = status.instance(vim.fn.getcwd(0))
+  if instance == nil or instance.buffer == nil then
     return
   end
 
@@ -115,79 +111,83 @@ return {
     { "<leader>gc", open_neogit({ "commit" }), desc = "Git commit" },
     { "<leader>gl", open_neogit({ "log" }), desc = "Git log" },
   },
-  opts = {
-    kind = "auto",
-    floating = {
-      border = require("util.float").border,
-    },
-    graph_style = "unicode",
-    signs = {
-      hunk = { "", "" },
-      item = { fold_signs.closed, fold_signs.open },
-      section = { fold_signs.closed, fold_signs.open },
-    },
-    status = {
-      HEAD_padding = 8,
-      mode_padding = 2,
-      mode_text = {
-        M = "● modified",
-        N = "+ new file",
-        A = "+ added",
-        D = "- deleted",
-        C = "· copied",
-        U = "! updated",
-        R = "→ renamed",
-        T = "● changed",
-        DD = "! unmerged",
-        AU = "! unmerged",
-        UD = "! unmerged",
-        UA = "! unmerged",
-        DU = "! unmerged",
-        AA = "! unmerged",
-        UU = "! unmerged",
-        ["?"] = "",
+  opts = function()
+    local float = require("util.float")
+
+    return {
+      kind = "auto",
+      floating = {
+        border = float.border,
       },
-    },
-    mappings = {
+      graph_style = "unicode",
+      signs = {
+        hunk = { "", "" },
+        item = { fold_signs.closed, fold_signs.open },
+        section = { fold_signs.closed, fold_signs.open },
+      },
       status = {
-        s = stage_file_or_hop,
+        HEAD_padding = 8,
+        mode_padding = 2,
+        mode_text = {
+          M = "● modified",
+          N = "+ new file",
+          A = "+ added",
+          D = "- deleted",
+          C = "· copied",
+          U = "! updated",
+          R = "→ renamed",
+          T = "● changed",
+          DD = "! unmerged",
+          AU = "! unmerged",
+          UD = "! unmerged",
+          UA = "! unmerged",
+          DU = "! unmerged",
+          AA = "! unmerged",
+          UU = "! unmerged",
+          ["?"] = "",
+        },
       },
-    },
-    commit_editor = {
-      kind = "auto",
-    },
-    commit_select_view = {
-      kind = "auto",
-    },
-    log_view = {
-      kind = "auto",
-    },
-    reflog_view = {
-      kind = "auto",
-    },
-    refs_view = {
-      kind = "auto",
-    },
-    stash = {
-      kind = "auto",
-    },
-    builders = {
-      NeogitCommitPopup = function(builder)
-        -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
-        -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
-        builder:new_action_group("AI"):action("C", "AI Commit", function()
-          require("aicommits").commit()
-        end)
-      end,
-    },
-    integrations = {
-      telescope = true,
-      diffview = true,
-      fzf_lua = false,
-      mini_pick = false,
-      snacks = false,
-    },
-  },
+      mappings = {
+        status = {
+          s = stage_file_or_hop,
+        },
+      },
+      commit_editor = {
+        kind = "auto",
+      },
+      commit_select_view = {
+        kind = "auto",
+      },
+      log_view = {
+        kind = "auto",
+      },
+      reflog_view = {
+        kind = "auto",
+      },
+      refs_view = {
+        kind = "auto",
+      },
+      stash = {
+        kind = "auto",
+      },
+      builders = {
+        NeogitCommitPopup = function(builder)
+          -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
+          -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
+          builder:new_action_group("AI"):action("C", "AI Commit", function()
+            require("aicommits").commit()
+          end)
+        end,
+      },
+      integrations = {
+        telescope = true,
+        diffview = true,
+        fzf_lua = false,
+        mini_pick = false,
+        snacks = false,
+      },
+    }
+  end,
   config = function(_, opts)
     require("neogit").setup(opts)
     require("plugins.neogit.highlights").apply()

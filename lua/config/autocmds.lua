@@ -4,6 +4,38 @@
 local augroup = vim.api.nvim_create_augroup
 local buffer_util = require("libs.buffer")
 
+local function emit_config_user_event(pattern, data)
+  if pattern == "ConfigUiReady" then
+    vim.g.config_ui_ready = true
+  elseif pattern == "ConfigBackground" then
+    vim.g.config_background_ready = true
+  end
+
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = pattern,
+    modeline = false,
+    data = data,
+  })
+end
+
+vim.api.nvim_create_autocmd("User", {
+  group = augroup("config_lazy_layers", { clear = true }),
+  pattern = "VeryLazy",
+  once = true,
+  callback = function()
+    emit_config_user_event("ConfigUiReady")
+
+    vim.defer_fn(function()
+      if vim.v.exiting ~= vim.NIL then
+        return
+      end
+
+      emit_config_user_event("ConfigBackground")
+    end, 800)
+  end,
+  desc = "Split VeryLazy follow-up work into ordered config layers",
+})
+
 -- 类似 FilePost，但额外要求 UI 已经进入，避免启动页/空 buffer 过早触发文件型 UI 插件。
 local file_post_group = "config_file_post"
 local file_post_fired = false
@@ -24,7 +56,7 @@ local function fire_config_file_post(bufnr)
     data = { buf = bufnr },
   })
 
-  pcall(vim.api.nvim_del_augroup_by_name, file_post_group)
+  vim.api.nvim_del_augroup_by_name(file_post_group)
 end
 
 vim.api.nvim_create_autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {

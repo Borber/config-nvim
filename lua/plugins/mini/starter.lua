@@ -1,7 +1,6 @@
 local M = {}
 local configured = false
 local buffer_util = require("libs.buffer")
-local icons = require("libs.icons")
 local delayed_content_ready = false
 local hidden_statusline
 
@@ -57,15 +56,12 @@ local function restore_starter_statusline()
   vim.o.laststatus = hidden_statusline
   hidden_statusline = nil
 
-  local ok, lualine = pcall(require, "lualine")
-  if ok and type(lualine.refresh) == "function" then
-    pcall(lualine.refresh, {
-      scope = "tabpage",
-      place = { "statusline" },
-      trigger = "autocmd",
-      force = true,
-    })
-  end
+  require("lualine").refresh({
+    scope = "tabpage",
+    place = { "statusline" },
+    trigger = "autocmd",
+    force = true,
+  })
 end
 
 local function hide_starter_statusline(buf_id)
@@ -115,7 +111,7 @@ end
 
 local function save_buffer(buf_id)
   if not vim.bo[buf_id].modified or vim.bo[buf_id].readonly or not vim.bo[buf_id].modifiable then
-    return
+    return true
   end
 
   local ok, err = pcall(vim.api.nvim_buf_call, buf_id, function()
@@ -124,11 +120,16 @@ local function save_buffer(buf_id)
 
   if not ok then
     vim.notify("Failed to save buffer before opening starter: " .. tostring(err), vim.log.levels.ERROR)
+    return false
   end
+
+  return true
 end
 
 local function delete_buffer(buf_id)
-  save_buffer(buf_id)
+  if not save_buffer(buf_id) then
+    return
+  end
 
   local bufremove = require("mini.bufremove")
   local ok, err = pcall(bufremove.delete, buf_id, false)
@@ -158,13 +159,8 @@ local function startup_footer()
     return ""
   end
 
-  local ok, stats = pcall(function()
-    return require("lazy").stats()
-  end)
-
-  if not ok or type(stats) ~= "table" then
-    return ""
-  end
+  local stats = require("lazy").stats()
+  local icons = require("libs.icons")
 
   local startuptime = stats.startuptime or 0
   local ms = math.floor(startuptime * 100 + 0.5) / 100
@@ -232,7 +228,7 @@ local function ensure_setup(autoopen)
   configured = true
 
   local starter = require("mini.starter")
-  if vim.g.did_very_lazy then
+  if vim.g.config_background_ready then
     enable_delayed_content(false)
   end
 
@@ -292,7 +288,7 @@ local function ensure_setup(autoopen)
 
   vim.api.nvim_create_autocmd("User", {
     group = vim.api.nvim_create_augroup("ConfigMiniStarterDelayedContent", { clear = true }),
-    pattern = "VeryLazy",
+    pattern = "ConfigBackground",
     callback = function()
       vim.schedule(enable_delayed_content)
     end,

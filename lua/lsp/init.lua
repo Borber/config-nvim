@@ -12,12 +12,12 @@ local server_names = {
 }
 
 local function load_server(name)
-  local ok, config = pcall(require, "lsp.servers." .. name)
-  if not ok then
-    error(("Failed to load LSP server config %q: %s"):format(name, config))
+  local config = require("lsp.servers." .. name)
+  if type(config) ~= "table" then
+    error(("LSP server config %q must return a table"):format(name))
   end
 
-  return config or {}
+  return config
 end
 
 function M.servers()

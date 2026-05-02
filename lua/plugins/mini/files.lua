@@ -9,14 +9,14 @@ local enable_starter_open_key = false
 local syncing_focused_window = false
 
 -- 从 cwd 向下构造分支，直到当前文件或目录所在的位置。
-local function build_branch_from_cwd(cwd, path)
+local function build_branch_from_cwd(cwd, path, stat_cache)
   if path == "" then
     return nil
   end
 
   local normalized_cwd = canonical_path(cwd)
   local normalized_path = canonical_path(path)
-  local current_dir = path_util.is_directory(path) and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
+  local current_dir = path_util.is_directory(path, stat_cache) and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
   local branch = { current_dir }
   local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
 
@@ -168,8 +168,11 @@ local function sync_focus_to_current_window()
   end
 
   syncing_focused_window = true
-  pcall(minifiles.set_branch, state.branch, { depth_focus = target_depth })
+  local ok, err = pcall(minifiles.set_branch, state.branch, { depth_focus = target_depth })
   syncing_focused_window = false
+  if not ok then
+    error(err)
+  end
 end
 
 local function open_entry()
@@ -195,22 +198,23 @@ end
 
 local function open_files(root)
   local minifiles = require("mini.files")
-  local cwd = vim.fs.normalize(root or vim.fn.getcwd())
+  local cwd = canonical_path(root or vim.fn.getcwd())
   local path = vim.api.nvim_buf_get_name(0)
+  local stat_cache = {}
 
   -- 先以 cwd 作为锚点打开，再展开到当前文件所在位置。
   minifiles.open(cwd, false)
   hide_reusable_target_placeholder(minifiles)
 
-  local branch = build_branch_from_cwd(cwd, path)
+  local branch = build_branch_from_cwd(cwd, path, stat_cache)
   if branch == nil then
     return
   end
 
   minifiles.set_branch(branch, { depth_focus = #branch })
 
-  if path_util.is_file(path) then
-    focus_file_entry(minifiles, branch[#branch], vim.fs.normalize(path))
+  if path_util.is_file(path, stat_cache) then
+    focus_file_entry(minifiles, branch[#branch], canonical_path(path))
   end
 end
 

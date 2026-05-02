@@ -10,6 +10,7 @@ return {
   cmd = { "AICommit", "AICommitHealth", "AICommitDebug" },
   opts = function()
     local local_config = local_aicommits_config()
+    local float = require("util.float")
 
     return {
       active_provider = "openai",
@@ -32,7 +33,7 @@ return {
         picker = {
           width = 0.4,
           height = 0.3,
-          border = require("util.float").border,
+          border = float.border,
         },
       },
       integrations = {

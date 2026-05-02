@@ -15,7 +15,7 @@ end
 
 return {
   "nvim-treesitter/nvim-treesitter-context",
-  event = "VeryLazy",
+  event = "User ConfigFilePost",
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
   },

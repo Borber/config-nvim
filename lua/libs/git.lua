@@ -1,12 +1,8 @@
 local M = {}
 
-local uv = vim.uv
 local buffer_util = require("libs.buffer")
 local path_util = require("libs.path")
-
-local function normalize_path(path)
-  return path_util.local_normalized(path)
-end
+local normalize_path = path_util.local_normalized
 
 function M.dir_from_buffer(bufnr)
   -- Git 上下文只从真实文件 buffer 推导；Neogit/terminal/空白 buffer 交给调用方回退 cwd。
@@ -24,8 +20,7 @@ function M.dir_from_buffer(bufnr)
     return nil
   end
 
-  local stat = uv.fs_stat(name)
-  if stat and stat.type == "directory" then
+  if path_util.is_directory(name) then
     return name
   end
 
@@ -49,7 +44,7 @@ function M.root_from(dir)
     return nil
   end
 
-  return vim.fs.normalize(root)
+  return path_util.canonical(root)
 end
 
 return M

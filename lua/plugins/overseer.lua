@@ -1,8 +1,7 @@
-local buffer_util = require("libs.buffer")
-
 -- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。
 -- 这样从特殊 buffer（例如 Neogit/terminal）触发任务时不会拿到无意义路径。
 local function search_params()
+  local buffer_util = require("libs.buffer")
   local dir = vim.fn.getcwd()
   if buffer_util.is_normal_file(0) then
     local bufname = vim.api.nvim_buf_get_name(0)
@@ -132,19 +131,23 @@ return {
   },
   ---@module "overseer"
   ---@type overseer.SetupOpts
-  opts = {
-    task_list = {
-      direction = "bottom",
-      min_height = 8,
-      max_height = { 20, 0.25 },
-    },
-    form = {
-      border = require("util.float").border,
-    },
-    task_win = {
-      border = require("util.float").border,
-    },
-  },
+  opts = function()
+    local float = require("util.float")
+
+    return {
+      task_list = {
+        direction = "bottom",
+        min_height = 8,
+        max_height = { 20, 0.25 },
+      },
+      form = {
+        border = float.border,
+      },
+      task_win = {
+        border = float.border,
+      },
+    }
+  end,
   config = function(_, opts)
     setup_overseer_select()
     local overseer = require("overseer")

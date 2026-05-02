@@ -76,7 +76,7 @@ return {
     "nvim-lua/plenary.nvim",
     {
       "nvim-telescope/telescope-fzf-native.nvim",
-      -- fzf-native 是 C 扩展，需要本地编译；加载失败时下面的 pcall 会安静跳过。
+      -- fzf-native 是 C 扩展，需要本地编译；加载失败时直接暴露工具链问题。
       build = "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release --target install",
     },
   },

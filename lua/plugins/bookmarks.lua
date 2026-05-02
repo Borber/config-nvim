@@ -1,4 +1,6 @@
-local ic = require("libs.icons")
+local function icons()
+  return require("libs.icons")
+end
 
 local function project_name()
   local name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
@@ -51,6 +53,7 @@ local function apply_tree_icons(buf)
     return
   end
 
+  local ic = icons()
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local changed = false
 
@@ -159,7 +162,11 @@ end
 local function run_project_command(command, opts)
   return function()
     -- 所有书签命令先切到当前项目列表，避免手动命令误操作到别的项目。
-    activate_project_list(opts)
+    local list = activate_project_list(opts)
+    if opts and opts.create and list == nil then
+      return
+    end
+
     vim.cmd(command)
 
     if command == "BookmarksTree" then
@@ -174,6 +181,7 @@ local function bookmark_tree_label(bookmark)
     name = "[Untitled]"
   end
 
+  local ic = icons()
   return ic.tree.bookmark .. " " .. name
 end
 
@@ -214,7 +222,6 @@ end
 
 return {
   "LintaoAmons/bookmarks.nvim",
-  event = "VeryLazy",
   init = configure_sqlite_clib,
   cmd = {
     "BookmarkRebindOrphanNode",
@@ -246,36 +253,43 @@ return {
     "kkharji/sqlite.lua",
     "nvim-telescope/telescope.nvim",
   },
-  opts = {
-    calibrate = {
-      show_calibrate_logs = false,
-    },
-    signs = {
-      mark = {
-        icon = ic.ui.bookmark,
-        color = "#e0af68",
-        line_bg = "NONE",
+  opts = function()
+    local ic = icons()
+
+    return {
+      calibrate = {
+        show_calibrate_logs = false,
       },
-      desc_format = function()
-        return ""
-      end,
-    },
-    treeview = {
-      active_list_icon = ic.tree.active .. " ",
-      render_bookmark = bookmark_tree_label,
-      window_split_dimension = 50,
-    },
-    commands = {
-      use_current_cwd = function()
-        activate_project_list({ create = true, notify = true })
-      end,
-      open_project_tree = function()
-        activate_project_list({ create = true })
-        vim.cmd("BookmarksTree")
-        keep_tree_width()
-      end,
-    },
-  },
+      signs = {
+        mark = {
+          icon = ic.ui.bookmark,
+          color = "#e0af68",
+          line_bg = "NONE",
+        },
+        desc_format = function()
+          return ""
+        end,
+      },
+      treeview = {
+        active_list_icon = ic.tree.active .. " ",
+        render_bookmark = bookmark_tree_label,
+        window_split_dimension = 50,
+      },
+      commands = {
+        use_current_cwd = function()
+          activate_project_list({ create = true, notify = true })
+        end,
+        open_project_tree = function()
+          if activate_project_list({ create = true }) == nil then
+            return
+          end
+
+          vim.cmd("BookmarksTree")
+          keep_tree_width()
+        end,
+      },
+    }
+  end,
   config = function(_, opts)
     require("bookmarks").setup(opts)
     patch_tree_icons()

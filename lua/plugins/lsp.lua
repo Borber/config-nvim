@@ -1,5 +1,5 @@
 -- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API。
--- Mason 只负责安装检查和手动管理，延迟到首屏之后再加载。
+-- Mason 只负责安装和手动管理；LSP 本体等首个真实文件出现后再加载。
 
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
@@ -71,22 +71,6 @@ local function mason_lspconfig_opts()
   }
 end
 
-local function schedule_mason_lspconfig()
-  if #vim.api.nvim_list_uis() == 0 then
-    return
-  end
-
-  vim.defer_fn(function()
-    if vim.v.exiting ~= vim.NIL then
-      return
-    end
-
-    pcall(function()
-      require("lazy").load({ plugins = { "mason-lspconfig.nvim" } })
-    end)
-  end, 1000)
-end
-
 return {
   {
     "williamboman/mason.nvim",
@@ -108,7 +92,7 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    event = "VeryLazy",
+    event = "User ConfigFilePost",
     config = function()
       local lsp_registry = require("lsp")
       local servers = lsp_registry.servers()
@@ -141,7 +125,6 @@ return {
       end
 
       vim.lsp.enable(lsp_registry.names())
-      schedule_mason_lspconfig()
 
       vim.api.nvim_create_autocmd("LspAttach", {
         group = vim.api.nvim_create_augroup("ConfigLspAttach", { clear = true }),

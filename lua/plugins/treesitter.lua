@@ -2,7 +2,7 @@
 --   * setup 仅接受 install_dir 等少量选项，ensure_installed/auto_install 无效
 --   * 需要显式调用 install() 安装解析器
 --   * Neovim 0.11+ 已自动为已安装 parser 的 filetype 启用高亮
---   * 不支持懒加载（必须 lazy = false）
+--   * 当前配置延后到首个真实文件后加载，缺失 parser 交给显式命令处理
 local ensure_installed = {
   "markdown",
   "markdown_inline",
@@ -80,13 +80,19 @@ end
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
-  lazy = "VeryLazy",
+  event = "User ConfigFilePost",
+  cmd = { "TSInstallConfigParsers", "TSInstallMissingConfigParsers" },
   build = update_configured_parsers,
   config = function()
     require("nvim-treesitter").setup()
 
     vim.api.nvim_create_user_command("TSInstallConfigParsers", install_configured_parsers, {
       desc = "Install configured Treesitter parsers",
+      force = true,
+    })
+
+    vim.api.nvim_create_user_command("TSInstallMissingConfigParsers", install_missing_parsers, {
+      desc = "Install missing configured Treesitter parsers",
       force = true,
     })
 
@@ -100,8 +106,7 @@ return {
     })
 
     vim.schedule(function()
-      -- 启动后补装缺失 parser，再尝试给当前 buffer 启动高亮。
-      install_missing_parsers()
+      -- 插件加载后尝试给当前 buffer 启动高亮；缺 parser 时让错误直接暴露。
       start_configured_parser(vim.api.nvim_get_current_buf())
     end)
   end,

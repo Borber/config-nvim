@@ -1,6 +1,6 @@
 return {
   "m4xshen/hardtime.nvim",
-  event = "VeryLazy",
+  event = "User ConfigBackground",
   dependencies = {
     "MunifTanjim/nui.nvim",
   },

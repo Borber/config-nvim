@@ -13,7 +13,7 @@ return {
 
       icons_configured = true
 
-      -- 图标：作为 nvim-web-devicons 的替代；延迟到 VeryLazy，避免 starter 首屏加载图标系统。
+      -- 图标：作为 nvim-web-devicons 的替代；UI ready 后再加载，避免 starter 首屏加载图标系统。
       require("mini.icons").setup()
       MiniIcons.mock_nvim_web_devicons()
     end
@@ -63,20 +63,34 @@ return {
       })
     end
 
-    local function setup_very_lazy_modules()
-      setup_icons()
+    local function setup_background_modules()
       require("plugins.mini.visits").setup()
     end
 
+    local function setup_ui_modules()
+      setup_icons()
+    end
+
     vim.api.nvim_create_autocmd("User", {
-      group = vim.api.nvim_create_augroup("ConfigMiniVeryLazy", { clear = true }),
-      pattern = "VeryLazy",
-      callback = setup_very_lazy_modules,
+      group = vim.api.nvim_create_augroup("ConfigMiniUi", { clear = true }),
+      pattern = "ConfigUiReady",
+      callback = setup_ui_modules,
+      desc = "Load mini UI compatibility helpers",
+    })
+
+    if vim.g.config_ui_ready then
+      setup_ui_modules()
+    end
+
+    vim.api.nvim_create_autocmd("User", {
+      group = vim.api.nvim_create_augroup("ConfigMiniBackground", { clear = true }),
+      pattern = "ConfigBackground",
+      callback = setup_background_modules,
       desc = "Load nonessential mini startup helpers",
     })
 
-    if vim.g.did_very_lazy then
-      setup_very_lazy_modules()
+    if vim.g.config_background_ready then
+      setup_background_modules()
     end
 
     setup_editing_autocmds()

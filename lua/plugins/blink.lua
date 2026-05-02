@@ -102,132 +102,136 @@ return {
     package.loaded["blink.cmp.completion.accept.preview"] = preview_multiline_completion
     require("blink.cmp").setup(opts)
   end,
-  opts = {
-    keymap = {
-      preset = "super-tab",
-      ["<M-j>"] = { "select_next", "fallback" },
-      ["<M-k>"] = { "select_prev", "fallback" },
-      -- 滚动右侧文档窗口；文档窗未展开时回退到默认按键行为，不影响菜单显示。
-      ["<C-u>"] = { "scroll_documentation_up", "fallback" },
-      ["<C-d>"] = { "scroll_documentation_down", "fallback" },
-    },
-    completion = {
-      trigger = {
-        show_on_insert = true,
-        show_in_snippet = false,
-      },
-      menu = {
-        border = require("util.float").border,
-        direction_priority = cmdline_menu_direction,
-        winhighlight = require("util.float").menu_winhighlight(),
-        cmdline_position = cmdline_menu_position,
-      },
-      -- 选中候选时自动打开右侧详情窗，LSP/普通补全沿用 blink 原生文档渲染。
-      documentation = {
-        auto_show = true,
-        auto_show_delay_ms = 50,
-        update_delay_ms = 50,
-        window = {
-          desired_min_width = 48,
-          desired_min_height = 12,
-          border = require("util.float").border,
-          winhighlight = require("util.float").float_winhighlight({
-            EndOfBuffer = "NormalFloat",
-          }),
-          max_width = 96,
-          max_height = 24,
-          direction_priority = {
-            menu_north = { "e", "w", "n", "s" },
-            menu_south = { "e", "w", "s", "n" },
-          },
-        },
-      },
-    },
-    snippets = {
-      preset = "default",
-    },
-    sources = {
-      default = { "lsp", "copilot", "path", "buffer" },
-      per_filetype = {
-        markdown = { inherit_defaults = true, "snippets" },
-      },
-      providers = {
-        buffer = {
-          opts = {
-            get_bufnrs = function()
-              if vim.bo.filetype == "markdown" then
-                -- Markdown buffer 经常同时打开笔记/长文；只取当前 buffer，避免补全串词。
-                return { vim.api.nvim_get_current_buf() }
-              end
+  opts = function()
+    local float = require("util.float")
 
-              -- 其他文件从所有可见窗口收集 buffer，让分屏中的上下文也参与补全。
-              return vim
-                .iter(vim.api.nvim_list_wins())
-                :map(function(win)
-                  return vim.api.nvim_win_get_buf(win)
-                end)
-                :filter(function(buf)
-                  return vim.bo[buf].buftype ~= "nofile"
-                end)
-                :totable()
-            end,
-          },
-        },
-        copilot = {
-          name = "copilot",
-          module = "blink-copilot",
-          -- 只做轻微加权，避免 Copilot 抢过本地/LSP 的精确候选。
-          score_offset = 30,
-          async = true,
-          opts = {
-            debounce = 100,
-            max_completions = 4,
-            max_attempts = 5,
-          },
-        },
-      },
-    },
-    fuzzy = {
-      implementation = "prefer_rust",
-      -- 先执行自定义比较器，再回退到 blink 默认的精确度/分数排序。
-      sorts = { prefer_plain_symbol_over_copilot, "exact", "score", "sort_text" },
-    },
-    signature = {
-      window = {
-        border = require("util.float").border,
-        winhighlight = require("util.float").float_winhighlight(),
-      },
-    },
-    cmdline = {
-      enabled = true,
+    return {
       keymap = {
-        preset = "cmdline",
-        ["<Tab>"] = { "show", "accept" },
+        preset = "super-tab",
         ["<M-j>"] = { "select_next", "fallback" },
         ["<M-k>"] = { "select_prev", "fallback" },
-        ["<Up>"] = { "select_prev", "fallback" },
-        ["<Down>"] = { "select_next", "fallback" },
+        -- 滚动右侧文档窗口；文档窗未展开时回退到默认按键行为，不影响菜单显示。
+        ["<C-u>"] = { "scroll_documentation_up", "fallback" },
+        ["<C-d>"] = { "scroll_documentation_down", "fallback" },
       },
-      sources = function()
-        local cmdtype = vim.fn.getcmdtype()
-        -- 搜索命令只需要当前 buffer 内容；冒号命令则同时补命令和已有文本。
-        if cmdtype == "/" or cmdtype == "?" then
-          return { "buffer" }
-        end
-        if cmdtype == ":" or cmdtype == "@" then
-          return { "cmdline", "buffer" }
-        end
-        return {}
-      end,
       completion = {
+        trigger = {
+          show_on_insert = true,
+          show_in_snippet = false,
+        },
         menu = {
+          border = float.border,
+          direction_priority = cmdline_menu_direction,
+          winhighlight = float.menu_winhighlight(),
+          cmdline_position = cmdline_menu_position,
+        },
+        -- 选中候选时自动打开右侧详情窗，LSP/普通补全沿用 blink 原生文档渲染。
+        documentation = {
           auto_show = true,
-          draw = {
-            columns = { { "label", "label_description", gap = 1 } },
+          auto_show_delay_ms = 50,
+          update_delay_ms = 50,
+          window = {
+            desired_min_width = 48,
+            desired_min_height = 12,
+            border = float.border,
+            winhighlight = float.float_winhighlight({
+              EndOfBuffer = "NormalFloat",
+            }),
+            max_width = 96,
+            max_height = 24,
+            direction_priority = {
+              menu_north = { "e", "w", "n", "s" },
+              menu_south = { "e", "w", "s", "n" },
+            },
           },
         },
-        ghost_text = { enabled = true },
       },
-    },
-  },
+      snippets = {
+        preset = "default",
+      },
+      sources = {
+        default = { "lsp", "copilot", "path", "buffer" },
+        per_filetype = {
+          markdown = { inherit_defaults = true, "snippets" },
+        },
+        providers = {
+          buffer = {
+            opts = {
+              get_bufnrs = function()
+                if vim.bo.filetype == "markdown" then
+                  -- Markdown buffer 经常同时打开笔记/长文；只取当前 buffer，避免补全串词。
+                  return { vim.api.nvim_get_current_buf() }
+                end
+
+                -- 其他文件从所有可见窗口收集 buffer，让分屏中的上下文也参与补全。
+                return vim
+                  .iter(vim.api.nvim_list_wins())
+                  :map(function(win)
+                    return vim.api.nvim_win_get_buf(win)
+                  end)
+                  :filter(function(buf)
+                    return vim.bo[buf].buftype ~= "nofile"
+                  end)
+                  :totable()
+              end,
+            },
+          },
+          copilot = {
+            name = "copilot",
+            module = "blink-copilot",
+            -- 只做轻微加权，避免 Copilot 抢过本地/LSP 的精确候选。
+            score_offset = 30,
+            async = true,
+            opts = {
+              debounce = 100,
+              max_completions = 4,
+              max_attempts = 5,
+            },
+          },
+        },
+      },
+      fuzzy = {
+        implementation = "prefer_rust",
+        -- 先执行自定义比较器，再回退到 blink 默认的精确度/分数排序。
+        sorts = { prefer_plain_symbol_over_copilot, "exact", "score", "sort_text" },
+      },
+      signature = {
+        window = {
+          border = float.border,
+          winhighlight = float.float_winhighlight(),
+        },
+      },
+      cmdline = {
+        enabled = true,
+        keymap = {
+          preset = "cmdline",
+          ["<Tab>"] = { "show", "accept" },
+          ["<M-j>"] = { "select_next", "fallback" },
+          ["<M-k>"] = { "select_prev", "fallback" },
+          ["<Up>"] = { "select_prev", "fallback" },
+          ["<Down>"] = { "select_next", "fallback" },
+        },
+        sources = function()
+          local cmdtype = vim.fn.getcmdtype()
+          -- 搜索命令只需要当前 buffer 内容；冒号命令则同时补命令和已有文本。
+          if cmdtype == "/" or cmdtype == "?" then
+            return { "buffer" }
+          end
+          if cmdtype == ":" or cmdtype == "@" then
+            return { "cmdline", "buffer" }
+          end
+          return {}
+        end,
+        completion = {
+          menu = {
+            auto_show = true,
+            draw = {
+              columns = { { "label", "label_description", gap = 1 } },
+            },
+          },
+          ghost_text = { enabled = true },
+        },
+      },
+    }
+  end,
 }

@@ -23,15 +23,12 @@ require("config.lazy_ui").setup()
 
 if vim.g.lazy_did_setup then
   -- :R 会重新 source init.lua；Lazy 已初始化时只刷新插件规格，避免重复 setup 警告。
-  local ok, reloader = pcall(require, "lazy.manage.reloader")
-  if ok then
-    reloader.reload({
-      {
-        file = vim.env.MYVIMRC or vim.fs.joinpath(vim.fn.stdpath("config"), "init.lua"),
-        what = "changed",
-      },
-    })
-  end
+  require("lazy.manage.reloader").reload({
+    {
+      file = vim.env.MYVIMRC or vim.fs.joinpath(vim.fn.stdpath("config"), "init.lua"),
+      what = "changed",
+    },
+  })
 
   return
 end

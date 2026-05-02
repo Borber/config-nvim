@@ -1,44 +1,52 @@
-local ic = require("libs.icons")
-local icons = {
-  bookmark = { icon = ic.ui.bookmark, color = "yellow" },
-  buffer = { icon = ic.basic.file, color = "cyan" },
-  code = { icon = ic.ui.code, color = "orange" },
-  explorer = { icon = ic.ui.explorer, color = "cyan" },
-  find = { icon = ic.search.find, color = "green" },
-  git = { icon = ic.git.icon, color = "orange" },
-  keys = { icon = ic.ui.keys, color = "purple" },
-  markdown = { icon = ic.ui.markdown, color = "blue" },
-  quit = { icon = ic.ui.quit, color = "red" },
-  session = { icon = ic.ui.session, color = "azure" },
-  terminal = { icon = ic.ui.terminal, color = "red" },
-}
+local function key_icons()
+  local ic = require("libs.icons")
+
+  return {
+    bookmark = { icon = ic.ui.bookmark, color = "yellow" },
+    buffer = { icon = ic.basic.file, color = "cyan" },
+    code = { icon = ic.ui.code, color = "orange" },
+    explorer = { icon = ic.ui.explorer, color = "cyan" },
+    find = { icon = ic.search.find, color = "green" },
+    git = { icon = ic.git.icon, color = "orange" },
+    keys = { icon = ic.ui.keys, color = "purple" },
+    markdown = { icon = ic.ui.markdown, color = "blue" },
+    quit = { icon = ic.ui.quit, color = "red" },
+    session = { icon = ic.ui.session, color = "azure" },
+    terminal = { icon = ic.ui.terminal, color = "red" },
+  }
+end
 
 return {
   "folke/which-key.nvim",
-  -- 调整为 VeryLazy 事件
-  event = "VeryLazy",
-  opts = {
-    preset = "helix",
-    delay = 0,
-    win = {
-      border = require("util.float").border,
-    },
-    spec = {
-      { "<leader>e", icon = icons.explorer, desc = "Explorer" },
-      { "<leader>f", icon = icons.find, group = "find" },
-      { "<leader>g", icon = icons.git, group = "git" },
-      { "<leader>j", icon = { icon = "J", color = "green" }, group = "job" },
-      { "<leader>k", icon = icons.keys, group = "keys" },
-      { "<leader>m", icon = icons.bookmark, group = "bookmark" },
-      { "<leader>b", icon = icons.buffer, group = "buffer" },
-      { "<leader>c", icon = icons.code, group = "code" },
-      { "<leader>q", icon = icons.quit, group = "quit" },
-      { "<leader>s", icon = icons.session, group = "session" },
-      { "<leader>t", icon = icons.terminal, group = "terminal" },
-      { "<leader>?", icon = icons.buffer, desc = "Buffer keymaps" },
-      { "<localleader>m", icon = icons.markdown, group = "markdown" },
-    },
-  },
+  -- UI ready 后第一批加载，优先保证按键提示可用。
+  event = "User ConfigUiReady",
+  opts = function()
+    local icons = key_icons()
+    local float = require("util.float")
+
+    return {
+      preset = "helix",
+      delay = 0,
+      win = {
+        border = float.border,
+      },
+      spec = {
+        { "<leader>e", icon = icons.explorer, desc = "Explorer" },
+        { "<leader>f", icon = icons.find, group = "find" },
+        { "<leader>g", icon = icons.git, group = "git" },
+        { "<leader>j", icon = { icon = "J", color = "green" }, group = "job" },
+        { "<leader>k", icon = icons.keys, group = "keys" },
+        { "<leader>m", icon = icons.bookmark, group = "bookmark" },
+        { "<leader>b", icon = icons.buffer, group = "buffer" },
+        { "<leader>c", icon = icons.code, group = "code" },
+        { "<leader>q", icon = icons.quit, group = "quit" },
+        { "<leader>s", icon = icons.session, group = "session" },
+        { "<leader>t", icon = icons.terminal, group = "terminal" },
+        { "<leader>?", icon = icons.buffer, desc = "Buffer keymaps" },
+        { "<localleader>m", icon = icons.markdown, group = "markdown" },
+      },
+    }
+  end,
   keys = {
     {
       "<leader>?",

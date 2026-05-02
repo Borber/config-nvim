@@ -1,6 +1,6 @@
 return {
   "folke/noice.nvim",
-  event = "VeryLazy",
+  event = "User ConfigUiReady",
   dependencies = {
     "MunifTanjim/nui.nvim",
   },
@@ -39,81 +39,85 @@ return {
 
     require("noice").setup(opts)
   end,
-  opts = {
-    cmdline = {
-      enabled = true,
-      view = "cmdline_popup",
-      format = {
-        cmdline = {
-          title = "   ",
+  opts = function()
+    local float = require("util.float")
+
+    return {
+      cmdline = {
+        enabled = true,
+        view = "cmdline_popup",
+        format = {
+          cmdline = {
+            title = "   ",
+          },
         },
       },
-    },
-    views = {
-      cmdline_popup = {
-        size = {
-          min_width = 30,
+      views = {
+        cmdline_popup = {
+          size = {
+            min_width = 30,
+          },
+          border = float.noice_border(),
+          win_options = {
+            winhighlight = float.float_winhighlight({
+              IncSearch = "",
+              CurSearch = "",
+            }),
+          },
         },
-        border = require("util.float").noice_border(),
-        win_options = {
-          winhighlight = require("util.float").float_winhighlight({
-            IncSearch = "",
-            CurSearch = "",
+        cmdline_input = {
+          border = float.noice_border(),
+        },
+        popup = {
+          border = {
+            style = float.border,
+          },
+        },
+        hover = {
+          border = float.noice_border({ 0, 2 }),
+        },
+        mini = {
+          border = {
+            style = float.border,
+          },
+          win_options = {
+            winblend = 0,
+            winhighlight = float.float_winhighlight({
+              IncSearch = "",
+              CurSearch = "",
+            }),
+          },
+        },
+        confirm = {
+          border = vim.tbl_extend("force", float.noice_border(), {
+            text = { top = " Confirm " },
           }),
         },
       },
-      cmdline_input = {
-        border = require("util.float").noice_border(),
+      messages = {
+        enabled = true,
+        view = "mini",
+        view_error = "mini",
+        view_warn = "mini",
+        view_search = false,
       },
-      popup = {
-        border = {
-          style = require("util.float").border,
-        },
-      },
-      hover = {
-        border = require("util.float").noice_border({ 0, 2 }),
-      },
-      mini = {
-        border = {
-          style = require("util.float").border,
-        },
-        win_options = {
-          winblend = 0,
-          winhighlight = require("util.float").float_winhighlight({
-            IncSearch = "",
-            CurSearch = "",
-          }),
-        },
-      },
-      confirm = {
-        border = vim.tbl_extend("force", require("util.float").noice_border(), {
-          text = { top = " Confirm " },
-        }),
-      },
-    },
-    messages = {
-      enabled = true,
-      view = "mini",
-      view_error = "mini",
-      view_warn = "mini",
-      view_search = false,
-    },
-    popupmenu = {
-      enabled = false,
-    },
-    lsp = {
-      hover = {
+      popupmenu = {
         enabled = false,
       },
-      progress = {
-        enabled = true,
+      lsp = {
+        hover = {
+          enabled = false,
+        },
+        progress = {
+          enabled = true,
+        },
       },
-    },
-    presets = {
-      bottom_search = true,
-      command_palette = false,
-      long_message_to_split = true,
-      lsp_doc_border = true,
-    },
-  },
+      presets = {
+        bottom_search = true,
+        command_palette = false,
+        long_message_to_split = true,
+        lsp_doc_border = true,
+      },
+    }
+  end,
 }

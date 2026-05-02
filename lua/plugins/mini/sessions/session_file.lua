@@ -1,5 +1,21 @@
 local M = {}
 local path_util = require("libs.path")
+local meaningful_buffers_cache = {}
+
+local function stat_token(path)
+  local stat = path_util.stat(path)
+  if stat == nil then
+    return nil
+  end
+
+  local mtime = stat.mtime or {}
+  return table.concat({
+    path,
+    tostring(stat.size or 0),
+    tostring(mtime.sec or 0),
+    tostring(mtime.nsec or 0),
+  }, ":")
+end
 
 function M.canonical_path(path)
   -- session 文件里的路径和 buffer 路径来源不同，统一后才能稳定比较。
@@ -41,8 +57,14 @@ end
 
 function M.has_meaningful_buffers(path)
   -- 旧 session 只有包含真实可读文件时才值得恢复。
-  if vim.uv.fs_stat(path) == nil then
+  local token = stat_token(path)
+  if token == nil then
     return false
+  end
+
+  local cached = meaningful_buffers_cache[path]
+  if cached ~= nil and cached.token == token then
+    return cached.value
   end
 
   local ok, lines = pcall(vim.fn.readfile, path)
@@ -54,10 +76,12 @@ function M.has_meaningful_buffers(path)
   for _, line in ipairs(lines) do
     local session_path, kind = line_path(line)
     if (kind == "badd" or kind == "edit") and is_readable_path(session_path) then
+      meaningful_buffers_cache[path] = { token = token, value = true }
       return true
     end
   end
 
+  meaningful_buffers_cache[path] = { token = token, value = false }
   return false
 end
 
@@ -121,6 +145,7 @@ function M.sanitize(path, meaningful_paths)
     return false
   end
 
+  meaningful_buffers_cache[path] = nil
   return true
 end
 

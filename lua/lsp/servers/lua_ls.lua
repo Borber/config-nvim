@@ -1,8 +1,9 @@
 local function lua_ls_library()
+  local path_util = require("libs.path")
   local library = { vim.env.VIMRUNTIME }
   local lazy_root = vim.fs.joinpath(vim.fn.stdpath("data"), "lazy")
 
-  if vim.uv.fs_stat(lazy_root) == nil then
+  if not path_util.is_directory(lazy_root) then
     return library
   end
 
@@ -10,7 +11,7 @@ local function lua_ls_library()
   for name, type in vim.fs.dir(lazy_root) do
     if type == "directory" then
       local lua_dir = vim.fs.joinpath(lazy_root, name, "lua")
-      if vim.uv.fs_stat(lua_dir) ~= nil then
+      if path_util.is_directory(lua_dir) then
         table.insert(library, lua_dir)
       end
     end

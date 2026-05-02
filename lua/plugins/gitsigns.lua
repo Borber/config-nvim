@@ -31,9 +31,75 @@ end
 
 return {
   "lewis6991/gitsigns.nvim",
-  -- 首屏先让文件可见；git sign 和 blame 信息在 VeryLazy 后补上。
+  -- 目录启动时也尽早准备好 git sign；blame 仍保持手动开启，避免后台 git 查询抢首轮交互。
   event = "VeryLazy",
-  init = function()
+  opts = function()
+    local float = require("util.float")
+
+    return {
+      signs = {
+        add = { text = icons.sign },
+        change = { text = icons.sign },
+        delete = { text = icons.delete },
+        topdelete = { text = icons.delete },
+        changedelete = { text = icons.sign },
+        untracked = { text = icons.sign },
+      },
+      signcolumn = true,
+      current_line_blame = false,
+      current_line_blame_opts = {
+        virt_text = true,
+        virt_text_pos = "eol",
+        delay = 500,
+        ignore_whitespace = false,
+        virt_text_priority = 120,
+        use_focus = true,
+      },
+      current_line_blame_formatter = "  " .. icons.blame .. " <summary>, " .. icons.author .. " <author> (<author_time:%R>)",
+      current_line_blame_formatter_nc = "  " .. icons.blame .. " Not committed yet",
+      preview_config = {
+        style = "minimal",
+        relative = "cursor",
+        row = 1,
+        col = 2,
+        width = preview_width(),
+        border = float.borderchars("GitSignsPreviewBorder"),
+        title = float.title(icons.title .. " Gitsigns", "GitSignsPreviewTitle"),
+        title_pos = "center",
+        zindex = 50,
+      },
+      on_attach = function(bufnr)
+        local gs = require("gitsigns")
+        local map = function(mode, lhs, rhs, desc)
+          vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, silent = true })
+        end
+        local range = function()
+          return { vim.fn.line("."), vim.fn.line("v") }
+        end
+
+        map("n", "]h", function()
+          gs.nav_hunk("next")
+        end, "Next hunk")
+        map("n", "[h", function()
+          gs.nav_hunk("prev")
+        end, "Prev hunk")
+        map("n", "<leader>gh", gs.stage_hunk, "Stage hunk")
+        map("x", "<leader>gh", function()
+          gs.stage_hunk(range())
+        end, "Stage hunk")
+        map("n", "<leader>gH", gs.reset_hunk, "Reset hunk")
+        map("x", "<leader>gH", function()
+          gs.reset_hunk(range())
+        end, "Reset hunk")
+        map("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
+        map("n", "<leader>gb", function()
+          gs.blame_line({ full = true })
+        end, "Blame line")
+        map("n", "<leader>gB", gs.toggle_current_line_blame, "Toggle blame")
+      end,
+    }
+  end,
+  config = function(_, opts)
     local group = vim.api.nvim_create_augroup("UserGitsignsHighlights", { clear = true })
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = group,
@@ -41,67 +107,6 @@ return {
     })
 
     apply_gitsigns_highlights()
+    require("gitsigns").setup(opts)
   end,
-  opts = {
-    signs = {
-      add = { text = icons.sign },
-      change = { text = icons.sign },
-      delete = { text = icons.delete },
-      topdelete = { text = icons.delete },
-      changedelete = { text = icons.sign },
-      untracked = { text = icons.sign },
-    },
-    signcolumn = true,
-    current_line_blame = true,
-    current_line_blame_opts = {
-      virt_text = true,
-      virt_text_pos = "eol",
-      delay = 500,
-      ignore_whitespace = false,
-      virt_text_priority = 120,
-      use_focus = true,
-    },
-    current_line_blame_formatter = "  " .. icons.blame .. " <summary>, " .. icons.author .. " <author> (<author_time:%R>)",
-    current_line_blame_formatter_nc = "  " .. icons.blame .. " Not committed yet",
-    preview_config = {
-      style = "minimal",
-      relative = "cursor",
-      row = 1,
-      col = 2,
-      width = preview_width(),
-      border = require("util.float").borderchars("GitSignsPreviewBorder"),
-      title = require("util.float").title(icons.title .. " Gitsigns", "GitSignsPreviewTitle"),
-      title_pos = "center",
-      zindex = 50,
-    },
-    on_attach = function(bufnr)
-      local gs = require("gitsigns")
-      local map = function(mode, lhs, rhs, desc)
-        vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc, silent = true })
-      end
-      local range = function()
-        return { vim.fn.line("."), vim.fn.line("v") }
-      end
-
-      map("n", "]h", function()
-        gs.nav_hunk("next")
-      end, "Next hunk")
-      map("n", "[h", function()
-        gs.nav_hunk("prev")
-      end, "Prev hunk")
-      map("n", "<leader>gh", gs.stage_hunk, "Stage hunk")
-      map("x", "<leader>gh", function()
-        gs.stage_hunk(range())
-      end, "Stage hunk")
-      map("n", "<leader>gH", gs.reset_hunk, "Reset hunk")
-      map("x", "<leader>gH", function()
-        gs.reset_hunk(range())
-      end, "Reset hunk")
-      map("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
-      map("n", "<leader>gb", function()
-        gs.blame_line({ full = true })
-      end, "Blame line")
-      map("n", "<leader>gB", gs.toggle_current_line_blame, "Toggle blame")
-    end,
-  },
 }

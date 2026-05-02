@@ -6,7 +6,9 @@ local diagnostic_mute_markers = {
   ".nvim/lsp-diagnostics-off",
 }
 
+local path_util = require("libs.path")
 local local_config
+local diagnostic_mute_marker_cache = {}
 
 local function local_lsp_config()
   -- 本地配置可能包含私有路径，按需读取并缓存，避免 LSP attach 时反复 require。
@@ -22,11 +24,7 @@ local function local_lsp_config()
 end
 
 local function normalize_path(path)
-  if type(path) ~= "string" or path == "" then
-    return nil
-  end
-
-  return vim.fs.normalize(path)
+  return path_util.canonical(path_util.local_normalized(path))
 end
 
 local function path_contains(root, path)
@@ -39,6 +37,55 @@ local function path_contains(root, path)
   end
 
   return path == root or vim.startswith(path, root .. "/")
+end
+
+local function stat_token(path)
+  local stat = path_util.stat(path)
+  if stat == nil then
+    return path .. ":missing"
+  end
+
+  local mtime = stat.mtime or {}
+  return table.concat({
+    path,
+    stat.type or "",
+    tostring(stat.size or 0),
+    tostring(mtime.sec or 0),
+    tostring(mtime.nsec or 0),
+  }, ":")
+end
+
+local function marker_parent_token(dir, marker)
+  local marker_parent = normalize_path(vim.fs.dirname(vim.fs.joinpath(dir, marker)))
+  if marker_parent == nil or marker_parent == dir then
+    return nil
+  end
+
+  return stat_token(marker_parent)
+end
+
+local function marker_cache_token(dir, markers)
+  -- 嵌套 marker（例如 .nvim/lsp-diagnostics-off）变更时，变的是 marker 父目录的 mtime，
+  -- 不一定是项目根目录 mtime；token 同时纳入这些父目录才能避免正缓存变陈旧。
+  local tokens = { stat_token(dir) }
+
+  for _, marker in ipairs(markers) do
+    local token = marker_parent_token(dir, marker)
+    if token ~= nil then
+      table.insert(tokens, token)
+    end
+  end
+
+  return table.concat(tokens, "|")
+end
+
+local function parent_dir(dir)
+  local parent = vim.fs.dirname(dir)
+  if parent == nil or parent == dir then
+    return nil
+  end
+
+  return parent
 end
 
 local function client_root(client, bufnr)
@@ -80,18 +127,35 @@ local function has_diagnostic_mute_marker(bufnr)
 
   -- 从当前文件目录一路向上查找标记文件，让项目根或子目录都能局部静音诊断。
   while dir ~= nil do
-    for _, marker in ipairs(markers) do
-      if vim.uv.fs_stat(vim.fs.joinpath(dir, marker)) ~= nil then
+    local token = marker_cache_token(dir, markers)
+    local cache_key = dir .. "|" .. table.concat(markers, "\0")
+    local cached = diagnostic_mute_marker_cache[cache_key]
+    if cached ~= nil and cached.token == token then
+      if cached.value then
         return true
       end
-    end
 
-    local parent = vim.fs.dirname(dir)
-    if parent == nil or parent == dir then
-      break
-    end
+      dir = parent_dir(dir)
+    else
+      local muted_here = false
+      for _, marker in ipairs(markers) do
+        if path_util.exists(vim.fs.joinpath(dir, marker)) then
+          muted_here = true
+          break
+        end
+      end
 
-    dir = parent
+      diagnostic_mute_marker_cache[cache_key] = {
+        token = token,
+        value = muted_here,
+      }
+
+      if muted_here then
+        return true
+      end
+
+      dir = parent_dir(dir)
+    end
   end
 
   return false

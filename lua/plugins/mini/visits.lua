@@ -1,34 +1,14 @@
 local M = {}
 local configured = false
 
-local uv = vim.uv
 local path_util = require("libs.path")
-local ic = require("libs.icons")
 local recent_paths = nil
 local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
 local recent_paths_limit = 100
-
-local function normalize_path(path)
-  -- 转成绝对路径，避免同一个目录因为相对路径不同而在最近列表里重复出现。
-  return path_util.absolute(path)
-end
-
-local function is_directory(path)
-  return path_util.is_directory(path)
-end
-
-local function path_directory(path)
-  -- 打开文件时把 cwd 切到文件所在目录；打开目录时 cwd 就是目录本身。
-  if path == nil then
-    return nil
-  end
-
-  if is_directory(path) then
-    return path
-  end
-
-  return normalize_path(vim.fn.fnamemodify(path, ":h"))
-end
+local startup_paths_recorded = false
+local canonical_path = path_util.canonical_absolute
+local is_directory = path_util.is_directory
+local path_exists = path_util.exists
 
 local function load_recent_paths()
   -- 最近路径按需懒加载，并缓存在内存里，避免 starter 每次刷新都读文件。
@@ -36,7 +16,7 @@ local function load_recent_paths()
     return recent_paths
   end
 
-  if uv.fs_stat(recent_paths_store) == nil then
+  if not path_exists(recent_paths_store) then
     recent_paths = {}
     return recent_paths
   end
@@ -51,9 +31,10 @@ local function load_recent_paths()
   end
 
   -- 读取时顺手过滤已经不存在的路径，starter 里就不会出现失效入口。
+  local stat_cache = {}
   for _, path in ipairs(decoded) do
-    local resolved_path = normalize_path(path)
-    if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
+    local resolved_path = canonical_path(path)
+    if resolved_path ~= nil and path_exists(resolved_path, stat_cache) then
       table.insert(recent_paths, resolved_path)
     end
   end
@@ -70,8 +51,8 @@ local function write_recent_paths()
 end
 
 local function push_recent_path(path)
-  local resolved_path = normalize_path(path)
-  if resolved_path == nil or uv.fs_stat(resolved_path) == nil then
+  local resolved_path = canonical_path(path)
+  if resolved_path == nil or not path_exists(resolved_path) then
     return
   end
 
@@ -95,7 +76,7 @@ end
 
 local function remove_recent_path(path)
   -- 删除最近路径时同样先规整成绝对路径，保证 UI 中展示的路径能命中存储项。
-  local resolved_path = normalize_path(path)
+  local resolved_path = canonical_path(path)
   if resolved_path == nil then
     return false
   end
@@ -121,14 +102,27 @@ local function startup_paths()
   local paths = {}
 
   -- argv 从后往前压入，最后显示时仍能保持命令行参数的原始顺序。
+  local stat_cache = {}
   for index = vim.fn.argc() - 1, 0, -1 do
-    local resolved_path = normalize_path(vim.fn.argv(index))
-    if resolved_path ~= nil and uv.fs_stat(resolved_path) ~= nil then
+    local resolved_path = canonical_path(vim.fn.argv(index))
+    if resolved_path ~= nil and path_exists(resolved_path, stat_cache) then
       table.insert(paths, resolved_path)
     end
   end
 
   return paths
+end
+
+local function record_startup_paths()
+  if startup_paths_recorded then
+    return
+  end
+
+  startup_paths_recorded = true
+
+  for _, path in ipairs(startup_paths()) do
+    push_recent_path(path)
+  end
 end
 
 local function path_name(path)
@@ -145,8 +139,9 @@ local function close_current_starter()
   require("mini.starter").close(buf_id)
 end
 
-local function format_path_name(path)
-  local icon = is_directory(path) and ic.basic.dir or ic.basic.file
+local function format_path_name(path, cache)
+  local ic = require("libs.icons")
+  local icon = path_util.is_directory(path, cache) and ic.basic.dir or ic.basic.file
   local name = path_name(path)
 
   return string.format("%s  %s  %s", name, path, icon)
@@ -159,37 +154,33 @@ function M.setup()
 
   configured = true
 
+  if vim.v.vim_did_enter == 1 then
+    vim.schedule(record_startup_paths)
+    return
+  end
+
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
     once = true,
-    callback = function()
-      for _, path in ipairs(startup_paths()) do
-        push_recent_path(path)
-      end
-    end,
+    callback = record_startup_paths,
   })
 end
 
 function M.record_path(path)
-  local resolved_path = normalize_path(path)
-  if resolved_path == nil then
-    return
-  end
-
-  push_recent_path(resolved_path)
+  push_recent_path(path)
 end
 
 function M.open_path(path, opts)
   -- starter/recent path 的统一入口：负责记录最近路径、切 cwd、恢复 session 或打开文件。
   opts = opts or {}
 
-  local resolved_path = normalize_path(path)
+  local resolved_path = canonical_path(path)
   if resolved_path == nil then
     return
   end
 
   if opts.record ~= false then
-    M.record_path(resolved_path)
+    push_recent_path(resolved_path)
   end
 
   close_current_starter()
@@ -208,7 +199,7 @@ function M.open_path(path, opts)
     return
   end
 
-  local directory = path_directory(resolved_path)
+  local directory = canonical_path(vim.fn.fnamemodify(resolved_path, ":h"))
   if directory ~= nil then
     -- 打开文件前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
     vim.api.nvim_set_current_dir(directory)
@@ -226,8 +217,9 @@ function M.recent_paths_section(limit)
 
   return function()
     local items = {}
+    local stat_cache = {}
     for _, path in ipairs(load_recent_paths()) do
-      if uv.fs_stat(path) == nil then
+      if not path_exists(path, stat_cache) then
         goto continue
       end
 
@@ -235,7 +227,7 @@ function M.recent_paths_section(limit)
         action = function()
           M.open_path(path)
         end,
-        name = format_path_name(path),
+        name = format_path_name(path, stat_cache),
         recent_path = path,
         section = "Recent paths",
       })
