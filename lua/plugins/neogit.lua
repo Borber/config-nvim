@@ -143,6 +143,5 @@ return {
   config = function(_, opts)
     require("neogit").setup(opts)
     require("plugins.neogit.highlights").apply()
-    create_neogit_command()
   end,
 }

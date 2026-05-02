@@ -1,12 +1,13 @@
 -- ============================================
 -- 基础选项
 -- ============================================
+vim.loader.enable()
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
 local opt = vim.opt
 if vim.fn.exists("&winborder") == 1 then
-  opt.winborder = require("util.float").border -- 默认让插件浮窗保持直角矩形边框。
+  opt.winborder = "single" -- 默认让插件浮窗保持直角矩形边框。
 end
 local statuscolumn = {}
 

@@ -4,6 +4,13 @@ local function is_uri(path)
   return type(path) == "string" and path:match("^%w[%w+.-]*://") ~= nil
 end
 
+local function trim_trailing_slash(path)
+  if path ~= nil and #path > 3 then
+    return (path:gsub("/+$", ""))
+  end
+  return path
+end
+
 -- Windows/Unix 路径统一成 /，并去掉多余尾斜杠，方便后续前缀比较。
 function M.canonical(path)
   if path == nil or path == "" then
@@ -13,11 +20,7 @@ function M.canonical(path)
   local normalized = vim.fs.normalize(path):gsub("\\", "/")
   normalized = normalized:gsub("^([A-Za-z]:)/+", "%1/")
 
-  if #normalized > 3 then
-    normalized = normalized:gsub("/+$", "")
-  end
-
-  return normalized
+  return trim_trailing_slash(normalized)
 end
 
 function M.local_normalized(path)
@@ -71,11 +74,8 @@ function M.canonical_absolute(path)
   end
 
   local normalized = vim.fs.normalize(vim.fn.fnamemodify(expanded, ":p")):gsub("\\", "/")
-  if #normalized > 3 then
-    normalized = normalized:gsub("/+$", "")
-  end
 
-  return normalized
+  return trim_trailing_slash(normalized)
 end
 
 return M

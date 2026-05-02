@@ -92,13 +92,7 @@ local function startup_directory()
 end
 
 local function notify_read_error(err)
-  local message = tostring(err)
-
-  if message:find("is not a name for detected session", 1, true) then
-    message = "No session saved for current directory yet"
-  end
-
-  vim.notify(message, vim.log.levels.WARN)
+  vim.notify(tostring(err), vim.log.levels.WARN)
 end
 
 function M.setup()

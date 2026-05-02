@@ -5,14 +5,8 @@ local tree_icons = {
 }
 
 local function project_name()
-  local cwd = vim.fn.getcwd()
-  local name = vim.fn.fnamemodify(cwd, ":t")
-
-  if name ~= "" then
-    return name
-  end
-
-  return cwd ~= "" and cwd or nil
+  local name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
+  return name ~= "" and name or nil
 end
 
 local function configure_sqlite_clib()
@@ -45,13 +39,6 @@ local function refresh_bookmarks()
   end
 
   require("bookmarks.tree.operate").refresh()
-end
-
-local function configured_tree_width()
-  local config = vim.g.bookmarks_config or {}
-  local treeview = config.treeview or {}
-
-  return treeview.window_split_dimension or 50
 end
 
 local function compact_tree_gutter(win)
@@ -123,7 +110,7 @@ local function keep_tree_width()
     apply_tree_icons(ctx.buf)
     vim.wo[ctx.win].winfixwidth = true
 
-    local width = configured_tree_width()
+    local width = ((vim.g.bookmarks_config or {}).treeview or {}).window_split_dimension or 50
     if vim.api.nvim_win_get_width(ctx.win) ~= width then
       local ok, err = pcall(vim.api.nvim_win_set_width, ctx.win, width)
       if not ok then
@@ -200,7 +187,9 @@ local function create_project_commands()
   end, { desc = "Use current cwd as the active bookmark list" })
 
   vim.api.nvim_create_user_command("BookmarksProjectTree", function()
-    run_project_command("BookmarksTree", { create = true })()
+    activate_project_list({ create = true })
+    vim.cmd("BookmarksTree")
+    keep_tree_width()
   end, { desc = "Open bookmarks tree for current cwd" })
 end
 
@@ -285,7 +274,9 @@ return {
         activate_project_list({ create = true, notify = true })
       end,
       open_project_tree = function()
-        run_project_command("BookmarksTree", { create = true })()
+        activate_project_list({ create = true })
+        vim.cmd("BookmarksTree")
+        keep_tree_width()
       end,
     },
   },

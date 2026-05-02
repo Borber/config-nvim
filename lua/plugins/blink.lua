@@ -4,7 +4,7 @@ local function leading_identifier(label)
     return nil
   end
 
-  return label:match("^[%a_][%w_]*") or label:match("^[%w_]+")
+  return label:match("^[%a_][%w_]*")
 end
 
 -- 当 Copilot 候选只是对已有符号做扩写时，让本地/LSP 的纯符号项优先展示。

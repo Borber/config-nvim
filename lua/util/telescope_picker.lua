@@ -1,48 +1,39 @@
 local M = {}
 local float = require("util.float")
-
-local function load_telescope()
-  return {
-    pickers = require("telescope.pickers"),
-    finders = require("telescope.finders"),
-    config = require("telescope.config").values,
-    actions = require("telescope.actions"),
-    action_state = require("telescope.actions.state"),
-    themes = require("telescope.themes"),
-  }
-end
+local pickers = require("telescope.pickers")
+local finders = require("telescope.finders")
+local config = require("telescope.config").values
+local actions = require("telescope.actions")
+local action_state = require("telescope.actions.state")
+local themes = require("telescope.themes")
 
 -- 通用 dropdown 外壳：负责 Telescope 的 finder/sorter/布局装配。
 -- 业务模块只传 results、entry_maker 和按键动作；Telescope 不可用时直接暴露错误。
 function M.dropdown(opts)
   opts = opts or {}
 
-  local telescope = load_telescope()
-  local previewer = opts.previewer
-  if previewer == nil then
-    previewer = false
-  end
+  local _telescope = { pickers = pickers, finders = finders, config = config, actions = actions, action_state = action_state, themes = themes }
 
-  telescope.pickers
+  pickers
     .new(
-      telescope.themes.get_dropdown({
+      themes.get_dropdown({
         prompt_title = opts.prompt_title or "Select",
-        previewer = previewer,
+        previewer = opts.previewer or false,
         borderchars = opts.borderchars or float.telescope_dropdown_borderchars(),
         layout_config = opts.layout_config or { width = 0.65, height = 0.5 },
       }),
       {
-        finder = telescope.finders.new_table({
+        finder = finders.new_table({
           results = opts.results or {},
           entry_maker = opts.entry_maker,
         }),
-        sorter = opts.sorter or telescope.config.generic_sorter({}),
+        sorter = opts.sorter or config.generic_sorter({}),
         attach_mappings = function(prompt_bufnr, map)
           if opts.attach_mappings == nil then
             return true
           end
 
-          local result = opts.attach_mappings(prompt_bufnr, map, telescope)
+          local result = opts.attach_mappings(prompt_bufnr, map, _telescope)
           return result == nil and true or result
         end,
       }

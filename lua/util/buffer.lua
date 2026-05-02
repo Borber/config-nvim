@@ -135,26 +135,13 @@ function M.is_blank_placeholder(bufnr)
     and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
 end
 
-local function win_bufnr(win_id)
+function M.window_has_reusable_placeholder(win_id)
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
-    return nil
+    return false
   end
 
-  return vim.api.nvim_win_get_buf(win_id)
-end
-
-local function window_has_empty_unnamed(win_id)
-  local bufnr = win_bufnr(win_id)
-  return bufnr ~= nil and M.is_empty_unnamed(bufnr)
-end
-
-local function window_has_directory_placeholder(win_id)
-  local bufnr = win_bufnr(win_id)
-  return bufnr ~= nil and M.is_directory_placeholder(bufnr)
-end
-
-function M.window_has_reusable_placeholder(win_id)
-  return window_has_empty_unnamed(win_id) or window_has_directory_placeholder(win_id)
+  local bufnr = vim.api.nvim_win_get_buf(win_id)
+  return M.is_empty_unnamed(bufnr) or M.is_directory_placeholder(bufnr)
 end
 
 return M
