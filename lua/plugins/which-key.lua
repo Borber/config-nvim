@@ -15,9 +15,8 @@ local icons = {
 
 return {
   "folke/which-key.nvim",
-  -- 调整为 VimEnter 事件，确保在 Vim 启动完成后加载 which-key 插件
-  -- 保证第一次打开 which-key 的速度
-  event = "VimEnter",
+  -- 调整为 VeryLazy 事件
+  event = "VeryLazy",
   opts = {
     preset = "helix",
     delay = 0,

@@ -66,7 +66,10 @@ local function delete_current_session(opts)
 end
 
 local function close_transient_windows()
-  require("mini.files").close()
+  local minifiles = package.loaded["mini.files"]
+  if minifiles ~= nil then
+    minifiles.close()
+  end
 end
 
 local function is_headless()

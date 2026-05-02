@@ -26,6 +26,5 @@ return {
     })
 
     vim.cmd("colorscheme rose-pine-dawn")
-    apply_highlights()
   end,
 }

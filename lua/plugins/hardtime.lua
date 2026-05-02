@@ -1,6 +1,6 @@
 return {
   "m4xshen/hardtime.nvim",
-  lazy = false,
+  event = "User ConfigFilePost",
   dependencies = {
     "MunifTanjim/nui.nvim",
   },

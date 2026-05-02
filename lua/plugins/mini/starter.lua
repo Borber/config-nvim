@@ -1,7 +1,8 @@
 local M = {}
 local configured = false
 local buffer_util = require("libs.buffer")
-local starter_refresh_after_lazy = false
+local icons = require("libs.icons")
+local delayed_content_ready = false
 
 local function current_recent_path()
   -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
@@ -111,6 +112,10 @@ local function home_directory()
 end
 
 local function startup_footer()
+  if not delayed_content_ready then
+    return ""
+  end
+
   local ok, stats = pcall(function()
     return require("lazy").stats()
   end)
@@ -120,30 +125,47 @@ local function startup_footer()
   end
 
   local startuptime = stats.startuptime or 0
-  starter_refresh_after_lazy = startuptime <= 0
-
-  if startuptime <= 0 then
-    return ("Loaded %d/%d plugins"):format(stats.loaded or 0, stats.count or 0)
-  end
-
   local ms = math.floor(startuptime * 100 + 0.5) / 100
-  return ("Loaded %d/%d plugins in %.2f ms"):format(stats.loaded or 0, stats.count or 0, ms)
+  return ("%s Loaded %d/%d plugins in %.2f ms"):format(icons.ui.rocket, stats.loaded or 0, stats.count or 0, ms)
 end
 
-local function refresh_starter_after_lazy()
-  if not starter_refresh_after_lazy or vim.bo.filetype ~= "ministarter" then
+local function recent_paths_items()
+  if not delayed_content_ready then
+    return {}
+  end
+
+  return require("plugins.mini.visits").recent_paths_section(5)()
+end
+
+local function refresh_current_starter()
+  if vim.bo.filetype ~= "ministarter" then
     return
   end
 
-  starter_refresh_after_lazy = false
   require("mini.starter").refresh()
+end
+
+local function enable_delayed_content(refresh)
+  if delayed_content_ready then
+    return
+  end
+
+  delayed_content_ready = true
+  require("plugins.mini.visits").setup()
+
+  if refresh ~= false then
+    refresh_current_starter()
+  end
 end
 
 local function prepare_starter()
   -- 真正进入 Starter 前先保存当前项目并清场，让下一次 Open 像刚启动一样干净。
   require("plugins.mini.sessions").write_current({ verbose = false })
 
-  require("mini.files").close()
+  local minifiles = package.loaded["mini.files"]
+  if minifiles ~= nil then
+    minifiles.close()
+  end
 
   for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
     if is_clearable_buffer(buf_id) then
@@ -168,17 +190,16 @@ local function ensure_setup(autoopen)
   configured = true
 
   local starter = require("mini.starter")
-  local visits = require("plugins.mini.visits")
-
-  -- 最近路径的采集独立放在 visits 模块里，starter 这里只负责展示和动作。
-  visits.setup()
+  if vim.g.did_very_lazy then
+    enable_delayed_content(false)
+  end
 
   starter.setup({
     autoopen = autoopen == true,
     header = "",
     footer = startup_footer,
     items = {
-      visits.recent_paths_section(5),
+      recent_paths_items,
       {
         name = "Find file",
         action = function()
@@ -226,10 +247,10 @@ local function ensure_setup(autoopen)
   })
 
   vim.api.nvim_create_autocmd("User", {
-    group = vim.api.nvim_create_augroup("ConfigMiniStarterLazyStats", { clear = true }),
-    pattern = "LazyVimStarted",
+    group = vim.api.nvim_create_augroup("ConfigMiniStarterDelayedContent", { clear = true }),
+    pattern = "VeryLazy",
     callback = function()
-      vim.schedule(refresh_starter_after_lazy)
+      vim.schedule(enable_delayed_content)
     end,
   })
 end

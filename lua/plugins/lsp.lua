@@ -1,9 +1,6 @@
 -- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API
 -- mason-lspconfig v2 的 automatic_enable 会自动调用 vim.lsp.enable
 
-local lsp_registry = require("lsp")
-local servers = lsp_registry.servers()
-
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
     vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
@@ -32,6 +29,8 @@ return {
     "williamboman/mason-lspconfig.nvim",
   },
   config = function()
+    local lsp_registry = require("lsp")
+    local servers = lsp_registry.servers()
     local diagnostics = require("plugins.lsp.diagnostics")
 
     -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。

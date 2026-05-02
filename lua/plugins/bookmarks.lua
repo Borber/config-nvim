@@ -192,7 +192,7 @@ end
 local function setup_project_autocmds()
   local group = vim.api.nvim_create_augroup("config_bookmarks_project", { clear = true })
 
-  -- VeryLazy 后插件才可用，延后一拍再尝试同步当前 cwd 的列表。
+  -- 插件加载后延后一拍再尝试同步当前 cwd 的列表，避免抢在项目上下文稳定前刷新。
   vim.schedule(function()
     activate_project_list({ create = false })
   end)
@@ -214,7 +214,7 @@ end
 
 return {
   "LintaoAmons/bookmarks.nvim",
-  event = "VeryLazy",
+  event = "User ConfigFilePost",
   init = configure_sqlite_clib,
   cmd = {
     "BookmarkRebindOrphanNode",

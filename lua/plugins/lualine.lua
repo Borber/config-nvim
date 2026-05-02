@@ -68,7 +68,7 @@ end
 local function setup_branch_refresh()
   local group = vim.api.nvim_create_augroup("ConfigLualineBranchRefresh", { clear = true })
 
-  -- ConfigFilePost 可能早于 VeryLazy，也可能晚于 lualine；两边都兜住才能稳定刷新首次状态栏。
+  -- ConfigFilePost 可能触发本次加载，也可能早于手动加载的 lualine；两边都兜住才能稳定刷新首次状态栏。
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = "ConfigFilePost",
@@ -85,7 +85,7 @@ end
 
 return {
   "nvim-lualine/lualine.nvim",
-  event = "VeryLazy",
+  event = "User ConfigFilePost",
   opts = {
     options = {
       theme = "auto",

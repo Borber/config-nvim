@@ -71,6 +71,7 @@ M.ui = {
   scroll_right = "",
   bookmark = "",
   markdown = "",
+  rocket = "",
 }
 
 -- OS 图标

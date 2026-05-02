@@ -80,7 +80,7 @@ end
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
-  lazy = false,
+  lazy = "VeryLazy",
   build = update_configured_parsers,
   config = function()
     require("nvim-treesitter").setup()
