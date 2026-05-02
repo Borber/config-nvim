@@ -9,21 +9,6 @@ local opt = vim.opt
 if vim.fn.exists("&winborder") == 1 then
   opt.winborder = "single" -- 默认让插件浮窗保持直角矩形边框。
 end
-local statuscolumn = {}
-
--- 从 gitsigns 读取当前行标记，塞回自定义 statuscolumn 的行号右侧。
-function statuscolumn.git_sign()
-  local gitsigns = package.loaded.gitsigns
-  if not gitsigns then
-    return " "
-  end
-
-  local sign = gitsigns.statuscolumn():gsub("%s+$", "")
-  return sign ~= "" and sign or " "
-end
-
-_G.ConfigStatusColumn = statuscolumn
-
 opt.number = true              -- 显示行号
 opt.relativenumber = true     -- 相对行号
 opt.mouse = "a"                -- 启用鼠标
@@ -84,8 +69,8 @@ function _G.ConfigFoldText()
   table.insert(parts, { "   ↙ [" .. hidden_count .. " lines hidden]", "ConfigFoldTail" })
   return parts
 end
-opt.signcolumn = "yes"       -- 常驻一格 sign 列，避免诊断/书签出现时挤动文本
-opt.statuscolumn = "%s%=%l%{%v:lua.ConfigStatusColumn.git_sign()%}"
+opt.signcolumn = "yes:1"       -- 常驻一格 sign 列，避免诊断/书签出现时挤动文本
+opt.numberwidth = 2            -- 行号列保持紧凑，超过两位时由 Neovim 自动扩展。
 opt.hidden = true              -- 切换缓冲区时保留未保存修改
 opt.autowriteall = true        -- 切换窗口等操作时自动保存
 opt.undofile = true            -- 跨启动保留撤销历史
