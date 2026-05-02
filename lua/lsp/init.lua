@@ -1,18 +1,37 @@
--- LSP 服务器注册中心
--- 统一管理所有语言服务器的配置声明，供 plugins/lsp.lua 调用 vim.lsp.enable()。
--- 每个服务器配置按语言拆分到 lua/lsp/servers/ 目录。
-
 local M = {}
 
--- 需要 Mason 自动安装的纯声明服务器
-M.default_servers = {}
+local server_names = {
+  "lua_ls",
+  "rust_analyzer",
+  "clangd",
+  "ts_ls",
+  "eslint",
+  "jsonls",
+  "bashls",
+  "taplo",
+}
 
--- 需要额外配置的自定义服务器（如 clangd、rust_analyzer、lua_ls 等）
-M.custom_servers = {}
+local function load_server(name)
+  local ok, config = pcall(require, "lsp.servers." .. name)
+  if not ok then
+    error(("Failed to load LSP server config %q: %s"):format(name, config))
+  end
 
-function M.setup()
-  -- 子类通过 setup() 注册 default_servers 和 custom_servers 条目，
-  -- 调用方通过 vim.lsp.config() + vim.lsp.enable() 激活。
+  return config or {}
+end
+
+function M.servers()
+  local servers = {}
+
+  for _, name in ipairs(server_names) do
+    servers[name] = load_server(name)
+  end
+
+  return servers
+end
+
+function M.names()
+  return vim.deepcopy(server_names)
 end
 
 return M

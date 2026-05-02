@@ -1,68 +1,8 @@
 -- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API
 -- mason-lspconfig v2 的 automatic_enable 会自动调用 vim.lsp.enable
 
-local function lua_ls_library()
-  local library = { vim.env.VIMRUNTIME }
-  local lazy_root = vim.fs.joinpath(vim.fn.stdpath("data"), "lazy")
-
-  if vim.uv.fs_stat(lazy_root) == nil then
-    return library
-  end
-
-  -- LuaLS 需要看到插件源码里的 EmmyLua 注解，才能识别插件导出的模块、类型和全局对象。
-  for name, type in vim.fs.dir(lazy_root) do
-    if type == "directory" then
-      local lua_dir = vim.fs.joinpath(lazy_root, name, "lua")
-      if vim.uv.fs_stat(lua_dir) ~= nil then
-        table.insert(library, lua_dir)
-      end
-    end
-  end
-
-  return library
-end
-
-local servers = {
-  lua_ls = {
-    settings = {
-      Lua = {
-        completion = { callSnippet = "Replace" },
-        diagnostics = { globals = { "vim", "MiniIcons" } },
-        runtime = { version = "LuaJIT" },
-        workspace = {
-          checkThirdParty = false,
-          library = lua_ls_library(),
-        },
-      },
-    },
-  },
-  rust_analyzer = {
-    settings = {
-      ["rust-analyzer"] = {
-        -- Rust 项目默认启用所有 feature，避免条件编译下的符号缺失。
-        cargo = { allFeatures = true },
-      },
-    },
-  },
-  -- C/C++ 只启用通用 clangd 能力，不写项目路径或 Chromium 专用探测。
-  clangd = {
-    cmd = {
-      "clangd",
-      "--background-index", -- 后台索引，提升跨文件跳转和引用查找体验
-      "--completion-style=detailed", -- 补全项保留更多类型/签名信息
-      "--header-insertion=never", -- 不让 clangd 自动插入 include，避免误改代码
-    },
-    init_options = {
-      clangdFileStatus = true, -- 允许 clangd 回报索引/解析状态
-    },
-  },
-  -- 常见 Web / 配置文件语言服务器先纳入 Mason 管理；具体项目能力由各 server 自己判断。
-  ts_ls = {},
-  eslint = {},
-  jsonls = {},
-  bashls = {},
-  taplo = {},
-}
+local lsp_registry = require("lsp")
+local servers = lsp_registry.servers()
 
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
@@ -121,7 +61,7 @@ return {
     end
 
     require("mason-lspconfig").setup({
-      ensure_installed = vim.tbl_keys(servers),
+      ensure_installed = lsp_registry.names(),
       automatic_enable = true,
     })
 
