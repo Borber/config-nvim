@@ -56,14 +56,10 @@ return {
         },
         border = require("util.float").noice_border(),
         win_options = {
-          winhighlight = {
-            Normal = "NormalFloat",
-            FloatTitle = "FloatTitle",
-            FloatBorder = "FloatBorder",
+          winhighlight = require("util.float").float_winhighlight({
             IncSearch = "",
             CurSearch = "",
-            Search = "",
-          },
+          }),
         },
       },
       cmdline_input = {
@@ -83,13 +79,10 @@ return {
         },
         win_options = {
           winblend = 0,
-          winhighlight = {
-            Normal = "NormalFloat",
-            FloatBorder = "FloatBorder",
+          winhighlight = require("util.float").float_winhighlight({
             IncSearch = "",
             CurSearch = "",
-            Search = "",
-          },
+          }),
         },
       },
       confirm = {
