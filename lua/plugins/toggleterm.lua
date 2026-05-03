@@ -112,30 +112,6 @@ local function toggle_default()
   end)
 end
 
-local function current_term()
-  -- identify() 会根据当前 buffer/window 找到对应的 toggleterm 实例。
-  local _, term = terminal_mod().identify()
-  return term
-end
-
-local function hide_current()
-  local term = current_term()
-  if term == nil then
-    vim.notify("Not in a terminal", vim.log.levels.INFO)
-    return
-  end
-  term:close()
-end
-
-local function shutdown_current()
-  local term = current_term()
-  if term == nil then
-    vim.notify("Not in a terminal", vim.log.levels.INFO)
-    return
-  end
-  term:shutdown()
-end
-
 local function rename_terminal()
   vim.cmd.ToggleTermSetName()
 end
@@ -147,8 +123,7 @@ local function pick_terminal()
     return
   end
 
-  -- 终端选择器复用通用 Telescope 外壳，但保留 toggleterm 自己的业务动作：
-  -- Enter 打开/聚焦终端，<C-x> 关闭选中终端并重新弹出列表。
+  -- 终端选择器复用通用 Telescope 外壳，但保留 toggleterm 自己的打开/聚焦动作。
   require("util.telescope_picker").dropdown({
     prompt_title = "Terminals",
     layout_config = { width = 0.5, height = 0.45 },
@@ -176,18 +151,7 @@ local function pick_terminal()
         end
       end
 
-      local function shutdown_selected()
-        local entry = telescope.action_state.get_selected_entry()
-        if entry and entry.value then
-          entry.value:shutdown()
-          telescope.actions.close(bufnr)
-          -- 关闭后重新打开选择器，方便连续清理多个终端。
-          vim.schedule(pick_terminal)
-        end
-      end
-
       telescope.actions.select_default:replace(open_selected)
-      map({ "i", "n" }, "<C-x>", shutdown_selected)
       return true
     end,
   })
@@ -204,8 +168,6 @@ return {
     { "<leader>tv", open_new("vertical"), desc = "New terminal (vertical)", mode = "n" },
     { "<leader>to", pick_terminal, desc = "Pick terminal", mode = "n" },
     { "<leader>tr", rename_terminal, desc = "Rename terminal", mode = "n" },
-    { "<C-x>", hide_current, desc = "Hide current terminal", mode = "t" },
-    { "<C-S-x>", shutdown_current, desc = "Shutdown current terminal", mode = "t" },
   },
   opts = {
     size = function(term)

@@ -84,6 +84,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>fH` | 命令历史 |
 | `<leader>x` / `<leader>X` | 删除 / 强制删除当前 buffer |
 | `<leader>bn` / `<leader>bp` | 下一个 / 上一个 buffer |
+| `<C-x>` | 关闭光标所在层级（窗口 / buffer / 特殊界面） |
 
 ### LSP / 诊断 / 符号
 
@@ -136,8 +137,6 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>to` | 终端选择器 |
 | `<leader>tr` | 重命名终端 |
 | `<leader>tn` | 外部终端 |
-| `<C-x>` | 隐藏当前终端（terminal 模式） |
-| `<C-S-x>` | 关闭并销毁当前终端（terminal 模式） |
 
 ### 任务（Overseer）
 
@@ -229,7 +228,7 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 ## Diffview
 
-Diffview 在三个面板（view、file_panel、file_history_panel）统一使用 `<C-x>` 关闭，和终端关闭手感保持一致。
+Diffview 关闭交给全局 `<C-x>`，在 Diffview tab 内会调用 Diffview 自己的关闭流程。
 
 ## 终端布局
 
