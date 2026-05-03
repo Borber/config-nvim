@@ -25,7 +25,7 @@ return {
           max_length = 72,
           generate = 5,
           temperature = 0.3,
-          max_tokens = 200,
+          max_tokens = 500,
         },
       },
       ui = {
