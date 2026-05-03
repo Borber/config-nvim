@@ -64,9 +64,9 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 ## LSP 配置
 
-- `lua/lsp/init.lua` 是 LSP server 注册中心，统一维护启用和 Mason 自动安装的 server 名单。
-- 具体 server 设置按文件拆到 `lua/lsp/servers/`，例如 `lua_ls.lua`、`clangd.lua`、`rust_analyzer.lua`。
-- `lua/plugins/lsp.lua` 只负责插件接线：诊断显示、Mason 配置和 `LspAttach` 快捷键。
+- `lua/lsp/init.lua` 是 LSP server 注册中心，统一维护启用的 server 名单。
+- `nvim-lspconfig` 提供默认 `cmd`、`filetypes` 和项目根目录识别；`lua/lsp/servers/` 只保留本地覆盖，例如 `lua_ls.lua`、`clangd.lua`、`rust_analyzer.lua`。
+- `lua/plugins/lsp.lua` 只负责插件接线：诊断显示、Mason 配置、启用 LSP 和 `LspAttach` 快捷键。
 
 ## 常用入口
 

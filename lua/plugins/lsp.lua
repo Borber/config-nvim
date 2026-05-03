@@ -40,7 +40,6 @@ return {
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       local registry = require("lsp")
-      local servers = registry.servers()
       local diagnostics = require("plugins.lsp.diagnostics")
 
       -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。
@@ -59,10 +58,7 @@ return {
         float = { border = require("util.float").border, source = "if_many" },
       })
 
-      for name, cfg in pairs(servers) do
-        vim.lsp.config(name, cfg)
-      end
-
+      registry.configure()
       vim.lsp.enable(registry.names())
 
       vim.api.nvim_create_autocmd("LspAttach", {
