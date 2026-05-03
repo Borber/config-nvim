@@ -44,6 +44,6 @@ end
 vim.g.neovide_scale_factor = 1.0
 
 -- 光标动画
-vim.g.neovide_cursor_animation_length = 0.25
-vim.g.neovide_cursor_trail_size = 1.25
+vim.g.neovide_cursor_animation_length = 0.45
+vim.g.neovide_cursor_trail_size = 1.50
 vim.g.neovide_cursor_vfx_mode = "pixiedust"

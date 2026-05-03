@@ -16,7 +16,9 @@ return {
       lua = { "stylua" },
       rust = { "rustfmt" },
       javascript = { "prettierd" },
+      javascriptreact = { "prettierd" },
       typescript = { "prettierd" },
+      typescriptreact = { "prettierd" },
       json = { "prettierd" },
       markdown = { "prettierd" },
       sh = { "shfmt" },
@@ -28,4 +30,7 @@ return {
     notify_on_error = true,
     notify_no_formatters = true,
   },
+  config = function(_, opts)
+    require("conform").setup(opts)
+  end,
 }
