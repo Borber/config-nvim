@@ -169,7 +169,7 @@ function M.setup()
   configured = true
 
   if vim.v.vim_did_enter == 1 then
-    vim.schedule(record_startup_paths)
+    record_startup_paths()
     return
   end
 

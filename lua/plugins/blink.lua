@@ -141,6 +141,11 @@ return {
           },
         },
       },
+
+      fuzzy = {
+        implementation = "prefer_rust_with_warning",
+      },
+
       signature = {
         window = {
           border = float.border,

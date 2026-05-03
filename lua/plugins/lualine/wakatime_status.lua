@@ -3,7 +3,7 @@ local M = {}
 -- WakaTime CLI 查询有外部进程开销；状态栏只缓存今日总时长，按事件节流刷新。
 local today = {
   text = "",
-  checked_at = 0,
+  checked_at = nil,
   pending = false,
   available = nil,
 }
@@ -24,17 +24,26 @@ local function refresh_statusline(force)
   })
 end
 
-local function total_minutes(output)
-  local text = vim.trim(tostring(output or ""))
-  local hours = tonumber(text:match("(%d+)%s+hrs?")) or 0
-  local minutes = tonumber(text:match("(%d+)%s+mins?")) or 0
+local function append_output(lines, data)
+  if type(data) ~= "table" then
+    return
+  end
 
-  return hours * 60 + minutes
+  for _, line in ipairs(data) do
+    if line ~= "" then
+      table.insert(lines, line)
+    end
+  end
+end
+
+local function decode_total_seconds(output)
+  local decoded = vim.json.decode(table.concat(output, "\n"))
+  return decoded.data.grand_total.total_seconds
 end
 
 local function format_today(output)
-  -- 官方摘要是英文时长文本；状态栏只保留总分钟数，减少左侧占宽。
-  local minutes = total_minutes(output)
+  -- 直接读取 CLI JSON 里的秒数，避免从英文摘要文本反推时间。
+  local minutes = math.floor(decode_total_seconds(output) / 60)
   if minutes == 0 then
     return ""
   end
@@ -44,29 +53,54 @@ local function format_today(output)
   return icons.ui.time .. " " .. tostring(minutes) .. "′"
 end
 
+local function wakatime_cli()
+  local cli = vim.fn.exepath("wakatime-cli")
+  if cli ~= "" then
+    return cli
+  end
+
+  return vim.fn.exepath("wakatime")
+end
+
 local function request_today(force)
-  local ok, wakatime = pcall(require, "wakatime")
-  if not ok or type(wakatime.get_today_summary) ~= "function" then
+  local cli = wakatime_cli()
+  if cli == "" then
     today.available = false
     return
   end
   today.available = true
 
   local now = vim.uv.now()
-  if today.pending or (not force and now - today.checked_at < refresh_interval) then
+  if today.pending or (not force and today.checked_at ~= nil and now - today.checked_at < refresh_interval) then
     return
   end
 
   today.pending = true
   today.checked_at = now
 
-  wakatime.get_today_summary(function(output)
+  local output = {}
+  local job = vim.fn.jobstart({ cli, "--today", "--output", "raw-json" }, {
+    stdout_buffered = true,
+    stderr_buffered = true,
+    on_stdout = function(_, data)
+      append_output(output, data)
+    end,
+    on_exit = function(_, exit_code)
+      vim.schedule(function()
+        today.pending = false
+        today.text = exit_code == 0 and format_today(output) or ""
+        refresh_statusline()
+      end)
+    end,
+  })
+
+  if not job or job <= 0 then
+    today.pending = false
+    today.text = ""
     vim.schedule(function()
-      today.pending = false
-      today.text = format_today(output)
       refresh_statusline()
     end)
-  end)
+  end
 end
 
 function M.component()
@@ -92,13 +126,13 @@ function M.setup_refresh()
   vim.api.nvim_create_autocmd({ "VimEnter", "FocusGained", "BufWritePost" }, {
     group = group,
     callback = function()
-      request_today(true)
+      request_today(false)
     end,
     desc = "Refresh lualine WakaTime today total",
   })
 
   vim.defer_fn(function()
-    request_today(true)
+    request_today(false)
   end, 1000)
 end
 

@@ -35,6 +35,9 @@ local refreshes = 0
 local branch_probe_bufs = {}
 local lualine_opts
 local wakatime_loads = 0
+local wakatime_jobs = {}
+local original_exepath = vim.fn.exepath
+local original_jobstart = vim.fn.jobstart
 
 package.loaded["lualine"] = {
   setup = function(opts)
@@ -49,13 +52,29 @@ package.loaded["wakatime"] = nil
 package.preload["wakatime"] = function()
   wakatime_loads = wakatime_loads + 1
 
-  return {
-    -- 模拟官方 Lua API 的异步摘要回调，锁住状态栏里的分钟格式。
-    get_today_summary = function(callback)
-      callback("5 hrs 14 mins")
-    end,
-  }
+  return {}
 end
+
+rawset(vim.fn, "exepath", function(command)
+  return command == "wakatime-cli" and "wakatime-cli" or ""
+end)
+
+rawset(vim.fn, "jobstart", function(command, opts)
+  table.insert(wakatime_jobs, command)
+
+  opts.on_stdout(1, {
+    vim.json.encode({
+      data = {
+        grand_total = {
+          total_seconds = 18840,
+        },
+      },
+    }),
+  }, "stdout")
+  opts.on_exit(1, 0, "exit")
+
+  return 1
+end)
 
 package.loaded["lualine.components.branch.git_branch"] = {
   find_git_dir = function()
@@ -110,14 +129,23 @@ assert_eq(wakatime_loads, 0, "ConfigUiReady should only set up deferred WakaTime
 
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()
-assert_eq(wakatime_loads, 1, "FocusGained should load WakaTime asynchronously")
+assert_eq(wakatime_loads, 0, "FocusGained should query WakaTime CLI without loading vim-wakatime")
+assert_eq(#wakatime_jobs, 1, "FocusGained should start one WakaTime CLI query")
+assert_eq(table.concat(wakatime_jobs[1], " "), "wakatime-cli --today --output raw-json", "WakaTime query should request raw JSON from CLI")
 assert_eq(
   lualine_opts.sections.lualine_c[1][1](),
   require("libs.icons").ui.time .. " 314" .. vim.fn.nr2char(0x2032),
-  "WakaTime today should render total minutes"
+  "WakaTime today should render total minutes from JSON seconds"
 )
 assert_eq(lualine_opts.sections.lualine_c[1].separator.right, "", "WakaTime should separate from diagnostics")
+vim.api.nvim_exec_autocmds("BufWritePost", { modeline = false })
+vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
+flush_scheduled()
+assert_eq(#wakatime_jobs, 1, "WakaTime refresh events should respect the refresh interval")
+
 assert_eq(type(lualine_opts.sections.lualine_c[1].color), "function", "WakaTime should keep its own color block")
 
+rawset(vim.fn, "exepath", original_exepath)
+rawset(vim.fn, "jobstart", original_jobstart)
 vim.fn.delete(tmp_root, "rf")
 print("headless lualine behavior checks passed")

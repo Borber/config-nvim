@@ -48,6 +48,38 @@ local function hop_action()
   return require("plugins.hop").keys[1][2]
 end
 
+local function stub_visits(overrides)
+  local visits = vim.tbl_extend("force", {
+    setup = function() end,
+    recent_paths_section = function()
+      return function()
+        return {}
+      end
+    end,
+    open_path = function() end,
+  }, overrides or {})
+
+  package.loaded["plugins.mini.visits"] = visits
+  return visits
+end
+
+local function stub_mini_starter(overrides)
+  local capture = {}
+  local starter = vim.tbl_extend("force", {
+    setup = function(opts)
+      capture.opts = opts
+    end,
+    gen_hook = {
+      aligning = function()
+        return function() end
+      end,
+    },
+  }, overrides or {})
+
+  package.loaded["mini.starter"] = starter
+  return capture
+end
+
 local tests = {}
 
 function tests.recent_paths_are_unique_ordered_and_removable()
@@ -85,15 +117,7 @@ function tests.starter_reuses_empty_placeholder_buffer()
   local saved_session = false
   local closed_files = false
 
-  package.loaded["plugins.mini.visits"] = {
-    setup = function() end,
-    recent_paths_section = function()
-      return function()
-        return {}
-      end
-    end,
-    open_path = function() end,
-  }
+  stub_visits()
   package.loaded["plugins.mini.sessions"] = {
     write_current = function()
       saved_session = true
@@ -108,17 +132,11 @@ function tests.starter_reuses_empty_placeholder_buffer()
   package.loaded["mini.bufremove"] = {
     delete = function() end,
   }
-  package.loaded["mini.starter"] = {
-    setup = function() end,
-    gen_hook = {
-      aligning = function()
-        return function() end
-      end,
-    },
+  stub_mini_starter({
     open = function(bufnr)
       opened_buf = bufnr
     end,
-  }
+  })
 
   vim.cmd("silent! enew!")
   local placeholder = vim.api.nvim_get_current_buf()
@@ -134,15 +152,7 @@ function tests.starter_hides_hidden_empty_placeholders()
 
   local opened_buf
 
-  package.loaded["plugins.mini.visits"] = {
-    setup = function() end,
-    recent_paths_section = function()
-      return function()
-        return {}
-      end
-    end,
-    open_path = function() end,
-  }
+  stub_visits()
   package.loaded["plugins.mini.sessions"] = {
     write_current = function() end,
   }
@@ -154,17 +164,11 @@ function tests.starter_hides_hidden_empty_placeholders()
   package.loaded["mini.bufremove"] = {
     delete = function() end,
   }
-  package.loaded["mini.starter"] = {
-    setup = function() end,
-    gen_hook = {
-      aligning = function()
-        return function() end
-      end,
-    },
+  stub_mini_starter({
     open = function(bufnr)
       opened_buf = bufnr
     end,
-  }
+  })
 
   local file = temp_path("starter-special", "main.lua")
   write_file(file, { "print('ok')" })
@@ -191,26 +195,11 @@ function tests.starter_hides_hidden_empty_placeholders()
   end
 end
 
-function tests.starter_hides_statusline_until_leave()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "lualine")
+function tests.starter_keeps_global_statusline_unchanged()
+  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions")
 
-  package.loaded["plugins.mini.visits"] = {
-    setup = function() end,
-    recent_paths_section = function()
-      return function()
-        return {}
-      end
-    end,
-    open_path = function() end,
-  }
-  package.loaded["mini.starter"] = {
-    setup = function() end,
-    gen_hook = {
-      aligning = function()
-        return function() end
-      end,
-    },
-  }
+  stub_visits()
+  stub_mini_starter()
 
   local original_laststatus = vim.o.laststatus
   vim.o.laststatus = 3
@@ -223,15 +212,66 @@ function tests.starter_hides_statusline_until_leave()
     modeline = false,
   })
 
-  assert_eq(vim.o.laststatus, 0, "starter should hide the bottom statusline")
-
-  vim.cmd("silent! enew!")
-  vim.wait(100, function()
-    return vim.o.laststatus == 3
-  end)
-
-  assert_eq(vim.o.laststatus, 3, "leaving starter should restore the previous statusline setting")
+  assert_eq(vim.o.laststatus, 3, "starter should leave global statusline ownership to lualine")
   vim.o.laststatus = original_laststatus
+end
+
+function tests.starter_initial_content_is_available_before_background()
+  reset_modules("plugins.mini.starter", "plugins.mini.visits", "lazy", "lazy.stats", "libs.icons")
+
+  local background_ready = vim.g.config_background_ready
+  vim.g.config_background_ready = nil
+
+  local setup_called = false
+
+  stub_visits({
+    setup = function()
+      setup_called = true
+    end,
+    recent_paths_section = function(limit)
+      assert_eq(limit, 5, "starter should request the configured recent path limit")
+      return function()
+        return {
+          {
+            name = "Project",
+            action = "",
+            recent_path = temp_path("project"),
+            section = "Recent paths",
+          },
+        }
+      end
+    end,
+  })
+  package.loaded["lazy"] = {
+    stats = function()
+      return {
+        loaded = 7,
+        count = 42,
+        startuptime = 99.999,
+      }
+    end,
+  }
+  package.loaded["lazy.stats"] = {
+    cputime = function()
+      return 12.345
+    end,
+  }
+  package.loaded["libs.icons"] = {
+    ui = {
+      rocket = "R",
+    },
+  }
+  local starter = stub_mini_starter()
+
+  require("plugins.mini.starter").setup()
+
+  local items = starter.opts.items[1]()
+  assert_true(setup_called, "starter should initialize visits before background work")
+  assert_eq(items[1].section, "Recent paths", "recent paths should render before delayed footer content")
+  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render before background work")
+
+  reset_modules("lazy", "lazy.stats", "libs.icons")
+  vim.g.config_background_ready = background_ready
 end
 
 function tests.mini_files_opens_from_root_and_focuses_current_branch()
@@ -524,7 +564,7 @@ function tests.neogit_status_s_stages_only_stageable_file_rows()
     end,
   }
 
-  local map = require("plugins.neogit").opts.mappings.status.s
+  local map = require("plugins.neogit").opts().mappings.status.s
   local function assert_s_behavior(expected_stage, message)
     staged = false
     hopped = false
@@ -587,7 +627,8 @@ local test_order = {
   "recent_paths_are_unique_ordered_and_removable",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
-  "starter_hides_statusline_until_leave",
+  "starter_keeps_global_statusline_unchanged",
+  "starter_initial_content_is_available_before_background",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
   "mini_files_does_not_install_local_hop_mapping",
