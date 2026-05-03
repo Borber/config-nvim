@@ -3,6 +3,10 @@
 -- 集中声明所有启用的 language server 名称，
 -- 从 lsp/servers/ 目录加载各自的配置表。
 -- ============================================
+---@class ConfigLspRegistry
+---@field servers fun(): table<string, vim.lsp.Config>
+---@field names fun(): string[]
+
 local M = {}
 
 local server_names = {
@@ -25,6 +29,7 @@ local function load_server(name)
   return config
 end
 
+---@return table<string, vim.lsp.Config>
 function M.servers()
   local servers = {}
 
@@ -35,6 +40,7 @@ function M.servers()
   return servers
 end
 
+---@return string[]
 function M.names()
   return vim.deepcopy(server_names)
 end

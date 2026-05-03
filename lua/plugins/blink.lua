@@ -91,9 +91,9 @@ end
 
 return {
   "saghen/blink.cmp",
-  version = "1.*",
   event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
+    "saghen/blink.lib",
     "fang2hou/blink-copilot",
   },
   config = function(_, opts)
@@ -191,7 +191,7 @@ return {
         },
       },
       fuzzy = {
-        implementation = "prefer_rust",
+        implementation = "rust",
         -- 先执行自定义比较器，再回退到 blink 默认的精确度/分数排序。
         sorts = { prefer_plain_symbol_over_copilot, "exact", "score", "sort_text" },
       },

@@ -64,13 +64,6 @@ local function lsp_capabilities()
   })
 end
 
-local function mason_lspconfig_opts()
-  return {
-    ensure_installed = require("lsp").names(),
-    automatic_enable = false,
-  }
-end
-
 return {
   {
     "williamboman/mason.nvim",
@@ -85,18 +78,12 @@ return {
     opts = {},
   },
   {
-    "williamboman/mason-lspconfig.nvim",
-    cmd = { "LspInstall", "LspUninstall" },
-    dependencies = { "williamboman/mason.nvim" },
-    opts = mason_lspconfig_opts,
-  },
-  {
     "neovim/nvim-lspconfig",
     event = "User ConfigUiReady",
     dependencies = { "williamboman/mason.nvim" },
     config = function()
-      local lsp_registry = require("lsp")
-      local servers = lsp_registry.servers()
+      local registry = require("lsp")
+      local servers = registry.servers()
       local diagnostics = require("plugins.lsp.diagnostics")
 
       -- 只把 WARN 及以上诊断显示成行内虚拟文本，HINT/INFO 仍保留在 Trouble/浮窗里。
@@ -125,7 +112,7 @@ return {
         vim.lsp.config(name, cfg)
       end
 
-      vim.lsp.enable(lsp_registry.names())
+      vim.lsp.enable(registry.names())
 
       vim.api.nvim_create_autocmd("LspAttach", {
         group = vim.api.nvim_create_augroup("ConfigLspAttach", { clear = true }),
