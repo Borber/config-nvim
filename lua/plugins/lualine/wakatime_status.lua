@@ -62,7 +62,7 @@ local function wakatime_cli()
   return vim.fn.exepath("wakatime")
 end
 
-local function request_today(force)
+local function request_today()
   local cli = wakatime_cli()
   if cli == "" then
     today.available = false
@@ -71,7 +71,7 @@ local function request_today(force)
   today.available = true
 
   local now = vim.uv.now()
-  if today.pending or (not force and today.checked_at ~= nil and now - today.checked_at < refresh_interval) then
+  if today.pending or (today.checked_at ~= nil and now - today.checked_at < refresh_interval) then
     return
   end
 
@@ -126,13 +126,13 @@ function M.setup_refresh()
   vim.api.nvim_create_autocmd({ "VimEnter", "FocusGained", "BufWritePost" }, {
     group = group,
     callback = function()
-      request_today(false)
+      request_today()
     end,
     desc = "Refresh lualine WakaTime today total",
   })
 
   vim.defer_fn(function()
-    request_today(false)
+    request_today()
   end, 1000)
 end
 

@@ -16,7 +16,7 @@ return {
     server_opts_overrides = {
       settings = {
         advanced = {
-          inlineSuggestCount = 4,
+          inlineSuggestCount = 5,
         },
       },
     },
