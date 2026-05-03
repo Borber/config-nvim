@@ -1,38 +1,3 @@
--- 提取候选项开头的标识符，用来判断 Copilot 是否只是把当前符号继续展开。
-local function leading_identifier(label)
-  if type(label) ~= "string" then
-    return nil
-  end
-
-  return label:match("^[%a_][%w_]*")
-end
-
--- 当 Copilot 候选只是对已有符号做扩写时，让本地/LSP 的纯符号项优先展示。
-local function prefer_plain_symbol_over_copilot(item_a, item_b)
-  local a_is_copilot = item_a.source_id == "copilot"
-  local b_is_copilot = item_b.source_id == "copilot"
-  if a_is_copilot == b_is_copilot then
-    return nil
-  end
-
-  local copilot_item = a_is_copilot and item_a or item_b
-  local other_item = a_is_copilot and item_b or item_a
-  local copilot_label = copilot_item.label or ""
-  local other_label = other_item.label or ""
-
-  if other_label ~= "" and vim.startswith(copilot_label, other_label) then
-    return not a_is_copilot
-  end
-
-  local copilot_head = leading_identifier(copilot_label)
-  local other_head = leading_identifier(other_label)
-  if copilot_head ~= nil and copilot_head == other_head then
-    return not a_is_copilot
-  end
-
-  return nil
-end
-
 local function preview_multiline_completion(item)
   local text_edits = require("blink.cmp.lib.text_edits")
   local text_edit = text_edits.get_from_item(item)
@@ -79,23 +44,17 @@ local function cmdline_menu_position()
   return { row, math.max(position.screenpos.col - 4, 0) }
 end
 
-local function cmdline_menu_direction()
-  local cmdtype = vim.fn.getcmdtype()
-  if cmdtype == "/" or cmdtype == "?" then
-    -- 搜索命令行在底部，补全菜单优先向上展开，避免遮挡 lualine。
-    return { "n", "s" }
-  end
-
-  return { "s", "n" }
-end
-
 return {
   "saghen/blink.cmp",
   event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
     "saghen/blink.lib",
+    "rafamadriz/friendly-snippets",
     "fang2hou/blink-copilot",
   },
+  build = function()
+    require("blink.cmp").build():wait(60000)
+  end,
   config = function(_, opts)
     -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
     -- 这个入口属于内部模块，升级 blink 后如果预览异常，优先检查这里。
@@ -121,7 +80,6 @@ return {
         },
         menu = {
           border = float.border,
-          direction_priority = cmdline_menu_direction,
           winhighlight = float.menu_winhighlight(),
           cmdline_position = cmdline_menu_position,
         },
@@ -179,21 +137,9 @@ return {
           copilot = {
             name = "copilot",
             module = "blink-copilot",
-            -- 只做轻微加权，避免 Copilot 抢过本地/LSP 的精确候选。
-            score_offset = 30,
             async = true,
-            opts = {
-              debounce = 100,
-              max_completions = 4,
-              max_attempts = 5,
-            },
           },
         },
-      },
-      fuzzy = {
-        implementation = "rust",
-        -- 先执行自定义比较器，再回退到 blink 默认的精确度/分数排序。
-        sorts = { prefer_plain_symbol_over_copilot, "exact", "score", "sort_text" },
       },
       signature = {
         window = {
@@ -211,17 +157,6 @@ return {
           ["<Up>"] = { "select_prev", "fallback" },
           ["<Down>"] = { "select_next", "fallback" },
         },
-        sources = function()
-          local cmdtype = vim.fn.getcmdtype()
-          -- 搜索命令只需要当前 buffer 内容；冒号命令则同时补命令和已有文本。
-          if cmdtype == "/" or cmdtype == "?" then
-            return { "buffer" }
-          end
-          if cmdtype == ":" or cmdtype == "@" then
-            return { "cmdline", "buffer" }
-          end
-          return {}
-        end,
         completion = {
           menu = {
             auto_show = true,

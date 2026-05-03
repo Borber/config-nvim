@@ -18,7 +18,7 @@
 | 插件管理 | lazy.nvim |
 | 启动页 / 文件树 | mini.nvim（starter、files、visits、sessions、surround、pairs、ai、move、align、splitjoin、bufremove） |
 | 补全 | blink.cmp + blink-copilot + Copilot.lua + friendly-snippets |
-| LSP | nvim-lspconfig + mason + mason-lspconfig（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
+| LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | 主题 | rose-pine（dawn 变体） |
 | 查找 | telescope.nvim + fzf-native |
 | 诊断 | trouble.nvim |
@@ -66,7 +66,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 - `lua/lsp/init.lua` 是 LSP server 注册中心，统一维护启用和 Mason 自动安装的 server 名单。
 - 具体 server 设置按文件拆到 `lua/lsp/servers/`，例如 `lua_ls.lua`、`clangd.lua`、`rust_analyzer.lua`。
-- `lua/plugins/lsp.lua` 只负责插件接线：共享 capabilities、诊断显示、Mason 配置和 `LspAttach` 快捷键。
+- `lua/plugins/lsp.lua` 只负责插件接线：诊断显示、Mason 配置和 `LspAttach` 快捷键。
 
 ## 常用入口
 

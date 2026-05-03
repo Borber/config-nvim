@@ -21,49 +21,6 @@ local function telescope_lsp_picker(name)
   end
 end
 
-local function lsp_capabilities()
-  -- 复制 blink.cmp 暴露的 LSP completion capabilities，避免 LSP 启动时反向加载整个补全插件。
-  return vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), {
-    textDocument = {
-      completion = {
-        completionItem = {
-          snippetSupport = true,
-          commitCharactersSupport = false,
-          documentationFormat = { "markdown", "plaintext" },
-          deprecatedSupport = true,
-          preselectSupport = false,
-          tagSupport = { valueSet = { 1 } },
-          insertReplaceSupport = true,
-          resolveSupport = {
-            properties = {
-              "documentation",
-              "detail",
-              "additionalTextEdits",
-              "command",
-              "data",
-            },
-          },
-          insertTextModeSupport = {
-            valueSet = { 1 },
-          },
-          labelDetailsSupport = true,
-        },
-        completionList = {
-          itemDefaults = {
-            "commitCharacters",
-            "editRange",
-            "insertTextFormat",
-            "insertTextMode",
-            "data",
-          },
-        },
-        contextSupport = true,
-        insertTextMode = 1,
-      },
-    },
-  })
-end
-
 return {
   {
     "williamboman/mason.nvim",
@@ -100,12 +57,6 @@ return {
           severity = { min = vim.diagnostic.severity.WARN },
         },
         float = { border = require("util.float").border, source = "if_many" },
-      })
-
-      -- 所有 server 共享的默认 capabilities：保持 blink.cmp 的 completion 能力声明，
-      -- 但不在 LSP 启动阶段加载补全插件本体。
-      vim.lsp.config("*", {
-        capabilities = lsp_capabilities(),
       })
 
       for name, cfg in pairs(servers) do
