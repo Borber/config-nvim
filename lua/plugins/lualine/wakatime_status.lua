@@ -39,7 +39,9 @@ local function format_today(output)
     return ""
   end
 
-  return tostring(minutes) .. "′"
+  local icons = require("libs.icons")
+
+  return icons.ui.time .. " " .. tostring(minutes) .. "′"
 end
 
 local function request_today(force)
@@ -75,8 +77,6 @@ function M.has_today()
   if today.available == false then
     return false
   end
-
-  request_today()
 
   -- 窄窗口优先让出空间给 mode/branch/diagnostics。
   return vim.o.columns > 100 and today.text ~= ""

@@ -77,6 +77,7 @@ M.ui = {
   bookmark = "",
   markdown = "",
   rocket = "",
+  time = "",
 }
 
 -- OS 图标

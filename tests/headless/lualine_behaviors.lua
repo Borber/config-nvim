@@ -34,6 +34,7 @@ end
 local refreshes = 0
 local branch_probe_bufs = {}
 local lualine_opts
+local wakatime_loads = 0
 
 package.loaded["lualine"] = {
   setup = function(opts)
@@ -44,12 +45,17 @@ package.loaded["lualine"] = {
   end,
 }
 
-package.loaded["wakatime"] = {
-  -- 模拟官方 Lua API 的异步摘要回调，锁住状态栏里的分钟格式。
-  get_today_summary = function(callback)
-    callback("5 hrs 14 mins")
-  end,
-}
+package.loaded["wakatime"] = nil
+package.preload["wakatime"] = function()
+  wakatime_loads = wakatime_loads + 1
+
+  return {
+    -- 模拟官方 Lua API 的异步摘要回调，锁住状态栏里的分钟格式。
+    get_today_summary = function(callback)
+      callback("5 hrs 14 mins")
+    end,
+  }
+end
 
 package.loaded["lualine.components.branch.git_branch"] = {
   find_git_dir = function()
@@ -59,6 +65,11 @@ package.loaded["lualine.components.branch.git_branch"] = {
 
 local lualine_spec = require("plugins.lualine")
 lualine_spec.config(nil, lualine_spec.opts())
+assert_eq(wakatime_loads, 0, "lualine setup should not load WakaTime synchronously")
+assert_eq(package.loaded["plugins.lualine.wakatime_status"], nil, "WakaTime status module should be deferred")
+assert_eq(lualine_opts.sections.lualine_c[1][1](), "", "WakaTime component should be empty before refresh")
+assert_eq(lualine_opts.sections.lualine_c[1].cond(), false, "WakaTime cond should not load status module")
+assert_eq(wakatime_loads, 0, "WakaTime cond should not load WakaTime synchronously")
 
 local project = temp_path("project")
 vim.fn.mkdir(project, "p")
@@ -90,9 +101,21 @@ flush_scheduled()
 assert_eq(refreshes, 1, "real file should refresh lualine branch once")
 assert_eq(branch_probe_bufs[1], file_buf, "branch refresh should run in the real file buffer")
 
+vim.api.nvim_exec_autocmds("User", {
+  pattern = "ConfigUiReady",
+  modeline = false,
+})
+flush_scheduled()
+assert_eq(wakatime_loads, 0, "ConfigUiReady should only set up deferred WakaTime refresh")
+
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()
-assert_eq(lualine_opts.sections.lualine_c[1][1](), "314′", "WakaTime today should render total minutes")
+assert_eq(wakatime_loads, 1, "FocusGained should load WakaTime asynchronously")
+assert_eq(
+  lualine_opts.sections.lualine_c[1][1](),
+  require("libs.icons").ui.time .. " 314" .. vim.fn.nr2char(0x2032),
+  "WakaTime today should render total minutes"
+)
 assert_eq(lualine_opts.sections.lualine_c[1].separator.right, "", "WakaTime should separate from diagnostics")
 assert_eq(type(lualine_opts.sections.lualine_c[1].color), "function", "WakaTime should keep its own color block")
 

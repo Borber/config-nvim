@@ -93,6 +93,7 @@ return {
   {
     "neovim/nvim-lspconfig",
     event = "User ConfigUiReady",
+    dependencies = { "williamboman/mason.nvim" },
     config = function()
       local lsp_registry = require("lsp")
       local servers = lsp_registry.servers()
