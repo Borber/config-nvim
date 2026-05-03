@@ -28,6 +28,20 @@ local function short_mode(mode)
   return mode_labels[mode] or mode:sub(1, 1)
 end
 
+local function refresh_statusline(force)
+  local ok, lualine = pcall(require, "lualine")
+  if not ok then
+    return
+  end
+
+  lualine.refresh({
+    scope = "tabpage",
+    place = { "statusline" },
+    trigger = "autocmd",
+    force = force == true,
+  })
+end
+
 local function is_branch_probe_buffer(bufnr)
   local buffer_util = require("libs.buffer")
   local path_util = require("libs.path")
@@ -68,12 +82,7 @@ local function refresh_branch_statusline(preferred_bufnr)
   -- 用真实文件 buffer 的上下文刷新 git_dir，否则首次打开仓库时要等 BufEnter 才能看到分支。
   vim.api.nvim_buf_call(bufnr, git_branch.find_git_dir)
 
-  require("lualine").refresh({
-    scope = "tabpage",
-    place = { "statusline" },
-    trigger = "autocmd",
-    force = true,
-  })
+  refresh_statusline(true)
 end
 
 local function setup_branch_refresh()
@@ -103,10 +112,12 @@ return {
   priority = 950,
   opts = function()
     local ic = require("libs.icons")
+    local theme = require("plugins.lualine.theme")
+    local wakatime = require("plugins.lualine.wakatime_status")
 
     return {
       options = {
-        theme = "auto",
+        theme = theme.statusline(),
         globalstatus = true,
         always_divide_middle = false,
         component_separators = { left = "", right = "" },
@@ -129,6 +140,13 @@ return {
           },
         },
         lualine_c = {
+          {
+            -- WakaTime 单独占第三段，用自己的背景和右斜角从 diagnostics 前切开。
+            wakatime.component,
+            cond = wakatime.has_today,
+            color = theme.wakatime_color,
+            separator = { right = "" },
+          },
           {
             "diagnostics",
             sources = { "nvim_diagnostic" },
@@ -186,5 +204,6 @@ return {
   config = function(_, opts)
     require("lualine").setup(opts)
     setup_branch_refresh()
+    require("plugins.lualine.wakatime_status").setup_refresh()
   end,
 }
