@@ -104,7 +104,7 @@ return {
     "nvim-telescope/telescope.nvim",
     "sindrets/diffview.nvim",
     -- 让 Neogit 的 commit popup 能调用 AI commit action。
-    "404pilo/aicommits.nvim",
+    "borber/aicommits.nvim",
   },
   keys = {
     { "<leader>gg", open_neogit(), desc = "Git status" },

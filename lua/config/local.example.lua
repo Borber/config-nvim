@@ -9,6 +9,12 @@ return {
     },
   },
 
+  orgmode = {
+    -- 全局 Org 笔记本根目录；不填时默认使用 ~/Dropbox/org。
+    root = "~/Dropbox/org",
+    drawer_width = 48,
+  },
+
   aicommits = {
     -- Codestral API key。不要把真实 key 写进 example 文件。
     api_key = "your-codestral-api-key",

@@ -56,7 +56,7 @@ opt.confirm = true -- 关闭/切换未保存 buffer 时给出确认
 opt.splitright = true -- 纵向分屏默认在右侧打开
 opt.splitbelow = true -- 横向分屏默认在下方打开
 opt.updatetime = 250 -- 更快触发 CursorHold / Git / LSP 刷新
-opt.timeoutlen = 400 -- 缩短 leader 组合键等待时间
+opt.timeoutlen = 850 -- 缩短 leader 组合键等待时间
 
 -- ============================================
 -- 折叠显示

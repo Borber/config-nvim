@@ -9,19 +9,19 @@ local map = vim.keymap.set
 -- 插入模式
 -- ============================================
 map("i", "jj", "<Esc>", { silent = true, desc = "Esc" })
-map("i", "<M-h>", "<Left>",  { silent = true })
-map("i", "<M-j>", "<Down>",  { silent = true })
-map("i", "<M-k>", "<Up>",    { silent = true })
+map("i", "<M-h>", "<Left>", { silent = true })
+map("i", "<M-j>", "<Down>", { silent = true })
+map("i", "<M-k>", "<Up>", { silent = true })
 map("i", "<M-l>", "<Right>", { silent = true })
-map("i", "<M-b>", "<C-o>b",  { silent = true })
-map("i", "<M-f>", "<C-o>w",  { silent = true })
+map("i", "<M-b>", "<C-o>b", { silent = true })
+map("i", "<M-f>", "<C-o>w", { silent = true })
 
 -- ============================================
 -- 命令行模式（/、?、:）
 -- ============================================
-map("c", "<M-h>", "<Left>",  { silent = true })
-map("c", "<M-j>", "<Down>",  { silent = true })
-map("c", "<M-k>", "<Up>",    { silent = true })
+map("c", "<M-h>", "<Left>", { silent = true })
+map("c", "<M-j>", "<Down>", { silent = true })
+map("c", "<M-k>", "<Up>", { silent = true })
 map("c", "<M-l>", "<Right>", { silent = true })
 
 -- ============================================
@@ -43,7 +43,7 @@ end, { silent = true, desc = "Move window edge up" })
 map("n", "<C-Right>", function()
   require("util.window").resize_current_edge("right")
 end, { silent = true, desc = "Move window edge right" })
-map({ "n", "t" }, "<C-x>", function()
+map({ "n", "t" }, "<leader>x", function()
   require("util.window").close_current()
 end, { silent = true, desc = "Close current layer" })
 

@@ -24,13 +24,14 @@
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
+| 笔记 | nvim-orgmode/orgmode |
 | 终端 | toggleterm.nvim（自定义布局：水平贴底、垂直在右互不侵占） |
 | 格式化 | conform.nvim |
 | UI | noice.nvim（命令行 / 消息浮窗）、lualine.nvim（状态栏 / tabline）、render-markdown.nvim、markdown-plus.nvim |
 | 书签 | bookmarks.nvim（按项目自动切换列表） |
 | Treesitter | nvim-treesitter（main 分支）+ treesitter-context |
 | 导航 | hop.nvim（普通文件按词跳转，部分特殊界面跨窗口按行跳转） |
-| 按键 | which-key.nvim、hawtkeys.nvim、hardtime.nvim（按键习惯提示） |
+| 按键 | which-key.nvim、hawtkeys.nvim |
 | Neovide | neov-ime.nvim（IME 管理） |
 
 ## 本地私密配置
@@ -51,6 +52,10 @@ return {
     diagnostic_mute_roots = {
       -- "/path/to/large/project",
     },
+  },
+  orgmode = {
+    root = "~/Dropbox/org",
+    drawer_width = 48,
   },
   aicommits = {
     api_key = "your-codestral-api-key",
@@ -82,9 +87,9 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>fh` | 帮助标签 |
 | `<leader>fr` | 最近打开文件 |
 | `<leader>fH` | 命令历史 |
-| `<leader>x` / `<leader>X` | 删除 / 强制删除当前 buffer |
+| `<leader>x` | 关闭光标所在层级（窗口 / buffer / 特殊界面） |
+| `<leader>X` | 强制删除当前 buffer |
 | `<leader>bn` / `<leader>bp` | 下一个 / 上一个 buffer |
-| `<C-x>` | 关闭光标所在层级（窗口 / buffer / 特殊界面） |
 
 ### LSP / 诊断 / 符号
 
@@ -126,6 +131,17 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>sr` | 恢复当前项目 session |
 | `<leader>sR` | 从列表选择 session 恢复 |
 | `<leader>sd` | 从列表删除 session |
+
+### 笔记
+
+| 按键 | 功能 |
+|------|------|
+| `<leader>nn` | 打开 / 关闭全局 Org 笔记抽屉 |
+| `<leader>ni` | 打开全局 Org inbox |
+| `<leader>nj` | 打开全局 Org journal |
+| `<leader>na` | 打开自定义 Org agenda 选择浮窗 |
+| `<leader>nc` | 打开自定义 Org capture 模板浮窗 |
+| `:Notes` | 打开 / 关闭全局 Org 笔记抽屉 |
 
 ### 终端
 
@@ -170,7 +186,6 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `[c` | 跳转到 Treesitter 上下文 |
 | `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行；Neogit 未暂存/未跟踪文件行会优先 stage |
 | `<leader>ka` / `<leader>kd` / `<leader>kh` | hawtkeys 全量键位 / 重复键位 / 建议 |
-| `<leader>kr` / `<leader>kt` | hardtime 报告 / 切换 |
 | `<leader>qq` / `<leader>qw` / `<leader>qQ` | 退出 / 保存退出 / 强制退出 |
 | `:R` | 重载 Neovim 配置（热更新，不重启） |
 | `:Starter` | 手动打开启动页 |
@@ -228,7 +243,7 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 ## Diffview
 
-Diffview 关闭交给全局 `<C-x>`，在 Diffview tab 内会调用 Diffview 自己的关闭流程。
+Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview 自己的关闭流程。
 
 ## 终端布局
 
@@ -254,6 +269,7 @@ toggleterm 使用自定义窗口切分策略：
 - `signcolumn` 固定保留（`yes`），避免诊断、git sign 或书签 sign 出现时正文左右跳动。gitsigns 通过自定义 `statuscolumn` 在行号右侧显示 git 标记。
 - Treesitter 折叠行使用自定义格式（`◇` 前缀 + 首行预览 + 尾部信息）。
 - Markdown 链接相关快捷键放在 `after/ftplugin/markdown.lua`，Lua 文件局部设置放在 `after/ftplugin/lua.lua`。
+- Org 笔记默认使用全局 `~/Dropbox/org` 根目录，可通过 `lua/config/local.lua` 的 `orgmode.root` 覆盖；右侧抽屉 buffer 不进入普通 buffer 列表，避免污染项目工作流。
 - Noice 在补全菜单显示时自动抑制 LSP signature popup，避免浮窗抢焦点。
 
 ## Treesitter
@@ -263,12 +279,6 @@ toggleterm 使用自定义窗口切分策略：
 - 每次 `build`（插件安装/更新时）自动更新全部已配置 parser。
 - 启动后补装可能缺失的 parser。
 - `:TSInstallConfigParsers` 可手动安装全部已配置 parser。
-
-## 键位习惯监控
-
-hardtime.nvim 以 `hint` 模式运行，不拦截按键流，通过提示帮助发现低效按键习惯。
-
-`<leader>kr` 查看报告，`<leader>kt` 切换开关。
 
 ## Neovide
 

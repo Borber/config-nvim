@@ -6,7 +6,7 @@ local function local_aicommits_config()
 end
 
 return {
-  "404pilo/aicommits.nvim",
+  "borber/aicommits.nvim",
   cmd = { "AICommit", "AICommitHealth", "AICommitDebug" },
   opts = function()
     local local_config = local_aicommits_config()
@@ -26,6 +26,13 @@ return {
           generate = 5,
           temperature = 0.3,
           max_tokens = 500,
+        },
+      },
+      input = {
+        mode = "rich",
+        rich = {
+          chunk_chars = 6000,
+          max_chunks_per_file = 10,
         },
       },
       ui = {
