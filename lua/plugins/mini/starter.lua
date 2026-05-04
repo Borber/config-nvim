@@ -5,6 +5,8 @@
 -- ============================================
 local M = {}
 local configured = false
+local startup_footer_enabled = false
+local startup_footer_text = nil
 local buffer_util = require("libs.buffer")
 
 local function ensure_visits()
@@ -125,13 +127,26 @@ local function home_directory()
   return vim.uv.os_homedir() or vim.fn.expand("~")
 end
 
-local function startup_footer()
+local function build_startup_footer()
   local stats = require("lazy").stats()
   local icons = require("libs.icons")
 
   local startuptime = require("lazy.stats").cputime()
   local ms = math.floor(startuptime * 100 + 0.5) / 100
   return ("%s Loaded %d/%d plugins in %.2f ms"):format(icons.ui.rocket, stats.loaded or 0, stats.count or 0, ms)
+end
+
+local function startup_footer()
+  if not startup_footer_enabled then
+    return ""
+  end
+
+  if startup_footer_text == nil then
+    -- 启动耗时只代表 Neovim 首次进入 Starter 的那一刻；后续重开 Starter 不再重算。
+    startup_footer_text = build_startup_footer()
+  end
+
+  return startup_footer_text
 end
 
 local function recent_paths_items()
@@ -168,6 +183,7 @@ local function ensure_setup(autoopen)
   end
 
   configured = true
+  startup_footer_enabled = autoopen == true
 
   local starter = require("mini.starter")
   ensure_visits()
@@ -233,6 +249,7 @@ end
 
 function M.open()
   ensure_setup(false)
+  startup_footer_enabled = false
   prepare_starter()
 
   local starter_buf

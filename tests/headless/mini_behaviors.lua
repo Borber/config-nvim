@@ -217,12 +217,17 @@ function tests.starter_keeps_global_statusline_unchanged()
 end
 
 function tests.starter_initial_content_is_available_before_background()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "lazy", "lazy.stats", "libs.icons")
+  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
 
   local background_ready = vim.g.config_background_ready
   vim.g.config_background_ready = nil
 
   local setup_called = false
+  local stats = {
+    loaded = 7,
+    count = 42,
+  }
+  local cputime = 12.345
 
   stub_visits({
     setup = function()
@@ -244,16 +249,12 @@ function tests.starter_initial_content_is_available_before_background()
   })
   package.loaded["lazy"] = {
     stats = function()
-      return {
-        loaded = 7,
-        count = 42,
-        startuptime = 99.999,
-      }
+      return stats
     end,
   }
   package.loaded["lazy.stats"] = {
     cputime = function()
-      return 12.345
+      return cputime
     end,
   }
   package.loaded["libs.icons"] = {
@@ -261,14 +262,33 @@ function tests.starter_initial_content_is_available_before_background()
       rocket = "R",
     },
   }
-  local starter = stub_mini_starter()
+  local starter = stub_mini_starter({
+    open = function() end,
+  })
+  package.loaded["plugins.mini.sessions"] = {
+    write_current = function() end,
+  }
+  package.loaded["mini.files"] = {
+    close = function() end,
+  }
+  package.loaded["mini.bufremove"] = {
+    delete = function() end,
+  }
 
-  require("plugins.mini.starter").setup()
+  local starter_module = require("plugins.mini.starter")
+  starter_module.setup({ autoopen = true })
 
   local items = starter.opts.items[1]()
   assert_true(setup_called, "starter should initialize visits before background work")
   assert_eq(items[1].section, "Recent paths", "recent paths should render before delayed footer content")
   assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render before background work")
+
+  stats.loaded = 25
+  cputime = 27464.444
+  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should keep the first startup snapshot")
+
+  starter_module.open()
+  assert_eq(starter.opts.footer(), "", "manual starter reopen should hide the startup-only footer")
 
   reset_modules("lazy", "lazy.stats", "libs.icons")
   vim.g.config_background_ready = background_ready
