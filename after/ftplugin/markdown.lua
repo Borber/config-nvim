@@ -57,6 +57,19 @@ end
 map("n", "K", open_markdown_target, "Open markdown link")
 map({ "n", "x" }, "<localleader>mx", "<Plug>(MarkdownPlusToggleCheckbox)", "Toggle checkbox")
 
+-- ufo 的 foldtext handler 会覆盖整行，导致 render-markdown.nvim 的 hl_eol 标题
+-- 背景丢失；这里把当前 buffer 从 ufo detach，改用 treesitter foldexpr + 默认
+-- foldtext，标题背景与表格图标继续由 render-markdown.nvim 渲染。
+do
+  local ok, ufo = pcall(require, "ufo")
+  if ok then
+    pcall(ufo.detach)
+  end
+  vim.opt_local.foldmethod = "expr"
+  vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+  vim.opt_local.foldtext = ""
+end
+
 local function has_buffer_keymap(bufnr, mode, lhs)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return false

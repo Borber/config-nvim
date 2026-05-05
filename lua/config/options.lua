@@ -61,8 +61,9 @@ opt.timeoutlen = 850 -- 缩短 leader 组合键等待时间
 -- ============================================
 -- 折叠显示
 -- ============================================
-opt.foldlevelstart = 99 -- 新窗口默认全展开，LSP 折叠不自动收拢
-require("config.fold").setup() -- foldmethod/foldexpr/foldtext 全部下沉到 fold 子模块
+-- foldmethod / foldexpr / foldtext / foldlevel 全部由 nvim-ufo 接管，参见
+-- `lua/plugins/ufo.lua`：`init` 写入推荐 options，`opts` 配置 provider 与
+-- foldtext handler。这里不再提前设置任何 fold 选项，避免与 ufo 冲突。
 
 -- ============================================
 -- 搜索、替换与跳转
