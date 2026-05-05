@@ -1,13 +1,82 @@
+local function normalize_display_path(path)
+  return vim.fs.normalize(path):gsub("\\", "/")
+end
+
+local is_windows = package.config:sub(1, 1) == "\\"
+
+local function normalize_buffer_path(path)
+  if not is_windows or not path:match("^%a:[/\\]") then
+    return path
+  end
+
+  return vim.fs.normalize(path):gsub("/", "\\")
+end
+
+local function cwd_relative_path(path)
+  if path == nil or path == "" then
+    return path
+  end
+
+  if not path:find("[/\\]") and not path:match("^%a:") then
+    return path
+  end
+
+  local normalized = normalize_display_path(path)
+  if not normalized:match("^/") and not normalized:match("^%a:/") then
+    return normalized
+  end
+
+  local relative = vim.fs.relpath(normalize_display_path(vim.uv.cwd() or vim.fn.getcwd()), normalized)
+  if relative ~= nil then
+    return relative
+  end
+
+  return normalize_display_path(vim.fn.fnamemodify(normalized, ":~"))
+end
+
 local function buffer_path_display(_, path)
-  local filename = vim.fn.fnamemodify(path, ":t")
-  local parent = vim.fn.fnamemodify(vim.fn.fnamemodify(path, ":h"), ":~:.")
+  local display_path = cwd_relative_path(path)
+  local filename = vim.fn.fnamemodify(display_path, ":t")
+  local parent = vim.fn.fnamemodify(display_path, ":h")
 
   if parent == "." or parent == "" then
     return filename
   end
 
-  -- Buffer 列表优先显示文件名，只保留一段短目录用来区分同名文件。
-  return filename .. " " .. parent:gsub("\\", "/")
+  -- Windows 下 Telescope 可能先传入未相对化的绝对路径，这里保持 buffer 列表文件名优先。
+  return filename .. " " .. normalize_display_path(parent)
+end
+
+local function buffer_number_width()
+  local max_bufnr = 1
+
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.fn.buflisted(bufnr) == 1 then
+      max_bufnr = math.max(max_bufnr, bufnr)
+    end
+  end
+
+  return #tostring(max_bufnr)
+end
+
+local function buffer_entry_maker(opts)
+  local make_default_entry
+
+  return function(entry)
+    if make_default_entry == nil then
+      make_default_entry = require("telescope.make_entry").gen_from_buffer(opts)
+    end
+
+    if entry.info == nil or entry.info.name == "" then
+      return make_default_entry(entry)
+    end
+
+    return make_default_entry(vim.tbl_extend("force", entry, {
+      info = vim.tbl_extend("force", entry.info, {
+        name = normalize_buffer_path(entry.info.name),
+      }),
+    }))
+  end
 end
 
 return {
@@ -38,9 +107,13 @@ return {
     {
       "<leader>,",
       function()
-        require("telescope.builtin").buffers({
+        local opts = {
+          bufnr_width = buffer_number_width(),
           path_display = buffer_path_display,
-        })
+        }
+        opts.entry_maker = buffer_entry_maker(opts)
+
+        require("telescope.builtin").buffers(opts)
       end,
       desc = "Buffers",
     },
