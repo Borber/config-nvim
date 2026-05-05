@@ -116,6 +116,11 @@ return {
     local sessions = require("plugins.mini.sessions")
     sessions.setup()
 
+    if vim.fn.argc() > 0 then
+      -- 命令行路径是启动语义，不能等背景层；否则 `nvim .` 可能来不及写入 recent paths。
+      require("plugins.mini.visits").setup()
+    end
+
     vim.keymap.set("n", "<leader>e", function()
       require("plugins.mini.files").toggle()
     end, {
