@@ -150,7 +150,7 @@ local function startup_footer()
 end
 
 local function recent_paths_items()
-  return ensure_visits().recent_paths_section(5)()
+  return ensure_visits().recent_paths_section(10)()
 end
 
 local function prepare_starter()
