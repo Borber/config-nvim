@@ -13,8 +13,6 @@ local recent_projects_limit = 100
 local canonical_path = path_util.canonical_absolute
 local is_directory = path_util.is_directory
 local path_exists = path_util.exists
-local dirchanged_timer = nil
-local suppressed_project = nil
 
 local function home_directory()
   local home = vim.uv.os_homedir()
@@ -143,40 +141,8 @@ local function remove_recent_project(path)
   return removed
 end
 
-local function record_project(path)
-  local project = project_from_path(path)
-  if project == nil then
-    return
-  end
-
-  if suppressed_project ~= nil then
-    local should_skip = suppressed_project == project
-    suppressed_project = nil
-    if should_skip then
-      return
-    end
-  end
-
-  push_recent_project(project)
-end
-
 local function record_current_project()
-  record_project(vim.fn.getcwd())
-end
-
-local function schedule_current_project_record(delay)
-  if dirchanged_timer then
-    dirchanged_timer:stop()
-  end
-
-  dirchanged_timer = vim.defer_fn(function()
-    dirchanged_timer = nil
-    record_current_project()
-  end, delay or 50)
-end
-
-local function suppress_project_record(path)
-  suppressed_project = project_from_path(path)
+  push_recent_project(vim.fn.getcwd())
 end
 
 local function path_name(path)
@@ -217,15 +183,6 @@ function M.setup()
       desc = "Record startup project",
     })
   end
-
-  vim.api.nvim_create_autocmd("DirChanged", {
-    group = group,
-    callback = function()
-      -- Session 恢复可能短暂切到旧 cwd；稍等一拍，只记录最终稳定目录。
-      schedule_current_project_record(100)
-    end,
-    desc = "Record changed project",
-  })
 end
 
 function M.record_path(path)
@@ -242,11 +199,8 @@ function M.open_path(path, opts)
   end
 
   local project = project_from_path(resolved_path)
-  if opts.record == false then
-    suppress_project_record(project)
-  elseif project ~= nil then
+  if opts.record ~= false and project ~= nil then
     push_recent_project(project)
-    suppress_project_record(project)
   end
 
   close_current_starter()

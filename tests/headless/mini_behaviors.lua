@@ -153,7 +153,7 @@ function tests.recent_projects_record_current_cwd_after_late_setup()
   end
 end
 
-function tests.recent_projects_record_false_skips_direct_record()
+function tests.recent_projects_record_false_skips_project_record()
   reset_modules("plugins.mini.visits", "plugins.mini.sessions", "plugins.mini.files")
 
   local original_cwd = vim.fn.getcwd()
@@ -176,7 +176,44 @@ function tests.recent_projects_record_false_skips_direct_record()
     local visits = require("plugins.mini.visits")
     visits.open_path(config, { record = false })
 
-    assert_eq(vim.fn.filereadable(store), 0, "record=false should not write a recent project directly")
+    vim.wait(150)
+
+    assert_eq(vim.fn.filereadable(store), 0, "record=false should not write a recent project")
+  end, debug.traceback)
+
+  pcall(vim.api.nvim_set_current_dir, original_cwd)
+  reset_modules("plugins.mini.sessions", "plugins.mini.files")
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
+function tests.recent_projects_open_path_records_project()
+  reset_modules("plugins.mini.visits", "plugins.mini.sessions", "plugins.mini.files")
+
+  local original_cwd = vim.fn.getcwd()
+  local ok, err = xpcall(function()
+    local project = temp_path("open-path-record-project")
+    vim.fn.mkdir(project, "p")
+
+    local store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+    vim.fn.delete(store)
+
+    package.loaded["plugins.mini.sessions"] = {
+      has_current = function()
+        return false
+      end,
+    }
+    package.loaded["plugins.mini.files"] = {
+      open = function() end,
+    }
+
+    require("plugins.mini.visits").open_path(project)
+
+    local lines = vim.fn.readfile(store)
+    local decoded = vim.json.decode(table.concat(lines, "\n"))
+    assert_eq(decoded[1], require("libs.path").canonical_absolute(project), "open_path should record explicit project opens")
   end, debug.traceback)
 
   pcall(vim.api.nvim_set_current_dir, original_cwd)
@@ -759,7 +796,8 @@ end
 local test_order = {
   "recent_projects_are_unique_ordered_and_removable",
   "recent_projects_record_current_cwd_after_late_setup",
-  "recent_projects_record_false_skips_direct_record",
+  "recent_projects_record_false_skips_project_record",
+  "recent_projects_open_path_records_project",
   "mini_setup_initializes_visits_for_startup_paths",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
