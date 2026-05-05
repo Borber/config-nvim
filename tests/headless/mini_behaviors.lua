@@ -82,13 +82,13 @@ end
 
 local tests = {}
 
-function tests.recent_paths_are_unique_ordered_and_removable()
+function tests.recent_projects_are_unique_ordered_and_removable()
   reset_modules("plugins.mini.visits")
 
-  local first = temp_path("recent", "first.txt")
-  local second = temp_path("recent", "second.txt")
-  write_file(first)
-  write_file(second)
+  local first = temp_path("recent", "first-project")
+  local second = temp_path("recent", "second-project")
+  vim.fn.mkdir(first, "p")
+  vim.fn.mkdir(second, "p")
 
   local visits = require("plugins.mini.visits")
   visits.record_path(first)
@@ -97,27 +97,28 @@ function tests.recent_paths_are_unique_ordered_and_removable()
 
   local items = visits.recent_paths_section(5)()
   assert_eq(#items, 2, "recent paths should be unique")
-  assert_eq(items[1].recent_path, vim.fn.fnamemodify(first, ":p"), "newest repeated path should move to top")
-  assert_eq(items[2].recent_path, vim.fn.fnamemodify(second, ":p"), "older path should remain after newest")
+  assert_eq(items[1].recent_path, require("libs.path").canonical_absolute(first), "newest repeated path should move to top")
+  assert_eq(items[2].recent_path, require("libs.path").canonical_absolute(second), "older path should remain after newest")
 
   assert_true(visits.remove_recent_path(first), "remove_recent_path should report removal")
   items = visits.recent_paths_section(5)()
   assert_eq(#items, 1, "removed path should disappear")
-  assert_eq(items[1].recent_path, vim.fn.fnamemodify(second, ":p"), "remaining path should still be listed")
+  assert_eq(items[1].recent_path, require("libs.path").canonical_absolute(second), "remaining path should still be listed")
 
   assert_true(visits.remove_recent_path(second), "last recent path should be removable")
   items = visits.recent_paths_section(5)()
-  assert_eq(items[1].name, "There are no recent paths yet", "empty recent paths should render a placeholder item")
+  assert_eq(items[1].name, "There are no recent projects yet", "empty recent paths should render a placeholder item")
 end
 
-function tests.recent_paths_flush_after_late_setup()
+function tests.recent_projects_record_current_cwd_after_late_setup()
   reset_modules("plugins.mini.visits")
 
   local original_v = vim.v
+  local original_cwd = vim.fn.getcwd()
   local ok, err = xpcall(function()
     local project = temp_path("startup-recent-project")
     vim.fn.mkdir(project, "p")
-    vim.cmd("args " .. vim.fn.fnameescape(project))
+    vim.api.nvim_set_current_dir(project)
 
     local store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
     vim.fn.delete(store)
@@ -137,22 +138,49 @@ function tests.recent_paths_flush_after_late_setup()
     require("plugins.mini.visits").setup()
     vim.v = original_v
 
-    local flush_autocmds = vim.api.nvim_get_autocmds({
-      event = "VimLeavePre",
-      group = "ConfigRecentPathsFlush",
-    })
-    assert_eq(#flush_autocmds, 1, "late visits.setup should still register recent path flushing")
-
-    vim.api.nvim_exec_autocmds("VimLeavePre", { group = "ConfigRecentPathsFlush", modeline = false })
-
     local lines = vim.fn.readfile(store)
     local decoded = vim.json.decode(table.concat(lines, "\n"))
-    assert_eq(decoded[1], require("libs.path").canonical_absolute(project), "late visits.setup should flush startup argv path")
+    assert_eq(decoded[1], require("libs.path").canonical_absolute(project), "late visits.setup should record current cwd project")
   end, debug.traceback)
 
   vim.v = original_v
-  pcall(vim.api.nvim_del_augroup_by_name, "ConfigRecentPathsFlush")
+  pcall(vim.api.nvim_set_current_dir, original_cwd)
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigRecentProjects")
   vim.cmd("silent! argdelete *")
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
+function tests.recent_projects_record_false_skips_direct_record()
+  reset_modules("plugins.mini.visits", "plugins.mini.sessions", "plugins.mini.files")
+
+  local original_cwd = vim.fn.getcwd()
+  local ok, err = xpcall(function()
+    local config = temp_path("record-false-project")
+    vim.fn.mkdir(config, "p")
+
+    local store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+    vim.fn.delete(store)
+
+    package.loaded["plugins.mini.sessions"] = {
+      has_current = function()
+        return false
+      end,
+    }
+    package.loaded["plugins.mini.files"] = {
+      open = function() end,
+    }
+
+    local visits = require("plugins.mini.visits")
+    visits.open_path(config, { record = false })
+
+    assert_eq(vim.fn.filereadable(store), 0, "record=false should not write a recent project directly")
+  end, debug.traceback)
+
+  pcall(vim.api.nvim_set_current_dir, original_cwd)
+  reset_modules("plugins.mini.sessions", "plugins.mini.files")
 
   if not ok then
     error(err, 0)
@@ -326,7 +354,7 @@ function tests.starter_initial_content_is_available_before_background()
             name = "Project",
             action = "",
             recent_path = temp_path("project"),
-            section = "Recent paths",
+            section = "Recent projects",
           },
         }
       end
@@ -365,7 +393,7 @@ function tests.starter_initial_content_is_available_before_background()
 
   local items = starter.opts.items[1]()
   assert_true(setup_called, "starter should initialize visits before background work")
-  assert_eq(items[1].section, "Recent paths", "recent paths should render before delayed footer content")
+  assert_eq(items[1].section, "Recent projects", "recent paths should render before delayed footer content")
   assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render before background work")
 
   stats.loaded = 25
@@ -729,8 +757,9 @@ function tests.session_restore_preserves_requested_cwd()
 end
 
 local test_order = {
-  "recent_paths_are_unique_ordered_and_removable",
-  "recent_paths_flush_after_late_setup",
+  "recent_projects_are_unique_ordered_and_removable",
+  "recent_projects_record_current_cwd_after_late_setup",
+  "recent_projects_record_false_skips_direct_record",
   "mini_setup_initializes_visits_for_startup_paths",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",

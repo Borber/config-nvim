@@ -81,10 +81,6 @@ return {
       })
     end
 
-    local function setup_background_modules()
-      require("plugins.mini.visits").setup()
-    end
-
     local function setup_ui_modules()
       setup_icons()
     end
@@ -100,26 +96,11 @@ return {
       setup_ui_modules()
     end
 
-    vim.api.nvim_create_autocmd("User", {
-      group = vim.api.nvim_create_augroup("ConfigMiniBackground", { clear = true }),
-      pattern = "ConfigBackground",
-      callback = setup_background_modules,
-      desc = "Load nonessential mini startup helpers",
-    })
-
-    if vim.g.config_background_ready then
-      setup_background_modules()
-    end
-
     setup_editing_autocmds()
 
     local sessions = require("plugins.mini.sessions")
     sessions.setup()
-
-    if vim.fn.argc() > 0 then
-      -- 命令行路径是启动语义，不能等背景层；否则 `nvim .` 可能来不及写入 recent paths。
-      require("plugins.mini.visits").setup()
-    end
+    require("plugins.mini.visits").setup()
 
     vim.keymap.set("n", "<leader>e", function()
       require("plugins.mini.files").toggle()

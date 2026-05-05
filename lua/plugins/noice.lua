@@ -14,7 +14,7 @@ return {
 
     local signature = require("noice.lsp.signature")
     if not signature._config_nvim_blink_guarded then
-      -- 只 patch 一次，防止 :R 重载配置后重复包裹同一个函数。
+      -- 只 patch 一次，防止插件配置被重复执行时多次包裹同一个函数。
       local original_check = signature.check
       local original_on_signature = signature.on_signature
 

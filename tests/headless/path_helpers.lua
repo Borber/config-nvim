@@ -50,8 +50,8 @@ package.loaded["plugins.mini.visits"] = nil
 local visits = require("plugins.mini.visits")
 local items = visits.recent_paths_section(5)()
 
-assert_eq(items[1].recent_path, path.canonical_absolute(recent_file), "legacy Windows recent path should still render")
-assert_eq(items[1].name ~= "There are no recent paths yet", true, "legacy Windows recent path should not fall back to placeholder")
+assert_eq(items[1].recent_path, path.canonical_absolute(vim.fs.dirname(recent_file)), "legacy Windows recent file should fold to its project")
+assert_eq(items[1].name ~= "There are no recent projects yet", true, "legacy Windows recent path should not fall back to placeholder")
 
 vim.env.XDG_DATA_HOME = old_xdg
 

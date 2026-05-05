@@ -169,34 +169,6 @@ local function close_special_buffer()
   return ok
 end
 
-local function close_orgmode(ft)
-  local buf = api.nvim_get_current_buf()
-
-  if ft == "orgcapture" or vim.b[buf].org_capture then
-    local ok, orgmode = pcall(require, "orgmode")
-    if ok and type(orgmode.action) == "function" then
-      orgmode.action("capture.kill", true)
-      return true
-    end
-
-    return close_special_buffer()
-  end
-
-  if ft == "orgagenda" then
-    if normal_window_count() > 1 then
-      local ok, err = pcall(api.nvim_win_close, api.nvim_get_current_win(), true)
-      if not ok then
-        notify_close_failure("window", err)
-      end
-      return ok
-    end
-
-    return close_special_buffer()
-  end
-
-  return false
-end
-
 -- ============================================
 -- 普通容器关闭
 -- ============================================
@@ -269,7 +241,7 @@ function M.close_current()
   local ft = current_filetype()
 
   -- 先交给拥有整组 UI 的插件清理，再按容器层级从外到内关闭。
-  if close_mini_files(ft) or close_diffview() or close_toggleterm(ft) or close_orgmode(ft) then
+  if close_mini_files(ft) or close_diffview() or close_toggleterm(ft) then
     return true
   end
 

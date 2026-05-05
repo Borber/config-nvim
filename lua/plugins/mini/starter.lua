@@ -16,7 +16,7 @@ local function ensure_visits()
 end
 
 local function current_recent_path()
-  -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent paths item。
+  -- mini.starter 的一行内容由多个 unit 组成，需要从当前行里找出 Recent projects item。
   local content = require("mini.starter").get_content()
   if content == nil then
     return nil
@@ -30,7 +30,7 @@ local function current_recent_path()
   end
 
   for _, unit in ipairs(content_line) do
-    if unit.type == "item" and unit.item ~= nil and unit.item.section == "Recent paths" then
+    if unit.type == "item" and unit.item ~= nil and unit.item.section == "Recent projects" then
       return unit.item.recent_path
     end
   end
@@ -54,7 +54,7 @@ end
 local function attach_starter_mappings(buf_id)
   vim.keymap.set("n", "<BS>", delete_current_recent_path, {
     buffer = buf_id,
-    desc = "Delete recent path",
+    desc = "Delete recent project",
     silent = true,
   })
 end

@@ -1,142 +1,182 @@
 -- ============================================
--- 最近路径管理
--- 记录用户打开过的文件/目录路径，供 Starter 展示，
--- 同时提供 open_path 统一入口（切 cwd → 恢复 session）。
+-- 最近项目管理
+-- 记录用户进入过的项目目录，供 Starter 展示；
+-- 文件级历史交给 Neovim 的 oldfiles / Telescope oldfiles。
 -- ============================================
 local M = {}
 local configured = false
 
 local path_util = require("libs.path")
-local recent_paths = nil
-local recent_paths_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
-local recent_paths_limit = 100
-local startup_paths_recorded = false
+local recent_projects = nil
+local recent_projects_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+local recent_projects_limit = 100
 local canonical_path = path_util.canonical_absolute
 local is_directory = path_util.is_directory
 local path_exists = path_util.exists
+local dirchanged_timer = nil
+local suppressed_project = nil
 
-local function load_recent_paths()
-  -- 最近路径按需懒加载，并缓存在内存里，避免 starter 每次刷新都读文件。
-  if recent_paths ~= nil then
-    return recent_paths
+local function home_directory()
+  local home = vim.uv.os_homedir()
+  if home == nil or home == "" then
+    return nil
   end
 
-  if not path_exists(recent_paths_store) then
-    recent_paths = {}
-    return recent_paths
+  return canonical_path(home)
+end
+
+local function project_from_path(path, cache)
+  local resolved_path = canonical_path(path)
+  if resolved_path == nil or not path_exists(resolved_path, cache) then
+    return nil
   end
 
-  local lines = vim.fn.readfile(recent_paths_store)
+  local project = resolved_path
+  if not is_directory(resolved_path, cache) then
+    project = canonical_path(vim.fn.fnamemodify(resolved_path, ":h"))
+    if project == nil or not is_directory(project, cache) then
+      return nil
+    end
+  end
+
+  if project == home_directory() then
+    return nil
+  end
+
+  return project
+end
+
+local function load_recent_projects()
+  -- 旧文件里可能存过文件路径；读取时统一折叠成它所在的项目目录。
+  if recent_projects ~= nil then
+    return recent_projects
+  end
+
+  recent_projects = {}
+  if not path_exists(recent_projects_store) then
+    return recent_projects
+  end
+
+  local lines = vim.fn.readfile(recent_projects_store)
   local ok, decoded = pcall(vim.json.decode, table.concat(lines, "\n"))
-
-  recent_paths = {}
   if not ok or type(decoded) ~= "table" then
-    vim.notify("Recent paths store is invalid: " .. recent_paths_store, vim.log.levels.ERROR)
-    return recent_paths
+    vim.notify("Recent projects store is invalid: " .. recent_projects_store, vim.log.levels.ERROR)
+    return recent_projects
   end
 
-  -- 读取时顺手过滤已经不存在的路径，starter 里就不会出现失效入口。
   local stat_cache = {}
+  local seen = {}
   for _, path in ipairs(decoded) do
-    local resolved_path = canonical_path(path)
-    if resolved_path ~= nil and path_exists(resolved_path, stat_cache) then
-      table.insert(recent_paths, resolved_path)
+    local project = type(path) == "string" and project_from_path(path, stat_cache) or nil
+    if project ~= nil and not seen[project] then
+      seen[project] = true
+      table.insert(recent_projects, project)
     end
   end
 
-  return recent_paths
+  return recent_projects
 end
 
-local function write_recent_paths()
-  if recent_paths == nil then
+local function write_recent_projects()
+  if recent_projects == nil then
     return
   end
 
-  vim.fn.writefile({ vim.json.encode(recent_paths) }, recent_paths_store)
-end
-
--- 延迟写入：聚合短时间内的多次路径变更，避免频繁磁盘 IO。
-local write_timer = nil
-local function schedule_write()
-  if write_timer then
-    write_timer:stop()
-  end
-  write_timer = vim.defer_fn(write_recent_paths, 1000)
-end
-
-local function push_recent_path(path)
-  local resolved_path = canonical_path(path)
-  if resolved_path == nil or not path_exists(resolved_path) then
-    return
-  end
-
-  local paths = load_recent_paths()
-
-  -- 移到队首前先删除旧位置，保持“最近使用”列表唯一且有序。
-  for index = #paths, 1, -1 do
-    if paths[index] == resolved_path then
-      table.remove(paths, index)
+  local directory = vim.fs.dirname(recent_projects_store)
+  if directory ~= nil then
+    local mkdir_ok = pcall(vim.fn.mkdir, directory, "p")
+    if not mkdir_ok then
+      vim.notify("Failed to create recent projects directory: " .. directory, vim.log.levels.ERROR)
+      return
     end
   end
 
-  table.insert(paths, 1, resolved_path)
-
-  while #paths > recent_paths_limit do
-    table.remove(paths)
+  local write_ok, result = pcall(vim.fn.writefile, { vim.json.encode(recent_projects) }, recent_projects_store)
+  if not write_ok or result ~= 0 then
+    vim.notify("Failed to write recent projects: " .. recent_projects_store, vim.log.levels.ERROR)
   end
-
-  schedule_write()
 end
 
-local function remove_recent_path(path)
-  -- 删除最近路径时同样先规整成绝对路径，保证 UI 中展示的路径能命中存储项。
-  local resolved_path = canonical_path(path)
-  if resolved_path == nil then
+local function push_recent_project(path)
+  local project = project_from_path(path)
+  if project == nil then
+    return
+  end
+
+  local projects = load_recent_projects()
+
+  for index = #projects, 1, -1 do
+    if projects[index] == project then
+      table.remove(projects, index)
+    end
+  end
+
+  table.insert(projects, 1, project)
+
+  while #projects > recent_projects_limit do
+    table.remove(projects)
+  end
+
+  write_recent_projects()
+end
+
+local function remove_recent_project(path)
+  local project = project_from_path(path)
+  if project == nil then
     return false
   end
 
-  local paths = load_recent_paths()
+  local projects = load_recent_projects()
   local removed = false
 
-  for index = #paths, 1, -1 do
-    if paths[index] == resolved_path then
-      table.remove(paths, index)
+  for index = #projects, 1, -1 do
+    if projects[index] == project then
+      table.remove(projects, index)
       removed = true
     end
   end
 
   if removed then
-    schedule_write()
+    write_recent_projects()
   end
 
   return removed
 end
 
-local function startup_paths()
-  local paths = {}
-
-  -- argv 从后往前压入，最后显示时仍能保持命令行参数的原始顺序。
-  local stat_cache = {}
-  for index = vim.fn.argc() - 1, 0, -1 do
-    local resolved_path = canonical_path(vim.fn.argv(index))
-    if resolved_path ~= nil and path_exists(resolved_path, stat_cache) then
-      table.insert(paths, resolved_path)
-    end
-  end
-
-  return paths
-end
-
-local function record_startup_paths()
-  if startup_paths_recorded then
+local function record_project(path)
+  local project = project_from_path(path)
+  if project == nil then
     return
   end
 
-  startup_paths_recorded = true
-
-  for _, path in ipairs(startup_paths()) do
-    push_recent_path(path)
+  if suppressed_project ~= nil then
+    local should_skip = suppressed_project == project
+    suppressed_project = nil
+    if should_skip then
+      return
+    end
   end
+
+  push_recent_project(project)
+end
+
+local function record_current_project()
+  record_project(vim.fn.getcwd())
+end
+
+local function schedule_current_project_record(delay)
+  if dirchanged_timer then
+    dirchanged_timer:stop()
+  end
+
+  dirchanged_timer = vim.defer_fn(function()
+    dirchanged_timer = nil
+    record_current_project()
+  end, delay or 50)
+end
+
+local function suppress_project_record(path)
+  suppressed_project = project_from_path(path)
 end
 
 local function path_name(path)
@@ -144,7 +184,7 @@ local function path_name(path)
 end
 
 local function close_current_starter()
-  -- 从 Starter 的最近路径或 <S-CR> 切换项目时，先关闭启动页，让后续窗口目标回到真实编辑区。
+  -- 从 Starter 的最近项目切换时，先关闭启动页，让后续窗口目标回到真实编辑区。
   local buf_id = vim.api.nvim_get_current_buf()
   if vim.bo[buf_id].filetype ~= "ministarter" then
     return
@@ -153,12 +193,9 @@ local function close_current_starter()
   require("mini.starter").close(buf_id)
 end
 
-local function format_path_name(path, cache)
-  local ic = require("libs.icons")
-  local icon = path_util.is_directory(path, cache) and ic.basic.dir or ic.basic.file
-  local name = path_name(path)
-
-  return string.format("%s  %s  %s", name, path, icon)
+local function format_project_name(path)
+  local icon = require("libs.icons").basic.dir
+  return string.format("%s  %s  %s", path_name(path), path, icon)
 end
 
 function M.setup()
@@ -168,36 +205,35 @@ function M.setup()
 
   configured = true
 
-  -- 退出前立即刷盘，防止 timer 还没触发就关闭了 Neovim。
-  vim.api.nvim_create_autocmd("VimLeavePre", {
-    group = vim.api.nvim_create_augroup("ConfigRecentPathsFlush", { clear = true }),
-    callback = function()
-      if write_timer then
-        write_timer:stop()
-        write_timer = nil
-      end
-      write_recent_paths()
-    end,
-  })
+  local group = vim.api.nvim_create_augroup("ConfigRecentProjects", { clear = true })
 
   if vim.v.vim_did_enter == 1 then
-    record_startup_paths()
-    return
+    record_current_project()
+  else
+    vim.api.nvim_create_autocmd("VimEnter", {
+      group = group,
+      once = true,
+      callback = record_current_project,
+      desc = "Record startup project",
+    })
   end
 
-  vim.api.nvim_create_autocmd("VimEnter", {
-    group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
-    once = true,
-    callback = record_startup_paths,
+  vim.api.nvim_create_autocmd("DirChanged", {
+    group = group,
+    callback = function()
+      -- Session 恢复可能短暂切到旧 cwd；稍等一拍，只记录最终稳定目录。
+      schedule_current_project_record(100)
+    end,
+    desc = "Record changed project",
   })
 end
 
 function M.record_path(path)
-  push_recent_path(path)
+  push_recent_project(path)
 end
 
 function M.open_path(path, opts)
-  -- starter/recent path 的统一入口：负责记录最近路径、切 cwd、恢复 session 或打开文件。
+  -- starter/recent project 的统一入口：记录项目、切 cwd、恢复 session 或打开文件。
   opts = opts or {}
 
   local resolved_path = canonical_path(path)
@@ -205,8 +241,12 @@ function M.open_path(path, opts)
     return
   end
 
-  if opts.record ~= false then
-    push_recent_path(resolved_path)
+  local project = project_from_path(resolved_path)
+  if opts.record == false then
+    suppress_project_record(project)
+  elseif project ~= nil then
+    push_recent_project(project)
+    suppress_project_record(project)
   end
 
   close_current_starter()
@@ -227,7 +267,7 @@ function M.open_path(path, opts)
 
   local directory = canonical_path(vim.fn.fnamemodify(resolved_path, ":h"))
   if directory ~= nil then
-    -- 打开文件前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
+    -- 打开文件前先切 cwd，让 Telescope、mini.files 等工具以该文件所在目录为上下文。
     vim.api.nvim_set_current_dir(directory)
   end
 
@@ -235,7 +275,7 @@ function M.open_path(path, opts)
 end
 
 function M.remove_recent_path(path)
-  return remove_recent_path(path)
+  return remove_recent_project(path)
 end
 
 function M.recent_paths_section(limit)
@@ -244,18 +284,18 @@ function M.recent_paths_section(limit)
   return function()
     local items = {}
     local stat_cache = {}
-    for _, path in ipairs(load_recent_paths()) do
-      if not path_exists(path, stat_cache) then
+    for _, project in ipairs(load_recent_projects()) do
+      if not is_directory(project, stat_cache) then
         goto continue
       end
 
       table.insert(items, {
         action = function()
-          M.open_path(path)
+          M.open_path(project)
         end,
-        name = format_path_name(path, stat_cache),
-        recent_path = path,
-        section = "Recent paths",
+        name = format_project_name(project),
+        recent_path = project,
+        section = "Recent projects",
       })
 
       if #items >= limit then
@@ -268,9 +308,9 @@ function M.recent_paths_section(limit)
     if #items == 0 then
       return {
         {
-          name = "There are no recent paths yet",
+          name = "There are no recent projects yet",
           action = "",
-          section = "Recent paths",
+          section = "Recent projects",
         },
       }
     end

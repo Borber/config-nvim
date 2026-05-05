@@ -75,35 +75,3 @@ map("t", "<C-l>", [[<C-\><C-n><C-w>l]], { silent = true })
 map("n", "<leader>tn", function()
   require("util.external_terminal").open_shell()
 end, { silent = true, desc = "Terminal new (external)" })
-
--- ============================================
--- 配置开发工具
--- ============================================
-
-local reload_namespaces = { "config", "libs", "lsp", "plugins", "util" }
-
-local function in_reload_namespace(name, namespace)
-  return name == namespace or name:sub(1, #namespace + 1) == namespace .. "."
-end
-
-local function should_reload_module(name)
-  for _, namespace in ipairs(reload_namespaces) do
-    if in_reload_namespace(name, namespace) then
-      return true
-    end
-  end
-
-  return false
-end
-
--- :R 重载当前配置仓库的 Lua 命名空间并重新 source init.lua
--- 用于开发配置时热更新（不重启 Neovim）
-vim.api.nvim_create_user_command("R", function()
-  for name, _ in pairs(package.loaded) do
-    if should_reload_module(name) then
-      package.loaded[name] = nil
-    end
-  end
-  dofile(vim.env.MYVIMRC)
-  vim.notify("Reloaded config", vim.log.levels.INFO)
-end, { desc = "Reload Neovim config" })

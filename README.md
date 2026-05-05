@@ -24,7 +24,7 @@
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
-| 笔记 | nvim-orgmode/orgmode |
+| 笔记 | Markdown + render-markdown.nvim |
 | 终端 | toggleterm.nvim（自定义布局：水平贴底、垂直在右互不侵占） |
 | 格式化 | conform.nvim |
 | UI | noice.nvim（命令行 / 消息浮窗）、lualine.nvim（状态栏 / tabline）、render-markdown.nvim、markdown-plus.nvim |
@@ -53,8 +53,8 @@ return {
       -- "/path/to/large/project",
     },
   },
-  orgmode = {
-    root = "~/Dropbox/org",
+  notes = {
+    root = "~/Dropbox/note",
     drawer_width = 48,
   },
   aicommits = {
@@ -136,12 +136,10 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>nn` | 打开 / 关闭全局 Org 笔记抽屉 |
-| `<leader>ni` | 打开全局 Org inbox |
-| `<leader>nj` | 打开全局 Org journal |
-| `<leader>na` | 打开自定义 Org agenda 选择浮窗 |
-| `<leader>nc` | 打开自定义 Org capture 模板浮窗 |
-| `:Notes` | 打开 / 关闭全局 Org 笔记抽屉 |
+| `<leader>nn` | 打开 / 关闭全局 Markdown 笔记抽屉 |
+| `<leader>ni` | 打开全局 `inbox.md`，移动到底部并进入插入模式 |
+| `<leader>nj` | 打开当日 `journal/YYYY/MM/W/YYYY-MM-DD.md`（如 `journal/2026/05/1/2026-05-05.md`），移动到底部并进入插入模式 |
+| `:Notes` | 打开 / 关闭全局 Markdown 笔记抽屉 |
 
 ### 终端
 
@@ -269,7 +267,7 @@ toggleterm 使用自定义窗口切分策略：
 - `signcolumn` 固定保留（`yes`），避免诊断、git sign 或书签 sign 出现时正文左右跳动。gitsigns 通过自定义 `statuscolumn` 在行号右侧显示 git 标记。
 - Treesitter 折叠行使用自定义格式（`◇` 前缀 + 首行预览 + 尾部信息）。
 - Markdown 链接相关快捷键放在 `after/ftplugin/markdown.lua`，Lua 文件局部设置放在 `after/ftplugin/lua.lua`。
-- Org 笔记默认使用全局 `~/Dropbox/org` 根目录，可通过 `lua/config/local.lua` 的 `orgmode.root` 覆盖；右侧抽屉 buffer 不进入普通 buffer 列表，避免污染项目工作流。
+- Markdown 笔记默认使用全局 `~/Dropbox/note` 根目录，可通过 `lua/config/local.lua` 的 `notes.root` 覆盖；journal 按 `journal/YYYY/MM/W/YYYY-MM-DD.md` 分层；右侧抽屉 buffer 不进入普通 buffer 列表，避免污染项目工作流。
 - Noice 在补全菜单显示时自动抑制 LSP signature popup，避免浮窗抢焦点。
 
 ## Treesitter

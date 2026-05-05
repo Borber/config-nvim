@@ -9,9 +9,9 @@ return {
     },
   },
 
-  orgmode = {
-    -- 全局 Org 笔记本根目录；不填时默认使用 ~/Dropbox/org。
-    root = "~/Dropbox/org",
+  notes = {
+    -- 全局 Markdown 笔记根目录；不填时默认使用 ~/Dropbox/note。
+    root = "~/Dropbox/note",
     drawer_width = 48,
   },
 

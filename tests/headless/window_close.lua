@@ -85,26 +85,6 @@ vim.bo.filetype = "toggleterm"
 assert_true(window.close_current(), "toggleterm window should report closed")
 assert_true(toggleterm_closed, "toggleterm close should be delegated")
 
-local old_orgmode = package.loaded["orgmode"]
-local org_action
-package.loaded["orgmode"] = {
-  action = function(name, opts)
-    org_action = { name, opts }
-  end,
-}
-vim.bo.filetype = "orgcapture"
-vim.b.org_capture = true
-assert_true(window.close_current(), "org capture window should report closed")
-assert_eq(org_action[1], "capture.kill", "org capture should delegate to orgmode kill")
-assert_eq(org_action[2], true, "org capture should use mapping-style cancel")
-vim.b.org_capture = nil
-package.loaded["orgmode"] = old_orgmode
-
-vim.cmd("enew")
-vim.bo.filetype = "orgagenda"
-vim.bo.buftype = "nofile"
-assert_true(window.close_current(), "org agenda buffer should close even in the last window")
-
 deleted_buf = nil
 deleted_force = nil
 vim.bo.filetype = ""
