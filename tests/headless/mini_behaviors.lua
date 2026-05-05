@@ -29,8 +29,20 @@ local function normal_map(buf_id, lhs)
 end
 
 local function reset_modules(...)
+  local names = {}
   for _, name in ipairs({ ... }) do
-    package.loaded[name] = nil
+    names[#names + 1] = name
+  end
+
+  -- 新拆出来的子模块也一并清掉，避免旧缓存让测试误判为“还在用旧实现”。
+  for loaded_name in pairs(package.loaded) do
+    for _, target in ipairs(names) do
+      local prefix = target .. "."
+      if loaded_name == target or loaded_name:sub(1, #prefix) == prefix then
+        package.loaded[loaded_name] = nil
+        break
+      end
+    end
   end
 end
 
