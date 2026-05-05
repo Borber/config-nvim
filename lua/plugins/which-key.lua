@@ -17,17 +17,9 @@ local function key_icons()
   }
 end
 
-local function show_prefix(keys)
-  -- 走 which-key 自己的前缀状态机，避免单独 <Space> 被当成普通移动键执行。
-  return function()
-    require("which-key").show({ keys = keys })
-  end
-end
-
 return {
   "folke/which-key.nvim",
-  -- UI ready 后第一批加载，优先保证按键提示可用。
-  event = "User ConfigUiReady",
+  lazy = false,
   opts = function()
     local icons = key_icons()
     local float = require("util.float")
@@ -57,23 +49,6 @@ return {
     }
   end,
   keys = {
-    -- lazy.nvim 先注册全局兜底；which-key 自动 trigger 重建时，第一下前缀键仍能被接住。
-    {
-      "<leader>",
-      show_prefix("<leader>"),
-      mode = { "n", "x", "o" },
-      nowait = true,
-      silent = true,
-      desc = "which-key-trigger leader",
-    },
-    {
-      "<localleader>",
-      show_prefix("<localleader>"),
-      mode = { "n", "x", "o" },
-      nowait = true,
-      silent = true,
-      desc = "which-key-trigger localleader",
-    },
     {
       "<leader>?",
       function()
