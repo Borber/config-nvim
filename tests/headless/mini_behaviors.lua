@@ -579,7 +579,7 @@ function tests.mini_files_focus_tracks_entered_directory_window()
 end
 
 function tests.hop_global_mapping_uses_words_in_normal_file_buffer()
-  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_regex")
+  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_target")
 
   vim.cmd("silent! enew!")
   vim.bo.buftype = ""
@@ -593,7 +593,7 @@ function tests.hop_global_mapping_uses_words_in_normal_file_buffer()
     hint_words = function(opts)
       word_opts = opts
     end,
-    hint_with_regex = function()
+    hint_with_callback = function()
       error("normal file buffers should not use line hints")
     end,
   }
@@ -604,7 +604,7 @@ function tests.hop_global_mapping_uses_words_in_normal_file_buffer()
 end
 
 function tests.hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer()
-  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_regex")
+  reset_modules("plugins.hop", "plugins.hop.line_jump", "hop", "hop.jump_target")
 
   vim.cmd("silent! enew!")
   vim.bo.filetype = "minifiles"
@@ -617,9 +617,10 @@ function tests.hop_global_mapping_uses_registered_line_jump_handler_in_special_b
   local handled_target
   local moved_target
 
-  package.loaded["hop.jump_regex"] = {
-    by_line_start = function()
-      return "line-start-regex"
+  package.loaded["hop.jump_target"] = {
+    line_start_generator = function(skip_whitespace)
+      assert_eq(skip_whitespace, false, "Hop mapping should use raw line starts")
+      return "line-start-generator"
     end,
   }
   package.loaded["hop"] = {
@@ -631,8 +632,8 @@ function tests.hop_global_mapping_uses_registered_line_jump_handler_in_special_b
     hint_words = function()
       error("special buffers should not use HopWord")
     end,
-    hint_with_regex = function(regex, opts, callback)
-      assert_eq(regex, "line-start-regex", "Hop mapping should use line hints")
+    hint_with_callback = function(generator, opts, callback)
+      assert_eq(generator, "line-start-generator", "Hop mapping should use line hints")
       opts_used = opts
       callback(jump_target)
     end,

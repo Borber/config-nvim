@@ -19,6 +19,7 @@ end
 
 local function hint_lines_across_windows()
   local hop = require("hop")
+  local jump_target = require("hop.jump_target")
   local opts = setmetatable({
     multi_windows = true,
     visual_mode = "V",
@@ -29,12 +30,12 @@ local function hint_lines_across_windows()
     opts.multi_windows = false
   end
 
-  hop.hint_with_regex(require("hop.jump_regex").by_line_start(), opts, function(jump_target)
-    if require("plugins.hop.line_jump").handle(jump_target) then
+  hop.hint_with_callback(jump_target.line_start_generator(false), opts, function(target)
+    if require("plugins.hop.line_jump").handle(target) then
       return
     end
 
-    hop.move_cursor_to(jump_target, opts)
+    hop.move_cursor_to(target, opts)
   end)
 end
 
@@ -49,7 +50,7 @@ local function hint_by_context()
 end
 
 local spec = {
-  "wsdjeg/hop.nvim",
+  "Borber/hop.nvim",
   keys = {
     {
       "s",
@@ -60,7 +61,7 @@ local spec = {
     },
   },
   opts = {
-    keys = "werasdfcvjlk",
+    keys = "werasdfcvuiojkl",
     jump_on_sole_occurrence = true,
     dim_unmatched = false,
   },
