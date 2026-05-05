@@ -168,17 +168,6 @@ function M.setup()
 
   configured = true
 
-  if vim.v.vim_did_enter == 1 then
-    record_startup_paths()
-    return
-  end
-
-  vim.api.nvim_create_autocmd("VimEnter", {
-    group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
-    once = true,
-    callback = record_startup_paths,
-  })
-
   -- 退出前立即刷盘，防止 timer 还没触发就关闭了 Neovim。
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = vim.api.nvim_create_augroup("ConfigRecentPathsFlush", { clear = true }),
@@ -189,6 +178,17 @@ function M.setup()
       end
       write_recent_paths()
     end,
+  })
+
+  if vim.v.vim_did_enter == 1 then
+    record_startup_paths()
+    return
+  end
+
+  vim.api.nvim_create_autocmd("VimEnter", {
+    group = vim.api.nvim_create_augroup("ConfigStarterRecentPaths", { clear = true }),
+    once = true,
+    callback = record_startup_paths,
   })
 end
 

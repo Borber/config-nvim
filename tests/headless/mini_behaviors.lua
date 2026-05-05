@@ -110,6 +110,91 @@ function tests.recent_paths_are_unique_ordered_and_removable()
   assert_eq(items[1].name, "There are no recent paths yet", "empty recent paths should render a placeholder item")
 end
 
+function tests.recent_paths_flush_after_late_setup()
+  reset_modules("plugins.mini.visits")
+
+  local original_v = vim.v
+  local ok, err = xpcall(function()
+    local project = temp_path("startup-recent-project")
+    vim.fn.mkdir(project, "p")
+    vim.cmd("args " .. vim.fn.fnameescape(project))
+
+    local store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+    vim.fn.delete(store)
+
+    vim.v = setmetatable({}, {
+      __index = function(_, key)
+        if key == "vim_did_enter" then
+          return 1
+        end
+        return original_v[key]
+      end,
+      __newindex = function(_, key, value)
+        original_v[key] = value
+      end,
+    })
+
+    require("plugins.mini.visits").setup()
+    vim.v = original_v
+
+    local flush_autocmds = vim.api.nvim_get_autocmds({
+      event = "VimLeavePre",
+      group = "ConfigRecentPathsFlush",
+    })
+    assert_eq(#flush_autocmds, 1, "late visits.setup should still register recent path flushing")
+
+    vim.api.nvim_exec_autocmds("VimLeavePre", { group = "ConfigRecentPathsFlush", modeline = false })
+
+    local lines = vim.fn.readfile(store)
+    local decoded = vim.json.decode(table.concat(lines, "\n"))
+    assert_eq(decoded[1], require("libs.path").canonical_absolute(project), "late visits.setup should flush startup argv path")
+  end, debug.traceback)
+
+  vim.v = original_v
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigRecentPathsFlush")
+  vim.cmd("silent! argdelete *")
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
+function tests.mini_setup_initializes_visits_for_startup_paths()
+  reset_modules("plugins.mini", "plugins.mini.visits", "plugins.mini.sessions")
+
+  local visits_setup = false
+  local ok, err = xpcall(function()
+    local project = temp_path("mini-startup-project")
+    vim.fn.mkdir(project, "p")
+    vim.cmd("args " .. vim.fn.fnameescape(project))
+
+    package.loaded["plugins.mini.visits"] = {
+      setup = function()
+        visits_setup = true
+      end,
+    }
+    package.loaded["plugins.mini.sessions"] = {
+      setup = function() end,
+      has_current = function()
+        return false
+      end,
+    }
+
+    require("plugins.mini").config()
+    assert_true(visits_setup, "mini setup should initialize visits when Neovim starts with path arguments")
+  end, debug.traceback)
+
+  vim.cmd("silent! argdelete *")
+  reset_modules("plugins.mini", "plugins.mini.visits", "plugins.mini.sessions")
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniUi")
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniBackground")
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniEditing")
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
 function tests.starter_reuses_empty_placeholder_buffer()
   reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions")
 
@@ -645,6 +730,8 @@ end
 
 local test_order = {
   "recent_paths_are_unique_ordered_and_removable",
+  "recent_paths_flush_after_late_setup",
+  "mini_setup_initializes_visits_for_startup_paths",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
   "starter_keeps_global_statusline_unchanged",
