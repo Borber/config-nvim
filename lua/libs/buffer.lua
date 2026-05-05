@@ -40,16 +40,6 @@ function M.normal_writable(bufnr)
   return bufnr, bo
 end
 
-function M.normal_writable_file(bufnr)
-  -- autosave 等写盘动作要求已经有文件名；无名 scratch buffer 不应该被 :write。
-  local target_bufnr, bo = M.normal_writable(bufnr)
-  if target_bufnr == nil or vim.api.nvim_buf_get_name(target_bufnr) == "" then
-    return nil
-  end
-
-  return target_bufnr, bo
-end
-
 function M.is_normal_file(bufnr)
   -- 普通文件上下文：非特殊 buftype，且已经关联一个文件名。
   bufnr = resolve_bufnr(bufnr)
@@ -67,9 +57,7 @@ function M.is_listed_normal_file(bufnr)
     return false
   end
 
-  return vim.bo[bufnr].buflisted
-    and vim.bo[bufnr].buftype == ""
-    and vim.api.nvim_buf_get_name(bufnr) ~= ""
+  return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == "" and vim.api.nvim_buf_get_name(bufnr) ~= ""
 end
 
 function M.is_terminal(bufnr)
@@ -88,8 +76,7 @@ function M.is_empty_unnamed(bufnr)
     return false
   end
 
-  return vim.api.nvim_buf_line_count(bufnr) == 1
-    and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
+  return vim.api.nvim_buf_line_count(bufnr) == 1 and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
 end
 
 function M.is_directory_placeholder(bufnr, directory)
@@ -113,8 +100,7 @@ function M.is_directory_placeholder(bufnr, directory)
       return false
     end
 
-    return vim.api.nvim_buf_line_count(bufnr) == 1
-      and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
+    return vim.api.nvim_buf_line_count(bufnr) == 1 and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
   end
 
   return true
@@ -136,8 +122,7 @@ function M.is_blank_placeholder(bufnr)
     return false
   end
 
-  return vim.api.nvim_buf_line_count(bufnr) == 1
-    and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
+  return vim.api.nvim_buf_line_count(bufnr) == 1 and vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == ""
 end
 
 function M.window_has_reusable_placeholder(win_id)
