@@ -1,5 +1,5 @@
 return {
-  "wakatime/vim-wakatime",
+  "Borber/vim-wakatime",
   event = { "BufWritePost" },
   opts = {
     status_bar_enabled = false,
