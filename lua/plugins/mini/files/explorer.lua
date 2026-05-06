@@ -141,6 +141,8 @@ function M.open_root(root)
   local stat_cache = {}
 
   -- 先在项目根打开，再按当前 buffer 的位置展开 branch。
+  -- mini.files 运行时支持 use_latest；LuaLS 偶尔只推断到 path 参数。
+  ---@diagnostic disable-next-line: redundant-parameter
   minifiles.open(cwd, false)
   hide_reusable_target_placeholder(minifiles)
 
