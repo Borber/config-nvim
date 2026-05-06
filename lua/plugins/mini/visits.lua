@@ -10,6 +10,7 @@ local path_util = require("libs.path")
 local recent_projects = nil
 local recent_projects_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
 local recent_projects_limit = 100
+M.recent_paths_limit = 10
 local canonical_path = path_util.canonical_absolute
 local is_directory = path_util.is_directory
 local path_exists = path_util.exists
@@ -233,7 +234,7 @@ function M.remove_recent_path(path)
 end
 
 function M.recent_paths_section(limit)
-  limit = limit or 5
+  limit = limit or M.recent_paths_limit
 
   return function()
     local items = {}

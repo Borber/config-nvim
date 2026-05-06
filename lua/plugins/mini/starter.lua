@@ -150,7 +150,8 @@ local function startup_footer()
 end
 
 local function recent_paths_items()
-  return ensure_visits().recent_paths_section(10)()
+  local visits = ensure_visits()
+  return visits.recent_paths_section(visits.recent_paths_limit or 10)()
 end
 
 local function prepare_starter()

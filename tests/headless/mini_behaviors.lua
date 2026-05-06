@@ -396,7 +396,7 @@ function tests.starter_initial_content_is_available_before_background()
       setup_called = true
     end,
     recent_paths_section = function(limit)
-      assert_eq(limit, 5, "starter should request the configured recent path limit")
+      assert_eq(limit, 10, "starter should request the configured recent path limit")
       return function()
         return {
           {
