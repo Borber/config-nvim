@@ -37,7 +37,24 @@ local function load_override(name)
   return config
 end
 
+local function configure_default_capabilities()
+  -- ufo 的 lsp provider 需要 foldingRange capability；跟随 LSP 注册阶段写入，
+  -- 避免折叠插件的 lazy spec 在启动期触碰 vim.lsp.config。
+  vim.lsp.config("*", {
+    capabilities = {
+      textDocument = {
+        foldingRange = {
+          dynamicRegistration = false,
+          lineFoldingOnly = true,
+        },
+      },
+    },
+  })
+end
+
 function M.configure()
+  configure_default_capabilities()
+
   for _, name in ipairs(override_names) do
     vim.lsp.config(name, load_override(name))
   end

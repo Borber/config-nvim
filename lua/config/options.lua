@@ -61,9 +61,11 @@ opt.timeoutlen = 850 -- 缩短 leader 组合键等待时间
 -- ============================================
 -- 折叠显示
 -- ============================================
--- foldmethod / foldexpr / foldtext / foldlevel 全部由 nvim-ufo 接管，参见
--- `lua/plugins/ufo.lua`：`init` 写入推荐 options，`opts` 配置 provider 与
--- foldtext handler。这里不再提前设置任何 fold 选项，避免与 ufo 冲突。
+-- nvim-ufo 在 VeryLazy 后接管 foldmethod / foldexpr / foldtext；基础展开状态提前写入，
+-- 避免首个真实文件在 provider 接管前出现默认折叠。
+opt.foldlevel = 99
+opt.foldlevelstart = 99
+opt.foldenable = true
 
 -- ============================================
 -- 搜索、替换与跳转

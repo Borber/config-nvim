@@ -12,25 +12,6 @@ return {
   "kevinhwang91/nvim-ufo",
   dependencies = { "kevinhwang91/promise-async" },
   event = "VeryLazy",
-  init = function()
-    -- ufo 推荐 options：完全展开 + 大 foldlevel 让 provider 自由产出。
-    vim.o.foldlevel = 99
-    vim.o.foldlevelstart = 99
-    vim.o.foldenable = true
-
-    -- 向所有 LSP server 广播 foldingRange capability，使 ufo 的 lsp provider
-    -- 能拿到块级折叠范围（rust-analyzer / clangd / lua_ls 等均支持）。
-    vim.lsp.config("*", {
-      capabilities = {
-        textDocument = {
-          foldingRange = {
-            dynamicRegistration = false,
-            lineFoldingOnly = true,
-          },
-        },
-      },
-    })
-  end,
   opts = function()
     return {
       open_fold_hl_timeout = 0, -- 关闭展开折叠后的高亮闪烁，避免“选中区域再消失”的观感。
