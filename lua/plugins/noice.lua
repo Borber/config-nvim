@@ -101,6 +101,16 @@ return {
         view_warn = "mini",
         view_search = false,
       },
+      routes = {
+        {
+          filter = {
+            find = "[Ww]aka[Tt]ime",
+          },
+          opts = {
+            skip = true,
+          },
+        },
+      },
       popupmenu = {
         enabled = false,
       },
