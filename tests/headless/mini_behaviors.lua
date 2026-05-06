@@ -806,6 +806,25 @@ function tests.session_restore_preserves_requested_cwd()
   assert_eq(sessions.should_auto_restore(), false, "headless mode should not auto restore sessions")
 end
 
+function tests.session_options_stay_lightweight()
+  reset_modules("plugins.mini.sessions")
+
+  local session_dir = temp_path("lightweight-sessions")
+  vim.fn.mkdir(session_dir, "p")
+
+  package.loaded["mini.sessions"] = {
+    config = { directory = session_dir },
+    setup = function() end,
+    read = function() end,
+    write = function() end,
+    select = function() end,
+  }
+
+  require("plugins.mini.sessions").setup()
+
+  assert_eq(vim.o.sessionoptions, "buffers", "sessions should not persist local options such as fold state")
+end
+
 local test_order = {
   "recent_projects_are_unique_ordered_and_removable",
   "recent_projects_record_current_cwd_after_late_setup",
@@ -825,6 +844,7 @@ local test_order = {
   "mini_files_hop_line_jump_opens_preview_file",
   "neogit_status_s_stages_only_stageable_file_rows",
   "session_restore_preserves_requested_cwd",
+  "session_options_stay_lightweight",
 }
 
 local failures = {}

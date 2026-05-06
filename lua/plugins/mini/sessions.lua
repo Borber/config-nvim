@@ -113,10 +113,10 @@ function M.setup()
 
   configured = true
 
-  -- cwd 由当前选择的目录决定；session 只负责恢复 buffer，不再抢项目目录。
+  -- session 只恢复真实文件 buffer；不保存 localoptions，
+  -- 避免折叠、statusline、signcolumn 等窗口/缓冲区局部状态污染下次启动。
   vim.opt.sessionoptions = {
     "buffers",
-    "localoptions",
   }
 
   require("mini.sessions").setup({
