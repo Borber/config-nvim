@@ -23,6 +23,11 @@ function M.dropdown(opts)
   opts = opts or {}
 
   local telescope = load_telescope()
+  local layout_config = vim.tbl_extend("force", {
+    width = 0.65,
+    height = 0.5,
+    prompt_position = "bottom",
+  }, opts.layout_config or {})
 
   telescope.pickers
     .new(
@@ -30,7 +35,8 @@ function M.dropdown(opts)
         prompt_title = opts.prompt_title or "Select",
         previewer = opts.previewer or false,
         borderchars = opts.borderchars or telescope.float.telescope_dropdown_borderchars(),
-        layout_config = opts.layout_config or { width = 0.65, height = 0.5 },
+        layout_config = layout_config,
+        sorting_strategy = opts.sorting_strategy or "descending",
       }),
       {
         finder = telescope.finders.new_table({

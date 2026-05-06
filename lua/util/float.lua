@@ -57,7 +57,9 @@ function M.borderchars(group)
 end
 
 -- Telescope 的 borderchars 顺序和普通浮窗不同，这里单独适配。
-function M.telescope_borderchars()
+function M.telescope_borderchars(opts)
+  opts = opts or {}
+
   return {
     char("top"),
     char("right"),
@@ -65,34 +67,19 @@ function M.telescope_borderchars()
     char("left"),
     char("top_left"),
     char("top_right"),
-    char("bottom_right"),
-    char("bottom_left"),
+    opts.bottom_right or char("bottom_right"),
+    opts.bottom_left or char("bottom_left"),
   }
 end
 
--- 下拉 picker 分 prompt/results/preview 三段，需要额外处理连接处。
+-- 下拉 picker 统一使用底部输入框，results 底角需要接到下方 prompt。
 function M.telescope_dropdown_borderchars()
   return {
-    prompt = {
-      char("top"),
-      char("right"),
-      " ",
-      char("left"),
-      char("top_left"),
-      char("top_right"),
-      char("right"),
-      char("left"),
-    },
-    results = {
-      char("top"),
-      char("right"),
-      char("bottom"),
-      char("left"),
-      char("left_join"),
-      char("right_join"),
-      char("bottom_right"),
-      char("bottom_left"),
-    },
+    prompt = M.telescope_borderchars(),
+    results = M.telescope_borderchars({
+      bottom_right = char("right_join"),
+      bottom_left = char("left_join"),
+    }),
     preview = M.telescope_borderchars(),
   }
 end
@@ -155,13 +142,13 @@ function M.telescope_defaults()
       height = 0.8,
       horizontal = {
         preview_width = 0.55,
-        prompt_position = "top",
+        prompt_position = "bottom",
       },
       width = 0.87,
     },
     prompt_prefix = " " .. vim.fn.nr2char(0xf002) .. "  ",
     selection_caret = " " .. vim.fn.nr2char(0xf105) .. " ",
-    sorting_strategy = "ascending",
+    sorting_strategy = "descending",
     winblend = 0,
   }
 end
