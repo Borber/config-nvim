@@ -2,7 +2,7 @@
 local is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
 local is_macos = vim.fn.has("macunix") == 1
 local font_family = "Maple Mono NF, LXGW Bright, monospace"
-local default_font_size = is_windows and 17 or 21
+local default_font_size = is_windows and 17 or 22
 
 vim.g.gui_font_size = vim.g.gui_font_size or default_font_size
 vim.g.gui_default_font_size = vim.g.gui_default_font_size or vim.g.gui_font_size
@@ -40,8 +40,8 @@ if is_macos then
   vim.g.neovide_input_macos_option_key_is_meta = "only_left"
 end
 
--- 缩放（4K 屏可改为 1.25 或 1.5）
-vim.g.neovide_scale_factor = 1.0
+-- 缩放：macOS 上默认略微放大，其他平台保持原始比例。
+vim.g.neovide_scale_factor = is_macos and 1.1 or 1.0
 
 -- 光标动画
 vim.g.neovide_cursor_animation_length = 0.45
