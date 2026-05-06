@@ -33,7 +33,16 @@ end
 -- 路径与文件名
 -- ============================================
 local function normalize_path(path)
-  return vim.fs.normalize(vim.fn.fnamemodify(vim.fn.expand(path), ":p"))
+  local absolute = vim.fs.normalize(vim.fn.fnamemodify(vim.fn.expand(path), ":p"))
+  local real = vim.uv.fs_realpath(absolute)
+
+  -- macOS 云盘目录可能把 ~/Dropbox 解析成 CloudStorage 真实路径；
+  -- 用 realpath 参与比较，避免同一 notes 目录被识别成两个入口。
+  if real ~= nil then
+    return vim.fs.normalize(real)
+  end
+
+  return absolute
 end
 
 local function notes_root()
@@ -112,15 +121,61 @@ local function path_in_notes_root(path)
   return vim.startswith(normalized, root .. "/") or normalized == root
 end
 
+local function same_path(left, right)
+  left = normalize_path(left)
+  right = normalize_path(right)
+
+  if vim.fn.has("win32") == 1 then
+    left = left:lower()
+    right = right:lower()
+  end
+
+  return left == right
+end
+
 local function is_notes_buffer(bufnr)
   local name = api.nvim_buf_get_name(bufnr)
   return name ~= "" and path_in_notes_root(name)
 end
 
-local function notes_window()
+local function notes_windows()
+  local wins = {}
+
   for _, win in ipairs(api.nvim_tabpage_list_wins(0)) do
     if api.nvim_win_get_config(win).relative == "" and is_notes_buffer(api.nvim_win_get_buf(win)) then
+      table.insert(wins, win)
+    end
+  end
+
+  return wins
+end
+
+local function notes_window()
+  return notes_windows()[1]
+end
+
+local function notes_window_for_path(path)
+  for _, win in ipairs(notes_windows()) do
+    local name = api.nvim_buf_get_name(api.nvim_win_get_buf(win))
+    if same_path(name, path) then
       return win
+    end
+  end
+end
+
+local function close_notes_window(win)
+  local ok, err = pcall(api.nvim_win_close, win, false)
+  if not ok then
+    vim.notify("Failed to close notes drawer: " .. tostring(err), vim.log.levels.WARN)
+  end
+
+  return ok
+end
+
+local function close_extra_notes_windows(keep)
+  for _, win in ipairs(notes_windows()) do
+    if win ~= keep then
+      close_notes_window(win)
     end
   end
 end
@@ -128,14 +183,16 @@ end
 -- ============================================
 -- 抽屉窗口布局
 -- ============================================
--- 找不到现成 notes 窗口时，在最右侧创建固定宽度 split。
+-- 复用当前 tab 内唯一 notes 抽屉；旧状态里若残留多个 notes split，先收掉多余窗口。
 local function focus_notes_window()
   local win = notes_window()
   if win ~= nil then
+    close_extra_notes_windows(win)
     api.nvim_set_current_win(win)
     return
   end
 
+  -- 找不到现成 notes 窗口时，在最右侧创建固定宽度 split。
   vim.cmd("rightbelow vsplit")
   vim.cmd("wincmd L")
   api.nvim_win_set_width(0, notes_drawer_width())
@@ -147,19 +204,6 @@ local function set_drawer_options()
   vim.wo.winfixwidth = true
 end
 
--- ============================================
--- 编辑器行为
--- ============================================
-local function move_to_bottom_insert()
-  if api.nvim_buf_line_count(0) > 0 then
-    pcall(function()
-      vim.cmd("normal! G$")
-    end)
-  end
-
-  vim.cmd("startinsert!")
-end
-
 -- 打开笔记时默认展开折叠，减少追加 inbox/journal 前的上下文干扰。
 local function open_all_folds()
   pcall(function()
@@ -169,29 +213,28 @@ local function open_all_folds()
 end
 
 -- ============================================
--- 打开笔记文件
+-- 笔记文件切换
 -- ============================================
-local function open_notes_file(filename, opts)
-  opts = opts or {}
+local function open_notes_path(path)
+  if not ensure_notes_root() or not ensure_file_parent(path) then
+    return
+  end
 
+  focus_notes_window()
+  vim.cmd("edit " .. vim.fn.fnameescape(path))
+  set_drawer_options()
+  open_all_folds()
+end
+
+-- 三个 notes 入口共用同一套规则：当前已是目标文件则关闭，否则复用抽屉切到目标文件。
+local function toggle_notes_file(filename)
   return function()
-    if not ensure_notes_root() then
-      return
-    end
-
     local path = notes_file(filename)
-    if not ensure_file_parent(path) then
+    if notes_window_for_path(path) ~= nil and M.close_drawer() then
       return
     end
 
-    focus_notes_window()
-    vim.cmd("edit " .. vim.fn.fnameescape(path))
-    set_drawer_options()
-    open_all_folds()
-
-    if opts.insert_bottom then
-      move_to_bottom_insert()
-    end
+    open_notes_path(path)
   end
 end
 
@@ -199,54 +242,45 @@ end
 -- 对外入口
 -- ============================================
 function M.close_drawer()
-  local win = notes_window()
-  if win == nil then
+  local wins = notes_windows()
+  if #wins == 0 then
     return false
   end
 
-  local ok, err = pcall(api.nvim_win_close, win, false)
-  if not ok then
-    vim.notify("Failed to close notes drawer: " .. tostring(err), vim.log.levels.WARN)
+  local closed = false
+  for _, win in ipairs(wins) do
+    closed = close_notes_window(win) or closed
   end
 
-  return ok
+  return closed
 end
 
-function M.toggle()
-  if M.close_drawer() then
-    return
-  end
-
-  open_notes_file("index.md")()
-end
-
-function M.open_inbox()
-  open_notes_file("inbox.md", { insert_bottom = true })()
-end
-
-function M.open_journal()
-  open_notes_file(journal_file(today_date()), { insert_bottom = true })()
-end
+M.toggle = toggle_notes_file("index.md")
+M.toggle_inbox = toggle_notes_file("inbox.md")
 
 function M.setup()
+  local toggle_journal = function()
+    toggle_notes_file(journal_file(today_date()))()
+  end
+
   api.nvim_create_user_command("Notes", M.toggle, {
     desc = "Toggle global Markdown notes drawer",
     force = true,
   })
 
-  api.nvim_create_user_command("NotesInbox", M.open_inbox, {
-    desc = "Open global Markdown inbox",
+  api.nvim_create_user_command("NotesInbox", M.toggle_inbox, {
+    desc = "Toggle global Markdown inbox",
     force = true,
   })
 
-  api.nvim_create_user_command("NotesJournal", M.open_journal, {
-    desc = "Open global Markdown journal",
+  api.nvim_create_user_command("NotesJournal", toggle_journal, {
+    desc = "Toggle global Markdown journal",
     force = true,
   })
 
   vim.keymap.set("n", "<leader>nn", M.toggle, { silent = true, desc = "Toggle notes" })
-  vim.keymap.set("n", "<leader>ni", M.open_inbox, { silent = true, desc = "Notes inbox" })
-  vim.keymap.set("n", "<leader>nj", M.open_journal, { silent = true, desc = "Notes journal" })
+  vim.keymap.set("n", "<leader>ni", M.toggle_inbox, { silent = true, desc = "Toggle notes inbox" })
+  vim.keymap.set("n", "<leader>nj", toggle_journal, { silent = true, desc = "Toggle notes journal" })
 end
 
 return M

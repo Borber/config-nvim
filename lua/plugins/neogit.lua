@@ -189,6 +189,8 @@ return {
     }
   end,
   config = function(_, opts)
+    -- Neogit setup 运行时接收 opts；LuaLS 偶尔只推断到无参签名。
+    ---@diagnostic disable-next-line: redundant-parameter
     require("neogit").setup(opts)
     require("plugins.neogit.highlights").apply()
   end,

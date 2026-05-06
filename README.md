@@ -136,10 +136,10 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>nn` | 打开 / 关闭全局 Markdown 笔记抽屉 |
-| `<leader>ni` | 打开全局 `inbox.md`，移动到底部并进入插入模式 |
-| `<leader>nj` | 打开当日 `journal/YYYY/MM/W/YYYY-MM-DD.md`（如 `journal/2026/05/1/2026-05-05.md`），移动到底部并进入插入模式 |
-| `:Notes` | 打开 / 关闭全局 Markdown 笔记抽屉 |
+| `<leader>nn` | 打开 / 关闭全局 `index.md` 抽屉；从其它笔记入口切来时复用同一个右侧抽屉 |
+| `<leader>ni` | 打开 / 关闭全局 `inbox.md` 抽屉；从其它笔记入口切来时复用同一个右侧抽屉 |
+| `<leader>nj` | 打开 / 关闭当日 `journal/YYYY/MM/W/YYYY-MM-DD.md` 抽屉；从其它笔记入口切来时复用同一个右侧抽屉 |
+| `:Notes` | 同 `<leader>nn`，打开 / 关闭全局 `index.md` 抽屉 |
 
 ### 终端
 

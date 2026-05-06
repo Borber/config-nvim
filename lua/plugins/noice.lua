@@ -13,17 +13,17 @@ return {
     end
 
     local signature = require("noice.lsp.signature")
-    if not signature._config_nvim_blink_guarded then
+    if not rawget(signature, "_config_nvim_blink_guarded") then
       -- 只 patch 一次，防止插件配置被重复执行时多次包裹同一个函数。
       local original_check = signature.check
       local original_on_signature = signature.on_signature
 
-      signature.check = function(...)
+      signature.check = function()
         if blink_menu_visible() then
           return
         end
 
-        return original_check(...)
+        return original_check()
       end
 
       signature.on_signature = function(...)
@@ -34,7 +34,7 @@ return {
         return original_on_signature(...)
       end
 
-      signature._config_nvim_blink_guarded = true
+      rawset(signature, "_config_nvim_blink_guarded", true)
     end
 
     require("noice").setup(opts)
