@@ -22,28 +22,6 @@ local function template_label(tmpl)
   return tmpl.name
 end
 
-local function setup_overseer_select()
-  if vim.ui._config_overseer_patched then
-    return
-  end
-
-  vim.ui._config_overseer_original_select = vim.ui.select
-  local original_select = vim.ui._config_overseer_original_select
-
-  -- Overseer 的模板和 action 都走 vim.ui.select；只拦截 kind=overseer*，
-  -- 其它插件仍使用原本的 vim.ui.select，避免全局 UI 行为被这个配置意外改写。
-  rawset(vim.ui, "select", function(items, opts, on_choice)
-    if opts and type(opts.kind) == "string" and vim.startswith(opts.kind, "overseer") then
-      require("util.telescope_picker").select(items, opts, on_choice)
-      return
-    end
-
-    original_select(items, opts, on_choice)
-  end)
-
-  vim.ui._config_overseer_patched = true
-end
-
 local function setup_failure_output(overseer)
   -- 失败时自动打开输出，弥补任务列表默认收起时不容易看到错误详情的问题。
   overseer.add_template_hook({}, function(task_defn, util)
@@ -155,7 +133,7 @@ return {
     }
   end,
   config = function(_, opts)
-    setup_overseer_select()
+    require("patches.overseer_select").apply()
     local overseer = require("overseer")
     overseer.setup(opts)
     setup_failure_output(overseer)

@@ -8,6 +8,7 @@ local configured = false
 local startup_footer_enabled = false
 local startup_footer_text = nil
 local buffer_util = require("libs.buffer")
+local project = require("plugins.mini.project")
 
 local function ensure_visits()
   local visits = require("plugins.mini.visits")
@@ -123,10 +124,6 @@ local function hide_hidden_empty_placeholders()
   end
 end
 
-local function home_directory()
-  return vim.uv.os_homedir() or vim.fn.expand("~")
-end
-
 local function build_startup_footer()
   local stats = require("lazy").stats()
   local icons = require("libs.icons")
@@ -210,7 +207,7 @@ local function ensure_setup(autoopen)
       {
         name = "Open",
         action = function()
-          require("plugins.mini.files").open(home_directory())
+          require("plugins.mini.files").open(project.home_directory() or vim.fn.expand("~"))
         end,
         section = "Actions",
       },

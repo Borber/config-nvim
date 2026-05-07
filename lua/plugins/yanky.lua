@@ -1,6 +1,8 @@
+local lifecycle = require("config.lifecycle")
+
 return {
   "gbprod/yanky.nvim",
-  event = "User ConfigUiReady",
+  event = lifecycle.lazy_events.ui_ready,
   init = function()
     require("util.sqlite").configure_clib()
   end,

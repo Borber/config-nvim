@@ -381,9 +381,6 @@ end
 function tests.starter_initial_content_is_available_before_background()
   reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
 
-  local background_ready = vim.g.config_background_ready
-  vim.g.config_background_ready = nil
-
   local setup_called = false
   local stats = {
     loaded = 7,
@@ -453,7 +450,6 @@ function tests.starter_initial_content_is_available_before_background()
   assert_eq(starter.opts.footer(), "", "manual starter reopen should hide the startup-only footer")
 
   reset_modules("lazy", "lazy.stats", "libs.icons")
-  vim.g.config_background_ready = background_ready
 end
 
 function tests.mini_files_opens_from_root_and_focuses_current_branch()

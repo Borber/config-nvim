@@ -299,3 +299,14 @@ toggleterm 使用自定义窗口切分策略：
 ```sh
 nvim --headless -u NONE -i NONE -n -S tests/headless/mini_behaviors.lua +qa
 ```
+
+## 结构收口补充
+
+- `lua/state/lifecycle.lua` 持有生命周期状态，热重载时不需要回写全局变量。
+
+## 结构收口
+
+- `lua/config/lifecycle.lua` 统一管理 `ConfigUiReady` / `ConfigBackground` / `ConfigFilePost`。
+- `lua/plugins/mini/project.lua` 统一 recent、session、home 规则。
+- `lua/patches/` 统一收口 blink / noice / bookmarks / overseer / toggleterm 的内部 patch。
+- 细节说明见 `doc/lifecycle-and-patches.md`。

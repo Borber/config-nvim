@@ -69,6 +69,8 @@ local function has_wakatime_today()
 end
 
 local function setup_wakatime_refresh()
+  local lifecycle = require("config.lifecycle")
+
   local function setup()
     -- 让出一轮调度，等 lualine 首屏完成后再启动 WakaTime 查询。
     vim.schedule(function()
@@ -76,16 +78,10 @@ local function setup_wakatime_refresh()
     end)
   end
 
-  if vim.g.config_ui_ready then
+  lifecycle.once("ui_ready", function()
     setup()
-    return
-  end
-
-  vim.api.nvim_create_autocmd("User", {
+  end, {
     group = vim.api.nvim_create_augroup("ConfigLualineWakaTimeRefresh", { clear = true }),
-    pattern = "ConfigUiReady",
-    once = true,
-    callback = setup,
     desc = "Start lualine WakaTime refresh after UI startup",
   })
 end
@@ -134,24 +130,20 @@ local function refresh_branch_statusline(preferred_bufnr)
 end
 
 local function setup_branch_refresh()
+  local lifecycle = require("config.lifecycle")
   local group = vim.api.nvim_create_augroup("ConfigLualineBranchRefresh", { clear = true })
 
   -- ConfigFilePost 可能触发本次加载，也可能早于手动加载的 lualine；两边都兜住才能稳定刷新首次状态栏。
-  vim.api.nvim_create_autocmd("User", {
+  lifecycle.on("file_post", function(event)
+    local bufnr = event.data and event.data.buf or event.buf
+    vim.schedule(function()
+      refresh_branch_statusline(bufnr)
+    end)
+  end, {
     group = group,
-    pattern = "ConfigFilePost",
-    callback = function(event)
-      local bufnr = event.data and event.data.buf or event.buf
-      vim.schedule(function()
-        refresh_branch_statusline(bufnr)
-      end)
-    end,
+    schedule = false,
     desc = "Refresh lualine branch after first real file",
   })
-
-  if vim.g.config_file_posted then
-    vim.schedule(refresh_branch_statusline)
-  end
 end
 
 return {
@@ -250,6 +242,7 @@ return {
     }
   end,
   config = function(_, opts)
+    require("config.lifecycle").setup()
     require("lualine").setup(opts)
     setup_branch_refresh()
     setup_wakatime_refresh()

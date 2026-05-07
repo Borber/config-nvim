@@ -1,6 +1,8 @@
+local lifecycle = require("config.lifecycle")
+
 return {
   "m4xshen/hardtime.nvim",
-  event = "User ConfigBackground",
+  event = lifecycle.lazy_events.background,
   dependencies = {
     "MunifTanjim/nui.nvim",
   },

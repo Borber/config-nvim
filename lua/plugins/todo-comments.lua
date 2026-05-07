@@ -1,7 +1,9 @@
+local lifecycle = require("config.lifecycle")
+
 return {
   "folke/todo-comments.nvim",
   -- TODO 扫描不阻塞首屏；文件可见后再补上跳转和列表能力。
-  event = "User ConfigFilePost",
+  event = lifecycle.lazy_events.file_post,
   cmd = { "TodoTrouble", "TodoTelescope" },
   dependencies = { "nvim-lua/plenary.nvim" },
   opts = {},

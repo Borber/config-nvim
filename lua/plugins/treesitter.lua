@@ -1,3 +1,5 @@
+local lifecycle = require("config.lifecycle")
+
 -- nvim-treesitter main 分支：API 与 master 分支完全不同
 --   * setup 仅接受 install_dir 等少量选项，ensure_installed/auto_install 无效
 --   * 需要显式调用 install() 安装解析器
@@ -80,7 +82,7 @@ end
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
-  event = "User ConfigFilePost",
+  event = lifecycle.lazy_events.file_post,
   cmd = { "TSInstallConfigParsers", "TSInstallMissingConfigParsers" },
   build = update_configured_parsers,
   config = function()

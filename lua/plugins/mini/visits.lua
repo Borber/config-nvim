@@ -7,43 +7,14 @@ local M = {}
 local configured = false
 
 local path_util = require("libs.path")
+local project = require("plugins.mini.project")
 local recent_projects = nil
-local recent_projects_store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
-local recent_projects_limit = 100
-M.recent_paths_limit = 10
+local recent_projects_store = project.recent_projects_store
+local recent_projects_limit = project.recent_projects_store_limit
+M.recent_paths_limit = project.recent_paths_limit
 local canonical_path = path_util.canonical_absolute
 local is_directory = path_util.is_directory
 local path_exists = path_util.exists
-
-local function home_directory()
-  local home = vim.uv.os_homedir()
-  if home == nil or home == "" then
-    return nil
-  end
-
-  return canonical_path(home)
-end
-
-local function project_from_path(path, cache)
-  local resolved_path = canonical_path(path)
-  if resolved_path == nil or not path_exists(resolved_path, cache) then
-    return nil
-  end
-
-  local project = resolved_path
-  if not is_directory(resolved_path, cache) then
-    project = canonical_path(vim.fn.fnamemodify(resolved_path, ":h"))
-    if project == nil or not is_directory(project, cache) then
-      return nil
-    end
-  end
-
-  if project == home_directory() then
-    return nil
-  end
-
-  return project
-end
 
 local function load_recent_projects()
   -- 旧文件里可能存过文件路径；读取时统一折叠成它所在的项目目录。
@@ -66,10 +37,10 @@ local function load_recent_projects()
   local stat_cache = {}
   local seen = {}
   for _, path in ipairs(decoded) do
-    local project = type(path) == "string" and project_from_path(path, stat_cache) or nil
-    if project ~= nil and not seen[project] then
-      seen[project] = true
-      table.insert(recent_projects, project)
+    local project_path = type(path) == "string" and project.project_from_path(path, stat_cache) or nil
+    if project_path ~= nil and not seen[project_path] then
+      seen[project_path] = true
+      table.insert(recent_projects, project_path)
     end
   end
 
@@ -97,20 +68,20 @@ local function write_recent_projects()
 end
 
 local function push_recent_project(path)
-  local project = project_from_path(path)
-  if project == nil then
+  local project_path = project.project_from_path(path)
+  if project_path == nil then
     return
   end
 
   local projects = load_recent_projects()
 
   for index = #projects, 1, -1 do
-    if projects[index] == project then
+    if projects[index] == project_path then
       table.remove(projects, index)
     end
   end
 
-  table.insert(projects, 1, project)
+  table.insert(projects, 1, project_path)
 
   while #projects > recent_projects_limit do
     table.remove(projects)
@@ -120,8 +91,8 @@ local function push_recent_project(path)
 end
 
 local function remove_recent_project(path)
-  local project = project_from_path(path)
-  if project == nil then
+  local project_path = project.project_from_path(path)
+  if project_path == nil then
     return false
   end
 
@@ -129,7 +100,7 @@ local function remove_recent_project(path)
   local removed = false
 
   for index = #projects, 1, -1 do
-    if projects[index] == project then
+    if projects[index] == project_path then
       table.remove(projects, index)
       removed = true
     end
@@ -199,9 +170,9 @@ function M.open_path(path, opts)
     return
   end
 
-  local project = project_from_path(resolved_path)
-  if opts.record ~= false and project ~= nil then
-    push_recent_project(project)
+  local project_path = project.project_from_path(resolved_path)
+  if opts.record ~= false and project_path ~= nil then
+    push_recent_project(project_path)
   end
 
   close_current_starter()

@@ -6,6 +6,7 @@
 local M = {}
 local configured = false
 local path_util = require("libs.path")
+local project = require("plugins.mini.project")
 local canonical_path = path_util.canonical
 
 local function session_file()
@@ -36,21 +37,10 @@ local function current_session_name()
   return string.format("%s-%s.vim", name, hash)
 end
 
-local function current_directory_is_home()
-  local home = vim.uv.os_homedir()
-  if home == nil or home == "" then
-    return false
-  end
-
-  return current_directory() == canonical_path(home)
-end
-
 local function current_session_disabled_message()
   -- home 目录作为 starter 的入口页，不写项目 session。
   -- 否则随手退出 Neovim 会把 home 也恢复成一个“项目”。
-  if current_directory_is_home() then
-    return "Home directory uses starter instead of a session"
-  end
+  return project.session_disabled_reason(current_directory())
 end
 
 local function current_session_path()

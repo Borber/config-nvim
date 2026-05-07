@@ -2,6 +2,8 @@ local function icons()
   return require("libs.icons")
 end
 
+local tree_patch = require("patches.bookmarks_tree")
+
 local function project_name()
   local name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
   return name ~= "" and name or nil
@@ -9,105 +11,7 @@ end
 
 local function refresh_bookmarks()
   -- 切换项目列表后总是刷新 sign；tree 只有窗口真实存在时才刷新。
-  require("bookmarks.sign").safe_refresh_signs()
-
-  local ctx = vim.g.bookmark_tree_view_ctx
-  if ctx == nil then
-    return
-  end
-
-  if not (ctx.win and vim.api.nvim_win_is_valid(ctx.win) and ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf)) then
-    vim.g.bookmark_tree_view_ctx = nil
-    vim.notify("Bookmarks tree context is stale; skipped tree refresh", vim.log.levels.WARN)
-    return
-  end
-
-  if not (ctx.lines_ctx and ctx.lines_ctx.root_id) then
-    vim.notify("Bookmarks tree context is not ready; skipped tree refresh", vim.log.levels.WARN)
-    return
-  end
-
-  require("bookmarks.tree.operate").refresh()
-end
-
-local function compact_tree_gutter(win)
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].signcolumn = "no"
-  vim.wo[win].foldcolumn = "0"
-  vim.wo[win].statuscolumn = ""
-end
-
-local function apply_tree_icons(buf)
-  -- 上游 tree 渲染会直接写入 buffer；这里在渲染完成后做一次轻量文本替换。
-  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
-    return
-  end
-
-  local ic = icons()
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local changed = false
-
-  for index, line in ipairs(lines) do
-    local updated = line:gsub("^(%s*)▾", "%1" .. ic.tree.expanded, 1)
-    updated = updated:gsub("^(%s*)▸", "%1" .. ic.tree.collapsed, 1)
-
-    if updated ~= line then
-      lines[index] = updated
-      changed = true
-    end
-  end
-
-  if changed then
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  end
-end
-
-local function patch_tree_icons()
-  -- render.refresh 是内部入口，必须幂等 patch，避免配置重载后多层包裹。
-  local render = require("bookmarks.tree.render")
-  if render._config_icon_patch then
-    return
-  end
-
-  local refresh = render.refresh
-  render.refresh = function(...)
-    local result = refresh(...)
-    local ctx = vim.g.bookmark_tree_view_ctx
-
-    if ctx then
-      apply_tree_icons(ctx.buf)
-    end
-
-    return result
-  end
-  render._config_icon_patch = true
-end
-
-local function keep_tree_width()
-  -- tree 窗口可能被 split/resize 影响；下一轮事件循环再校正，确保 ctx 已更新。
-  vim.schedule(function()
-    local ctx = vim.g.bookmark_tree_view_ctx
-    if not (ctx and ctx.win and vim.api.nvim_win_is_valid(ctx.win)) then
-      return
-    end
-
-    if ctx.buf and vim.api.nvim_buf_is_valid(ctx.buf) and vim.api.nvim_win_get_buf(ctx.win) ~= ctx.buf then
-      return
-    end
-
-    compact_tree_gutter(ctx.win)
-    apply_tree_icons(ctx.buf)
-    vim.wo[ctx.win].winfixwidth = true
-
-    local width = ((vim.g.bookmarks_config or {}).treeview or {}).window_split_dimension or 50
-    if vim.api.nvim_win_get_width(ctx.win) ~= width then
-      local ok, err = pcall(vim.api.nvim_win_set_width, ctx.win, width)
-      if not ok then
-        vim.notify("Failed to resize bookmarks tree: " .. tostring(err), vim.log.levels.ERROR)
-      end
-    end
-  end)
+  tree_patch.refresh_tree()
 end
 
 local function activate_project_list(opts)
@@ -161,7 +65,7 @@ local function run_project_command(command, opts)
     vim.cmd(command)
 
     if command == "BookmarksTree" then
-      keep_tree_width()
+      tree_patch.keep_width()
     end
   end
 end
@@ -184,7 +88,7 @@ local function create_project_commands()
   vim.api.nvim_create_user_command("BookmarksProjectTree", function()
     activate_project_list({ create = true })
     vim.cmd("BookmarksTree")
-    keep_tree_width()
+    tree_patch.keep_width()
   end, { desc = "Open bookmarks tree for current cwd" })
 end
 
@@ -206,7 +110,7 @@ local function setup_project_autocmds()
 
   vim.api.nvim_create_autocmd({ "WinNew", "WinResized", "VimResized" }, {
     group = group,
-    callback = keep_tree_width,
+    callback = tree_patch.keep_width,
     desc = "Keep bookmarks tree at its configured width",
   })
 end
@@ -278,14 +182,14 @@ return {
           end
 
           vim.cmd("BookmarksTree")
-          keep_tree_width()
+          tree_patch.keep_width()
         end,
       },
     }
   end,
   config = function(_, opts)
     require("bookmarks").setup(opts)
-    patch_tree_icons()
+    tree_patch.apply_render_patch()
     create_project_commands()
     setup_project_autocmds()
   end,

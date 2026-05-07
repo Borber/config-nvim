@@ -1,41 +1,13 @@
+local lifecycle = require("config.lifecycle")
+
 return {
   "folke/noice.nvim",
-  event = "User ConfigUiReady",
+  event = lifecycle.lazy_events.ui_ready,
   dependencies = {
     "MunifTanjim/nui.nvim",
   },
   config = function(_, opts)
-    -- noice 的签名帮助和 blink 的补全菜单都可能占用同一块浮窗视线。
-    -- 当补全菜单已经显示时，临时压住 signature popup，避免两个浮窗抢焦点。
-    local function blink_menu_visible()
-      local blink = package.loaded["blink.cmp"]
-      return blink ~= nil and blink.is_menu_visible ~= nil and blink.is_menu_visible()
-    end
-
-    local signature = require("noice.lsp.signature")
-    if not rawget(signature, "_config_nvim_blink_guarded") then
-      -- 只 patch 一次，防止插件配置被重复执行时多次包裹同一个函数。
-      local original_check = signature.check
-      local original_on_signature = signature.on_signature
-
-      signature.check = function()
-        if blink_menu_visible() then
-          return
-        end
-
-        return original_check()
-      end
-
-      signature.on_signature = function(...)
-        if blink_menu_visible() then
-          return
-        end
-
-        return original_on_signature(...)
-      end
-
-      rawset(signature, "_config_nvim_blink_guarded", true)
-    end
+    require("patches.noice_signature").apply()
 
     require("noice").setup(opts)
   end,
