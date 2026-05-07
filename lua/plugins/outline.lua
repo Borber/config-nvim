@@ -123,7 +123,7 @@ return {
   },
   keys = {
     {
-      "<leader>fo",
+      "<leader>so",
       "<Cmd>Outline<CR>",
       desc = "Outline symbols",
     },

@@ -15,6 +15,15 @@ return {
         experimental = { enable = true },
       },
       procMacro = { enable = true },
+      workspace = {
+        symbol = {
+          search = {
+            excludeImports = true,
+            kind = "all_symbols",
+            scope = "workspace",
+          },
+        },
+      },
     },
   },
 }

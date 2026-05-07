@@ -83,10 +83,11 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>,` | Buffer 列表（Telescope picker） |
 | `<leader>/` | 当前 buffer 内搜索 |
 | `<leader>ff` | 查找文件 |
-| `<leader>fg` | 全局搜索（live grep） |
 | `<leader>fh` | 帮助标签 |
 | `<leader>fr` | 最近打开文件 |
 | `<leader>fH` | 命令历史 |
+| `<leader>fg` | 全局搜索（live grep） |
+| `<leader>fw` | 搜索光标词 / 选区文本 |
 | `<leader>x` | 关闭光标所在层级（窗口 / buffer / 特殊界面） |
 | `<leader>X` | 强制删除当前 buffer |
 | `<leader>bn` / `<leader>bp` | 下一个 / 上一个 buffer |
@@ -103,10 +104,10 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `gri` | 实现列表（Trouble） |
 | `<leader>cr` | 重命名符号 |
 | `<leader>ca` | 代码动作 |
-| `<leader>fd` | 当前文件诊断（Trouble） |
-| `<leader>fD` | 工作区诊断（Trouble） |
-| `<leader>fs` | 当前文件符号列表 |
-| `<leader>fS` | 工作区符号列表 |
+| `<leader>sd` | 当前文件诊断（Trouble） |
+| `<leader>sD` | 工作区诊断（Trouble） |
+| `<leader>so` | 当前文件结构侧栏（Outline） |
+| `<leader>ss` | 工作区符号搜索 |
 | `]d` / `[d` | 下一条 / 上一条诊断并弹出浮窗 |
 
 ### Git
@@ -122,15 +123,6 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>gb` | Blame line（完整信息） |
 | `<leader>gB` | 切换当前行 blame 显示 |
 | `]h` / `[h` | 下一个 / 上一个 hunk |
-
-### 会话
-
-| 按键 | 功能 |
-|------|------|
-| `<leader>ss` | 保存当前项目 session |
-| `<leader>sr` | 恢复当前项目 session |
-| `<leader>sR` | 从列表选择 session 恢复 |
-| `<leader>sd` | 从列表删除 session |
 
 ### 笔记
 

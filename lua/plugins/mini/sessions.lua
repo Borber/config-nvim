@@ -171,22 +171,6 @@ function M.setup()
   vim.api.nvim_create_user_command("SessionDelete", function()
     M.select_delete()
   end, { desc = "Select session to delete", force = true })
-
-  vim.keymap.set("n", "<leader>ss", function()
-    M.write_current({ verbose = true })
-  end, { desc = "Save session", silent = true })
-
-  vim.keymap.set("n", "<leader>sr", function()
-    M.read_current()
-  end, { desc = "Restore session", silent = true })
-
-  vim.keymap.set("n", "<leader>sR", function()
-    M.select_read()
-  end, { desc = "Select session", silent = true })
-
-  vim.keymap.set("n", "<leader>sd", function()
-    M.select_delete()
-  end, { desc = "Delete session", silent = true })
 end
 
 function M.has_current()

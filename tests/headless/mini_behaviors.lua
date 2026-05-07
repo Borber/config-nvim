@@ -486,8 +486,9 @@ function tests.mini_files_opens_from_root_and_focuses_current_branch()
 
   assert_eq(opened_root, vim.fs.normalize(project), "mini.files should open at requested root")
   assert_eq(branch[1], vim.fs.normalize(project), "branch should start at root")
-  assert_eq(branch[#branch], vim.fs.normalize(nested), "branch should end at current file directory")
-  assert_eq(focused_depth, #branch, "deepest branch should be focused")
+  assert_eq(branch[#branch - 1], vim.fs.normalize(nested), "branch should include current file directory")
+  assert_eq(branch[#branch], vim.fs.normalize(file), "branch should end at current file for preview")
+  assert_eq(focused_depth, #branch - 1, "current file directory should stay focused")
 end
 
 function tests.mini_files_hides_reusable_target_placeholder()

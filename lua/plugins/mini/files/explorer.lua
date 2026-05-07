@@ -6,15 +6,21 @@ local canonical_path = path_util.canonical
 local syncing_focused_window = false
 
 -- 从当前 cwd 和当前文件/目录构造 mini.files 需要的 branch 列表。
--- 这一步的目标不是“打开文件”，而是让文件树先落到项目根，再展开到实际上下文。
+-- 当前 buffer 是文件时，把文件本身也放进 branch；这样右侧预览由 mini.files 原生状态驱动。
 local function build_branch_from_cwd(cwd, path, stat_cache)
   if path == "" then
     return nil
   end
 
   local normalized_cwd = canonical_path(cwd)
-  local normalized_path = canonical_path(path)
-  local current_dir = path_util.is_directory(path, stat_cache) and normalized_path or canonical_path(vim.fs.dirname(normalized_path))
+  local normalized_path = path_util.local_normalized(path)
+  if normalized_path == nil then
+    return nil
+  end
+
+  local path_is_file = path_util.is_file(normalized_path, stat_cache)
+  local current_dir = path_util.is_directory(normalized_path, stat_cache) and normalized_path
+    or canonical_path(vim.fs.dirname(normalized_path))
   local branch = { current_dir }
   local cwd_ancestor_pattern = string.format("^%s/.", vim.pesc(normalized_cwd))
 
@@ -26,39 +32,12 @@ local function build_branch_from_cwd(cwd, path, stat_cache)
     return nil
   end
 
-  return branch
-end
-
-local function focus_file_entry(minifiles, directory_path, file_path)
-  local state = minifiles.get_explorer_state()
-  if state == nil then
-    return
+  if path_is_file then
+    table.insert(branch, normalized_path)
+    return branch, #branch - 1
   end
 
-  -- 先定位到对应目录窗口，再在那一列里把光标挪到目标文件行。
-  local target_win
-  for _, window in ipairs(state.windows) do
-    if canonical_path(window.path) == directory_path then
-      target_win = window.win_id
-      break
-    end
-  end
-
-  if target_win == nil or not vim.api.nvim_win_is_valid(target_win) then
-    return
-  end
-
-  local buf_id = vim.api.nvim_win_get_buf(target_win)
-  local line_count = vim.api.nvim_buf_line_count(buf_id)
-
-  for line = 1, line_count do
-    local entry = minifiles.get_fs_entry(buf_id, line)
-    if entry ~= nil and canonical_path(entry.path) == file_path then
-      vim.api.nvim_set_current_win(target_win)
-      vim.api.nvim_win_set_cursor(target_win, { line, 0 })
-      return
-    end
-  end
+  return branch, #branch
 end
 
 local function window_path(windows, win_id)
@@ -146,16 +125,12 @@ function M.open_root(root)
   minifiles.open(cwd, false)
   hide_reusable_target_placeholder(minifiles)
 
-  local branch = build_branch_from_cwd(cwd, path, stat_cache)
+  local branch, depth_focus = build_branch_from_cwd(cwd, path, stat_cache)
   if branch == nil then
     return
   end
 
-  minifiles.set_branch(branch, { depth_focus = #branch })
-
-  if path_util.is_file(path, stat_cache) then
-    focus_file_entry(minifiles, branch[#branch], canonical_path(path))
-  end
+  minifiles.set_branch(branch, { depth_focus = depth_focus })
 end
 
 function M.sync_focus_to_current_window()

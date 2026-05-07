@@ -12,7 +12,7 @@ local function key_icons()
     markdown = { icon = ic.ui.markdown, color = "blue" },
     notes = { icon = ic.basic.file, color = "blue" },
     quit = { icon = ic.ui.quit, color = "red" },
-    session = { icon = ic.ui.session, color = "azure" },
+    symbol = { icon = ic.symbol.Function, color = "cyan" },
     terminal = { icon = ic.ui.terminal, color = "red" },
   }
 end
@@ -41,7 +41,7 @@ return {
         { "<leader>b", icon = icons.buffer, group = "buffer" },
         { "<leader>c", icon = icons.code, group = "code" },
         { "<leader>q", icon = icons.quit, group = "quit" },
-        { "<leader>s", icon = icons.session, group = "session" },
+        { "<leader>s", icon = icons.symbol, group = "symbol" },
         { "<leader>t", icon = icons.terminal, group = "terminal" },
         { "<leader>?", icon = icons.buffer, desc = "Buffer keymaps" },
         { "<localleader>m", icon = icons.markdown, group = "markdown" },

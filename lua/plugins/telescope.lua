@@ -79,6 +79,41 @@ local function buffer_entry_maker(opts)
   end
 end
 
+local function selected_text()
+  local start_pos = vim.fn.getpos("'<")
+  local end_pos = vim.fn.getpos("'>")
+  local start_row, start_col = start_pos[2], start_pos[3]
+  local end_row, end_col = end_pos[2], end_pos[3]
+
+  if start_row == 0 or end_row == 0 then
+    return nil
+  end
+
+  if start_row > end_row or (start_row == end_row and start_col > end_col) then
+    start_row, end_row = end_row, start_row
+    start_col, end_col = end_col, start_col
+  end
+
+  local lines = vim.api.nvim_buf_get_text(0, start_row - 1, start_col - 1, end_row - 1, end_col, {})
+  local text = table.concat(lines, "\n")
+
+  return text ~= "" and text or nil
+end
+
+local function live_grep(opts)
+  return function()
+    require("telescope.builtin").live_grep(opts)
+  end
+end
+
+local function live_grep_current_text()
+  return function()
+    require("telescope.builtin").live_grep({
+      default_text = selected_text() or vim.fn.expand("<cword>"),
+    })
+  end
+end
+
 return {
   "nvim-telescope/telescope.nvim",
   cmd = "Telescope",
@@ -99,10 +134,14 @@ return {
     },
     {
       "<leader>fg",
-      function()
-        require("telescope.builtin").live_grep()
-      end,
+      live_grep(),
       desc = "Live grep",
+    },
+    {
+      "<leader>fw",
+      live_grep_current_text(),
+      desc = "Search word",
+      mode = { "n", "x" },
     },
     {
       "<leader>,",

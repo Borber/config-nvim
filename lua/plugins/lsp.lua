@@ -16,10 +16,139 @@ local function diagnostic_jump(count)
   end
 end
 
-local function telescope_lsp_picker(name)
-  -- 延迟 require Telescope，避免 LSP attach 时就加载 picker。
+local function workspace_symbol_display_location(path, lnum)
+  if path == nil or path == "" then
+    return "", nil
+  end
+
+  local normalized = vim.fs.normalize(path):gsub("\\", "/")
+  local cwd = vim.fs.normalize(vim.uv.cwd() or vim.fn.getcwd()):gsub("\\", "/")
+  local display_path = vim.fs.relpath(cwd, normalized) or vim.fn.fnamemodify(normalized, ":~")
+
+  if lnum ~= nil and lnum > 0 then
+    return display_path, tostring(lnum)
+  end
+
+  return display_path, nil
+end
+
+local function workspace_symbol_entry_maker(opts)
+  opts = opts or {}
+
+  local entry_display = require("telescope.pickers.entry_display")
+  local icons = require("libs.icons")
+  local make_entry = require("telescope.make_entry")
+  local symbol_icons = icons.symbol
+
+  -- 只改展示顺序：结果区聚焦符号本身，路径交给 preview 顶部显示。
+  local displayer = entry_display.create({
+    separator = " ",
+    items = {
+      { width = 2 },
+      { remaining = true },
+    },
+  })
+
+  return function(entry)
+    local text = entry.text or ""
+    local symbol_type, symbol_name = text:match("%[(.+)%]%s+(.*)")
+    symbol_type = entry.kind or symbol_type or "Unknown"
+    symbol_name = symbol_name or text
+    local symbol_icon = symbol_icons[symbol_type] or icons.basic.file
+
+    local display_path, display_lnum = workspace_symbol_display_location(entry.filename, entry.lnum)
+
+    return make_entry.set_default_entry_mt({
+      value = entry,
+      ordinal = table.concat({ symbol_name, symbol_type, display_path, display_lnum or "" }, " "),
+      display = function(item)
+        return displayer({
+          { item.symbol_icon, "TelescopeResultsComment" },
+          item.symbol_name,
+        })
+      end,
+      filename = entry.filename,
+      lnum = entry.lnum,
+      col = entry.col,
+      symbol_icon = symbol_icon,
+      symbol_name = symbol_name,
+      symbol_type = symbol_type,
+      display_path = display_path,
+      display_lnum = display_lnum,
+      start = entry.start,
+      finish = entry.finish,
+    }, opts)
+  end
+end
+
+local function workspace_symbol_winbar(entry)
+  local path = (entry.display_path or ""):gsub("%%", "%%%%")
+  local lnum = entry.display_lnum or ""
+
+  if path == "" then
+    return ""
+  end
+
+  if lnum ~= "" then
+    return path .. ":" .. lnum
+  end
+
+  return path
+end
+
+local symbol_preview_ns = vim.api.nvim_create_namespace("ConfigWorkspaceSymbolPreview")
+
+local function workspace_symbol_jump(self, bufnr, entry)
+  pcall(vim.api.nvim_buf_clear_namespace, bufnr, symbol_preview_ns, 0, -1)
+
+  if entry.lnum == nil or entry.lnum <= 0 then
+    return
+  end
+
+  pcall(vim.api.nvim_buf_add_highlight, bufnr, symbol_preview_ns, "TelescopePreviewLine", entry.lnum - 1, 0, -1)
+  pcall(vim.api.nvim_win_set_cursor, self.state.winid, { entry.lnum, 0 })
+  pcall(vim.api.nvim_win_call, self.state.winid, function()
+    vim.cmd("normal! zz")
+  end)
+end
+
+local function workspace_symbol_previewer()
+  local conf = require("telescope.config").values
+  local previewers = require("telescope.previewers")
+
+  return previewers.new_buffer_previewer({
+    title = "Symbol Preview",
+    get_buffer_by_name = function(_, entry)
+      return entry.filename
+    end,
+    define_preview = function(self, entry)
+      if entry.filename == nil or entry.filename == "" then
+        return
+      end
+
+      if self.state.winid ~= nil then
+        pcall(function()
+          vim.wo[self.state.winid].winbar = workspace_symbol_winbar(entry)
+        end)
+      end
+
+      conf.buffer_previewer_maker(entry.filename, self.state.bufnr, {
+        bufname = self.state.bufname,
+        winid = self.state.winid,
+        callback = function(bufnr)
+          workspace_symbol_jump(self, bufnr, entry)
+        end,
+      })
+    end,
+  })
+end
+
+local function workspace_symbols_picker()
   return function()
-    require("telescope.builtin")[name]()
+    require("telescope.builtin").lsp_dynamic_workspace_symbols({
+      entry_maker = workspace_symbol_entry_maker(),
+      previewer = workspace_symbol_previewer(),
+    })
   end
 end
 
@@ -112,11 +241,10 @@ return {
             -- 修改类动作统一放在 <leader>c 下：rename 改符号名，code action 做快速修复/重构。
             map("n", "<leader>cr", vim.lsp.buf.rename, "Rename symbol")
             map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-            -- 查找类入口统一放在 <leader>f 下；Trouble 承担诊断列表，Telescope 承担符号列表。
-            map("n", "<leader>fd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
-            map("n", "<leader>fD", "<Cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>", "Workspace diagnostics")
-            map("n", "<leader>fs", telescope_lsp_picker("lsp_document_symbols"), "Document symbols")
-            map("n", "<leader>fS", telescope_lsp_picker("lsp_dynamic_workspace_symbols"), "Workspace symbols")
+            -- 结构/诊断入口留在 <leader>s 下；真正的全文查找仍归到 Telescope 的 <leader>f 系列。
+            map("n", "<leader>sd", "<Cmd>Trouble diagnostics toggle focus=true filter.buf=0 win.position=bottom<CR>", "Document diagnostics")
+            map("n", "<leader>sD", "<Cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>", "Workspace diagnostics")
+            map("n", "<leader>ss", workspace_symbols_picker(), "Workspace symbols")
             -- 诊断跳转保留原生 [d/]d 手感，并在跳转后弹出诊断浮窗。
             map("n", "]d", diagnostic_jump(1), "Next diagnostic")
             map("n", "[d", diagnostic_jump(-1), "Previous diagnostic")
