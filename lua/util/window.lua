@@ -153,6 +153,20 @@ local function close_toggleterm(ft)
   return true
 end
 
+local function close_outline(ft)
+  if ft ~= "Outline" then
+    return false
+  end
+
+  local outline = package.loaded["outline"]
+  if outline == nil or type(outline.close) ~= "function" then
+    return false
+  end
+
+  outline.close()
+  return true
+end
+
 -- 特殊 buffer 是插件关闭失败后的兜底路径，只处理 buftype 非空的临时 buffer。
 local function close_special_buffer()
   local buf = api.nvim_get_current_buf()
@@ -241,7 +255,7 @@ function M.close_current()
   local ft = current_filetype()
 
   -- 先交给拥有整组 UI 的插件清理，再按容器层级从外到内关闭。
-  if close_mini_files(ft) or close_diffview() or close_toggleterm(ft) then
+  if close_mini_files(ft) or close_diffview() or close_toggleterm(ft) or close_outline(ft) then
     return true
   end
 

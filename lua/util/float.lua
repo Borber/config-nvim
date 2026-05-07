@@ -126,6 +126,17 @@ function M.menu_winhighlight(extra)
   }, extra or {}))
 end
 
+function M.panel_winhighlight(extra)
+  -- 右侧工具 split 复用浮窗底色和边线，避免 Outline 这类侧栏单独发散。
+  return M.float_winhighlight(vim.tbl_extend("force", {
+    CursorLine = "PmenuSel",
+    EndOfBuffer = "NormalFloat",
+    FoldColumn = "NormalFloat",
+    SignColumn = "NormalFloat",
+    WinSeparator = "FloatBorder",
+  }, extra or {}))
+end
+
 function M.title(text, group)
   return { { " " .. text .. " ", group or "FloatTitle" } }
 end
@@ -290,6 +301,23 @@ local function apply_small_plugin_highlights()
   link("GitSignsPreviewTitle", "FloatTitle")
 end
 
+local function apply_outline_highlights(palette)
+  local normal = palette.normal
+
+  set_hl("OutlineCurrent", { fg = normal.fg, bg = palette.selection_bg, bold = true })
+  set_hl("OutlineFoldMarker", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  set_hl("OutlineGuides", { fg = palette.border_fg, bg = normal.bg })
+  link("OutlineDetails", "Comment")
+  link("OutlineLineno", "LineNr")
+  link("OutlineHelpTip", "Comment")
+  link("OutlineJumpHighlight", "Visual")
+  link("OutlineStatusFt", "Type")
+  link("OutlineStatusProvider", "Special")
+  link("OutlineStatusError", "ErrorMsg")
+  link("OutlineKeymapHelpKey", "Special")
+  link("OutlineKeymapHelpDisabled", "Comment")
+end
+
 local function apply_editor_highlights(palette)
   local normal = palette.normal
   local comment = palette.comment
@@ -343,6 +371,7 @@ function M.apply_highlights()
   apply_lazy_highlights(palette)
   apply_telescope_highlights(palette)
   apply_small_plugin_highlights()
+  apply_outline_highlights(palette)
   apply_editor_highlights(palette)
 end
 
