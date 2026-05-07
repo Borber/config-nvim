@@ -50,6 +50,12 @@ local function temp_path(...)
   return vim.fs.joinpath(tmp_root, ...)
 end
 
+local path_util = require("libs.path")
+
+local function canonical_realpath(path)
+  return path_util.canonical(vim.uv.fs_realpath(path) or path)
+end
+
 local function write_file(path, lines)
   vim.fn.mkdir(vim.fs.dirname(path), "p")
   local ok = vim.fn.writefile(lines or { "x" }, path)
@@ -60,8 +66,8 @@ local function hop_action()
   return require("plugins.hop").keys[1][2]
 end
 
-local function stub_visits(overrides)
-  local visits = vim.tbl_extend("force", {
+local function stub_recent_projects(overrides)
+  local recent_projects = vim.tbl_extend("force", {
     setup = function() end,
     recent_paths_section = function()
       return function()
@@ -71,8 +77,8 @@ local function stub_visits(overrides)
     open_path = function() end,
   }, overrides or {})
 
-  package.loaded["plugins.mini.visits"] = visits
-  return visits
+  package.loaded["config.recent_projects"] = recent_projects
+  return recent_projects
 end
 
 local function stub_mini_starter(overrides)
@@ -95,35 +101,35 @@ end
 local tests = {}
 
 function tests.recent_projects_are_unique_ordered_and_removable()
-  reset_modules("plugins.mini.visits")
+  reset_modules("config.recent_projects")
 
   local first = temp_path("recent", "first-project")
   local second = temp_path("recent", "second-project")
   vim.fn.mkdir(first, "p")
   vim.fn.mkdir(second, "p")
 
-  local visits = require("plugins.mini.visits")
-  visits.record_path(first)
-  visits.record_path(second)
-  visits.record_path(first)
+  local recent_projects = require("config.recent_projects")
+  recent_projects.record_path(first)
+  recent_projects.record_path(second)
+  recent_projects.record_path(first)
 
-  local items = visits.recent_paths_section(5)()
+  local items = recent_projects.recent_paths_section(5)()
   assert_eq(#items, 2, "recent paths should be unique")
   assert_eq(items[1].recent_path, require("libs.path").canonical_absolute(first), "newest repeated path should move to top")
   assert_eq(items[2].recent_path, require("libs.path").canonical_absolute(second), "older path should remain after newest")
 
-  assert_true(visits.remove_recent_path(first), "remove_recent_path should report removal")
-  items = visits.recent_paths_section(5)()
+  assert_true(recent_projects.remove_recent_path(first), "remove_recent_path should report removal")
+  items = recent_projects.recent_paths_section(5)()
   assert_eq(#items, 1, "removed path should disappear")
   assert_eq(items[1].recent_path, require("libs.path").canonical_absolute(second), "remaining path should still be listed")
 
-  assert_true(visits.remove_recent_path(second), "last recent path should be removable")
-  items = visits.recent_paths_section(5)()
+  assert_true(recent_projects.remove_recent_path(second), "last recent path should be removable")
+  items = recent_projects.recent_paths_section(5)()
   assert_eq(items[1].name, "There are no recent projects yet", "empty recent paths should render a placeholder item")
 end
 
 function tests.recent_projects_record_current_cwd_after_late_setup()
-  reset_modules("plugins.mini.visits")
+  reset_modules("config.recent_projects")
 
   local original_v = vim.v
   local original_cwd = vim.fn.getcwd()
@@ -147,12 +153,12 @@ function tests.recent_projects_record_current_cwd_after_late_setup()
       end,
     })
 
-    require("plugins.mini.visits").setup()
+    require("config.recent_projects").setup()
     vim.v = original_v
 
     local lines = vim.fn.readfile(store)
     local decoded = vim.json.decode(table.concat(lines, "\n"))
-    assert_eq(decoded[1], require("libs.path").canonical_absolute(project), "late visits.setup should record current cwd project")
+    assert_eq(decoded[1], canonical_realpath(project), "late recent_projects.setup should record current cwd project")
   end, debug.traceback)
 
   vim.v = original_v
@@ -166,7 +172,7 @@ function tests.recent_projects_record_current_cwd_after_late_setup()
 end
 
 function tests.recent_projects_record_false_skips_project_record()
-  reset_modules("plugins.mini.visits", "plugins.mini.sessions", "plugins.mini.files")
+  reset_modules("config.recent_projects", "plugins.mini.sessions", "plugins.mini.files")
 
   local original_cwd = vim.fn.getcwd()
   local ok, err = xpcall(function()
@@ -185,8 +191,8 @@ function tests.recent_projects_record_false_skips_project_record()
       open = function() end,
     }
 
-    local visits = require("plugins.mini.visits")
-    visits.open_path(config, { record = false })
+    local recent_projects = require("config.recent_projects")
+    recent_projects.open_path(config, { record = false })
 
     vim.wait(150)
 
@@ -202,7 +208,7 @@ function tests.recent_projects_record_false_skips_project_record()
 end
 
 function tests.recent_projects_open_path_records_project()
-  reset_modules("plugins.mini.visits", "plugins.mini.sessions", "plugins.mini.files")
+  reset_modules("config.recent_projects", "plugins.mini.sessions", "plugins.mini.files")
 
   local original_cwd = vim.fn.getcwd()
   local ok, err = xpcall(function()
@@ -221,7 +227,7 @@ function tests.recent_projects_open_path_records_project()
       open = function() end,
     }
 
-    require("plugins.mini.visits").open_path(project)
+    require("config.recent_projects").open_path(project)
 
     local lines = vim.fn.readfile(store)
     local decoded = vim.json.decode(table.concat(lines, "\n"))
@@ -236,18 +242,18 @@ function tests.recent_projects_open_path_records_project()
   end
 end
 
-function tests.mini_setup_initializes_visits_for_startup_paths()
-  reset_modules("plugins.mini", "plugins.mini.visits", "plugins.mini.sessions")
+function tests.mini_setup_initializes_recent_projects_for_startup_paths()
+  reset_modules("plugins.mini", "config.recent_projects", "plugins.mini.sessions")
 
-  local visits_setup = false
+  local recent_projects_setup = false
   local ok, err = xpcall(function()
     local project = temp_path("mini-startup-project")
     vim.fn.mkdir(project, "p")
     vim.cmd("args " .. vim.fn.fnameescape(project))
 
-    package.loaded["plugins.mini.visits"] = {
+    package.loaded["config.recent_projects"] = {
       setup = function()
-        visits_setup = true
+        recent_projects_setup = true
       end,
     }
     package.loaded["plugins.mini.sessions"] = {
@@ -258,11 +264,11 @@ function tests.mini_setup_initializes_visits_for_startup_paths()
     }
 
     require("plugins.mini").config()
-    assert_true(visits_setup, "mini setup should initialize visits when Neovim starts with path arguments")
+    assert_true(recent_projects_setup, "mini setup should initialize recent projects when Neovim starts with path arguments")
   end, debug.traceback)
 
   vim.cmd("silent! argdelete *")
-  reset_modules("plugins.mini", "plugins.mini.visits", "plugins.mini.sessions")
+  reset_modules("plugins.mini", "config.recent_projects", "plugins.mini.sessions")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniUi")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniBackground")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniEditing")
@@ -273,13 +279,13 @@ function tests.mini_setup_initializes_visits_for_startup_paths()
 end
 
 function tests.starter_reuses_empty_placeholder_buffer()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions")
+  reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions")
 
   local opened_buf
   local saved_session = false
   local closed_files = false
 
-  stub_visits()
+  stub_recent_projects()
   package.loaded["plugins.mini.sessions"] = {
     write_current = function()
       saved_session = true
@@ -310,11 +316,11 @@ function tests.starter_reuses_empty_placeholder_buffer()
 end
 
 function tests.starter_hides_hidden_empty_placeholders()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "mini.bufremove")
+  reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions", "mini.bufremove")
 
   local opened_buf
 
-  stub_visits()
+  stub_recent_projects()
   package.loaded["plugins.mini.sessions"] = {
     write_current = function() end,
   }
@@ -358,9 +364,9 @@ function tests.starter_hides_hidden_empty_placeholders()
 end
 
 function tests.starter_keeps_global_statusline_unchanged()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions")
+  reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions")
 
-  stub_visits()
+  stub_recent_projects()
   stub_mini_starter()
 
   local original_laststatus = vim.o.laststatus
@@ -379,7 +385,7 @@ function tests.starter_keeps_global_statusline_unchanged()
 end
 
 function tests.starter_initial_content_is_available_before_background()
-  reset_modules("plugins.mini.starter", "plugins.mini.visits", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
+  reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
 
   local setup_called = false
   local stats = {
@@ -388,7 +394,7 @@ function tests.starter_initial_content_is_available_before_background()
   }
   local cputime = 12.345
 
-  stub_visits({
+  stub_recent_projects({
     setup = function()
       setup_called = true
     end,
@@ -459,6 +465,9 @@ function tests.mini_files_opens_from_root_and_focuses_current_branch()
   local nested = vim.fs.joinpath(project, "src")
   local file = vim.fs.joinpath(nested, "main.lua")
   write_file(file, { "print('ok')" })
+  local real_project = canonical_realpath(project)
+  local real_nested = canonical_realpath(nested)
+  local real_file = canonical_realpath(file)
 
   local opened_root
   local branch
@@ -481,13 +490,13 @@ function tests.mini_files_opens_from_root_and_focuses_current_branch()
     end,
   }
 
-  vim.cmd("edit " .. vim.fn.fnameescape(file))
-  require("plugins.mini.files").open(project)
+  vim.cmd("edit " .. vim.fn.fnameescape(real_file))
+  require("plugins.mini.files").open(real_project)
 
-  assert_eq(opened_root, vim.fs.normalize(project), "mini.files should open at requested root")
-  assert_eq(branch[1], vim.fs.normalize(project), "branch should start at root")
-  assert_eq(branch[#branch - 1], vim.fs.normalize(nested), "branch should include current file directory")
-  assert_eq(branch[#branch], vim.fs.normalize(file), "branch should end at current file for preview")
+  assert_eq(opened_root, real_project, "mini.files should open at requested root")
+  assert_eq(branch[1], real_project, "branch should start at root")
+  assert_eq(branch[#branch - 1], real_nested, "branch should include current file directory")
+  assert_eq(branch[#branch], real_file, "branch should end at current file for preview")
   assert_eq(focused_depth, #branch - 1, "current file directory should stay focused")
 end
 
@@ -693,7 +702,7 @@ function tests.mini_files_hop_line_jump_opens_preview_file()
 
   assert_true(handled, "mini.files should handle file preview line jumps")
   assert_true(closed_files, "preview line jump should close mini.files before opening file")
-  assert_eq(vim.fs.normalize(vim.api.nvim_buf_get_name(0)), vim.fs.normalize(file), "preview line jump should open file")
+  assert_eq(canonical_realpath(vim.api.nvim_buf_get_name(0)), canonical_realpath(file), "preview line jump should open file")
   assert_eq(vim.api.nvim_win_get_cursor(0)[1], 2, "preview line jump should keep selected line")
 end
 
@@ -799,7 +808,7 @@ function tests.session_restore_preserves_requested_cwd()
   assert_true(read_name:match("%.vim$") ~= nil, "session read should receive a session file name")
   assert_eq(read_opts.force, false, "session restore should not force by default")
   assert_eq(read_opts.verbose, false, "session restore should honor verbose=false")
-  assert_eq(vim.fs.normalize(vim.fn.getcwd()), vim.fs.normalize(project), "read_current should restore cwd after reading old sessions")
+  assert_eq(canonical_realpath(vim.fn.getcwd()), canonical_realpath(project), "read_current should restore cwd after reading old sessions")
   assert_eq(sessions.should_auto_restore(), false, "headless mode should not auto restore sessions")
 end
 
@@ -827,7 +836,7 @@ local test_order = {
   "recent_projects_record_current_cwd_after_late_setup",
   "recent_projects_record_false_skips_project_record",
   "recent_projects_open_path_records_project",
-  "mini_setup_initializes_visits_for_startup_paths",
+  "mini_setup_initializes_recent_projects_for_startup_paths",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
   "starter_keeps_global_statusline_unchanged",

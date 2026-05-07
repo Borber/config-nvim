@@ -19,7 +19,7 @@ end
 
 local function open_path(path)
   require("mini.files").close()
-  require("plugins.mini.visits").open_path(path)
+  require("config.recent_projects").open_path(path)
 end
 
 function M.enable()

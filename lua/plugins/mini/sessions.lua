@@ -6,7 +6,7 @@
 local M = {}
 local configured = false
 local path_util = require("libs.path")
-local project = require("plugins.mini.project")
+local project = require("config.project")
 local canonical_path = path_util.canonical
 
 local function session_file()

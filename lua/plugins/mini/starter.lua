@@ -8,12 +8,12 @@ local configured = false
 local startup_footer_enabled = false
 local startup_footer_text = nil
 local buffer_util = require("libs.buffer")
-local project = require("plugins.mini.project")
+local project = require("config.project")
 
-local function ensure_visits()
-  local visits = require("plugins.mini.visits")
-  visits.setup()
-  return visits
+local function ensure_recent_projects()
+  local recent_projects = require("config.recent_projects")
+  recent_projects.setup()
+  return recent_projects
 end
 
 local function current_recent_path()
@@ -45,8 +45,8 @@ local function delete_current_recent_path()
     return
   end
 
-  local visits = ensure_visits()
-  if visits.remove_recent_path(recent_path) then
+  local recent_projects = ensure_recent_projects()
+  if recent_projects.remove_recent_path(recent_path) then
     -- 删除后立即刷新启动页，不需要重开 Neovim。
     require("mini.starter").refresh()
   end
@@ -147,8 +147,8 @@ local function startup_footer()
 end
 
 local function recent_paths_items()
-  local visits = ensure_visits()
-  return visits.recent_paths_section(visits.recent_paths_limit or 10)()
+  local recent_projects = ensure_recent_projects()
+  return recent_projects.recent_paths_section(recent_projects.recent_paths_limit or 10)()
 end
 
 local function prepare_starter()
@@ -184,7 +184,7 @@ local function ensure_setup(autoopen)
   startup_footer_enabled = autoopen == true
 
   local starter = require("mini.starter")
-  ensure_visits()
+  ensure_recent_projects()
 
   starter.setup({
     autoopen = autoopen == true,
@@ -214,7 +214,7 @@ local function ensure_setup(autoopen)
       {
         name = "Config",
         action = function()
-          require("plugins.mini.visits").open_path(vim.fn.stdpath("config"), { record = false })
+          require("config.recent_projects").open_path(vim.fn.stdpath("config"), { record = false })
         end,
         section = "Actions",
       },

@@ -1,5 +1,5 @@
 -- ============================================
--- 最近项目管理
+-- 最近项目工作流
 -- 记录用户进入过的项目目录，供 Starter 展示；
 -- 文件级历史交给 Neovim 的 oldfiles / Telescope oldfiles。
 -- ============================================
@@ -7,7 +7,7 @@ local M = {}
 local configured = false
 
 local path_util = require("libs.path")
-local project = require("plugins.mini.project")
+local project = require("config.project")
 local recent_projects = nil
 local recent_projects_store = project.recent_projects_store
 local recent_projects_limit = project.recent_projects_store_limit

@@ -126,7 +126,7 @@ function M.setup()
 
   local sessions = require("plugins.mini.sessions")
   sessions.setup()
-  require("plugins.mini.visits").setup()
+  require("config.recent_projects").setup()
 
   setup_keymaps()
   setup_commands()
