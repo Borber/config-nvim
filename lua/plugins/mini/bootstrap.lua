@@ -25,7 +25,6 @@ local function setup_editing_modules()
 
   require("mini.pairs").setup()
   require("mini.align").setup()
-  require("mini.splitjoin").setup()
   require("plugins.mini.trailspace").setup()
 
   require("mini.indentscope").setup({

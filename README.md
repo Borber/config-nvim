@@ -16,7 +16,7 @@
 | 类别 | 插件 |
 |------|------|
 | 插件管理 | lazy.nvim |
-| 启动页 / 文件树 | mini.nvim（starter、files、visits、sessions、surround、pairs、ai、move、align、splitjoin、bufremove） |
+| 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、move、align、bufremove） |
 | 补全 | blink.cmp + blink-copilot + Copilot.lua + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | 主题 | rose-pine（dawn 变体） |
