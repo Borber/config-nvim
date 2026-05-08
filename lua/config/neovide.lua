@@ -13,6 +13,15 @@ local function set_font_size(size)
   vim.o.guifont = string.format("%s:h%d", font_family, size)
 end
 
+local function paste_system_clipboard()
+  local text = vim.fn.getreg("+")
+  if text == "" then
+    return
+  end
+
+  vim.api.nvim_paste(text, true, -1)
+end
+
 set_font_size(vim.g.gui_font_size)
 
 vim.keymap.set("n", "<C-=>", function()
@@ -26,6 +35,12 @@ end, { silent = true, desc = "减小字体" })
 vim.keymap.set("n", "<C-0>", function()
   set_font_size(vim.g.gui_default_font_size)
 end, { silent = true, desc = "重置字体" })
+
+vim.keymap.set({ "n", "i", "x", "c", "t" }, "<C-S-v>", paste_system_clipboard, {
+  silent = true,
+  desc = "粘贴系统剪贴板",
+})
+
 vim.opt.linespace = 2
 vim.g.neovide_theme = "light"
 vim.g.neovide_floating_shadow = false
