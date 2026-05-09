@@ -31,6 +31,21 @@ local function highlight(name)
   return vim.api.nvim_get_hl(0, { name = name, link = false })
 end
 
+local function telescope_borderchars(overrides)
+  overrides = overrides or {}
+
+  return {
+    overrides.top or char("top"),
+    overrides.right or char("right"),
+    overrides.bottom or char("bottom"),
+    overrides.left or char("left"),
+    overrides.top_left or char("top_left"),
+    overrides.top_right or char("top_right"),
+    overrides.bottom_right or char("bottom_right"),
+    overrides.bottom_left or char("bottom_left"),
+  }
+end
+
 -- 生成普通浮窗的边框字符；传入高亮组时返回带高亮的 borderchars。
 function M.borderchars(group)
   local chars = {
@@ -57,30 +72,23 @@ function M.borderchars(group)
 end
 
 -- Telescope 的 borderchars 顺序和普通浮窗不同，这里单独适配。
-function M.telescope_borderchars(opts)
-  opts = opts or {}
-
-  return {
-    char("top"),
-    char("right"),
-    char("bottom"),
-    char("left"),
-    char("top_left"),
-    char("top_right"),
-    opts.bottom_right or char("bottom_right"),
-    opts.bottom_left or char("bottom_left"),
-  }
+function M.telescope_borderchars()
+  return telescope_borderchars()
 end
 
--- 下拉 picker 统一使用底部输入框，results 底角需要接到下方 prompt。
+-- 下拉 picker 分 prompt/results/preview 三段，需要额外处理连接处。
 function M.telescope_dropdown_borderchars()
   return {
-    prompt = M.telescope_borderchars(),
-    results = M.telescope_borderchars({
-      bottom_right = char("right_join"),
-      bottom_left = char("left_join"),
+    prompt = telescope_borderchars({
+      bottom = " ",
+      bottom_right = char("right"),
+      bottom_left = char("left"),
     }),
-    preview = M.telescope_borderchars(),
+    results = telescope_borderchars({
+      top_left = char("left_join"),
+      top_right = char("right_join"),
+    }),
+    preview = telescope_borderchars(),
   }
 end
 
@@ -153,13 +161,13 @@ function M.telescope_defaults()
       height = 0.8,
       horizontal = {
         preview_width = 0.55,
-        prompt_position = "bottom",
+        prompt_position = "top",
       },
       width = 0.87,
     },
     prompt_prefix = " " .. vim.fn.nr2char(0xf002) .. "  ",
     selection_caret = " " .. vim.fn.nr2char(0xf105) .. " ",
-    sorting_strategy = "descending",
+    sorting_strategy = "ascending",
     winblend = 0,
   }
 end

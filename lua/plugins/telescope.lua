@@ -179,9 +179,7 @@ return {
           layout_config = {
             width = 0.4,
             height = 0.45,
-            prompt_position = "bottom",
           },
-          sorting_strategy = "descending",
         }))
       end,
       desc = "Command history",
