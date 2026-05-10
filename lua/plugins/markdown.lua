@@ -36,6 +36,7 @@ return {
       },
       heading = {
         sign = false,
+        setext = false,
         icons = { "󰲡 ", "󰲣 ", "󰲥 ", "󰲧 ", "󰲩 ", "󰲫 " },
       },
       code = {
