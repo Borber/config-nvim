@@ -21,7 +21,9 @@ function M.setup()
     },
     windows = {
       preview = true,
-      width_preview = 60,
+      width_focus = 34,
+      width_nofocus = 15,
+      width_preview = 42,
     },
   })
 

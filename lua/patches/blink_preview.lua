@@ -7,7 +7,7 @@ function M.preview_multiline_completion(item)
   local text_edits = require("blink.cmp.lib.text_edits")
   local text_edit = text_edits.get_from_item(item)
 
-  -- Copilot/LSP 可能返回 snippet 格式；预览前先展开占位符，避免把 ${1:...}
+  -- AI/LSP 候选可能返回 snippet 格式；预览前先展开占位符，避免把 ${1:...}
   -- 这类 snippet 语法直接临时写进 buffer。
   if item.insertTextFormat == vim.lsp.protocol.InsertTextFormat.Snippet then
     local expanded_snippet = require("blink.cmp.sources.snippets.utils").safe_parse(text_edit.newText)

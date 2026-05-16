@@ -527,6 +527,23 @@ function tests.mini_files_hides_reusable_target_placeholder()
   assert_eq(vim.bo[placeholder].buflisted, false, "mini.files should hide reusable empty target placeholders")
 end
 
+function tests.mini_files_uses_compact_window_widths()
+  reset_modules("plugins.mini.files", "mini.files")
+
+  local setup_opts
+  package.loaded["mini.files"] = {
+    setup = function(opts)
+      setup_opts = opts
+    end,
+  }
+
+  require("plugins.mini.files").setup()
+
+  assert_eq(setup_opts.windows.width_focus, 34, "focused mini.files directory window should stay compact")
+  assert_eq(setup_opts.windows.width_nofocus, 15, "unfocused mini.files directory windows should keep default compact width")
+  assert_eq(setup_opts.windows.width_preview, 42, "mini.files preview window should avoid taking most of the screen")
+end
+
 function tests.mini_files_does_not_install_local_hop_mapping()
   reset_modules("plugins.mini.files", "mini.files")
 
@@ -843,6 +860,7 @@ local test_order = {
   "starter_initial_content_is_available_before_background",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
+  "mini_files_uses_compact_window_widths",
   "mini_files_does_not_install_local_hop_mapping",
   "mini_files_focus_tracks_entered_directory_window",
   "hop_global_mapping_uses_words_in_normal_file_buffer",

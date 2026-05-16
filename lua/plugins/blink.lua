@@ -25,7 +25,7 @@ return {
   dependencies = {
     "saghen/blink.lib",
     "rafamadriz/friendly-snippets",
-    "fang2hou/blink-copilot",
+    "milanglacier/minuet-ai.nvim",
   },
   build = function()
     require("blink.cmp").build():wait(60000)
@@ -34,7 +34,14 @@ return {
     -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
     -- 这个入口属于内部模块，升级 blink 后如果预览异常，优先检查这里。
     require("patches.blink_preview").apply()
-    require("blink.cmp").setup(opts)
+    local blink = require("blink.cmp")
+    blink.setup(opts)
+
+    local function show_minuet()
+      blink.show({ providers = { "minuet" } })
+    end
+
+    vim.keymap.set("i", "<M-y>", show_minuet, { desc = "Minuet AI completion" })
   end,
   opts = function()
     local float = require("util.float")
@@ -44,6 +51,10 @@ return {
         preset = "super-tab",
         ["<M-j>"] = { "select_next", "fallback" },
         ["<M-k>"] = { "select_prev", "fallback" },
+        ["<Down>"] = { "select_next", "fallback" },
+        ["<Up>"] = { "select_prev", "fallback" },
+        ["<C-n>"] = { "select_next", "fallback" },
+        ["<C-p>"] = { "select_prev", "fallback" },
         -- 滚动右侧文档窗口；文档窗未展开时回退到默认按键行为，不影响菜单显示。
         ["<C-u>"] = { "scroll_documentation_up", "fallback" },
         ["<C-d>"] = { "scroll_documentation_down", "fallback" },
@@ -51,6 +62,7 @@ return {
       completion = {
         trigger = {
           show_on_insert = true,
+          prefetch_on_insert = false,
           show_in_snippet = false,
         },
         menu = {
@@ -83,7 +95,7 @@ return {
         preset = "default",
       },
       sources = {
-        default = { "lsp", "copilot", "path", "buffer" },
+        default = { "lsp", "minuet", "path", "buffer" },
         per_filetype = {
           markdown = { inherit_defaults = true, "snippets" },
         },
@@ -109,10 +121,12 @@ return {
               end,
             },
           },
-          copilot = {
-            name = "copilot",
-            module = "blink-copilot",
+          minuet = {
+            name = "minuet",
+            module = "minuet.blink",
             async = true,
+            timeout_ms = 3000,
+            score_offset = 50,
           },
         },
       },

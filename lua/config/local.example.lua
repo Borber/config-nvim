@@ -23,4 +23,12 @@ return {
     endpoint = "https://codestral.mistral.ai/v1/chat/completions",
     model = "codestral-latest",
   },
+
+  minuet = {
+    -- Codestral FIM 补全；不填 api_key/model/endpoint 时复用 aicommits。
+    -- 这里不读取环境变量，key 应直接放在 local.lua。
+    api_key = "your-codestral-api-key",
+    endpoint = "https://codestral.mistral.ai/v1/fim/completions",
+    max_tokens = 256,
+  },
 }

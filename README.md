@@ -17,7 +17,7 @@
 |------|------|
 | 插件管理 | lazy.nvim |
 | 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、move、align、bufremove） |
-| 补全 | blink.cmp + blink-copilot + Copilot.lua + friendly-snippets |
+| 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | 主题 | rose-pine（dawn 变体） |
 | 查找 | telescope.nvim + fzf-native |
@@ -61,6 +61,11 @@ return {
     api_key = "your-codestral-api-key",
     endpoint = "https://codestral.mistral.ai/v1/chat/completions",
     model = "codestral-latest",
+  },
+  minuet = {
+    api_key = "your-codestral-api-key",
+    endpoint = "https://codestral.mistral.ai/v1/fim/completions",
+    max_tokens = 256,
   },
 }
 ```
@@ -181,9 +186,9 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 ## 补全系统
 
-- **blink.cmp** 作为补全引擎，来源包括 LSP、Copilot、路径和 buffer 内容。
-- Copilot 候选通过 `blink-copilot` 集成到补全菜单，关闭了 Copilot 自带面板和内联建议。
-- Markdown 文件额外启用 snippets 来源；Copilot 在 markdown 中也可用。
+- **blink.cmp** 作为补全引擎，自动来源包括 LSP、Minuet、路径和 buffer 内容。
+- Minuet 候选通过 `minuet-ai.nvim` 的 blink native source 接入，使用 Codestral FIM；默认复用 `local.lua` 里 `aicommits` 的 key/model，也可用 `minuet.api_key` 单独覆盖，插入模式按 `Alt-y` 可手动请求 AI 补全。
+- Markdown 文件额外启用 snippets 来源。
 - 命令行补全：搜索命令（`/`、`?`）使用当前 buffer 内容；冒号命令同时补命令和已有文本。
 - Noice 命令行浮窗位置由补全菜单感知，避免遮挡。
 
