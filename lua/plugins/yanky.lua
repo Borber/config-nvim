@@ -1,5 +1,25 @@
 local lifecycle = require("config.lifecycle")
 
+local function yank_history()
+  local is_visual = vim.fn.mode() == "v" or vim.fn.mode() == "V"
+  if is_visual then
+    vim.cmd([[execute "normal! \<esc>"]])
+  end
+
+  local history = {}
+  for index, value in pairs(require("yanky.history").all()) do
+    value.history_index = index
+    history[index] = value
+  end
+
+  require("util.fzf_picker").select(history, {
+    prompt = "Yank history",
+    format_item = function(item)
+      return item.regcontents and item.regcontents:gsub("\n", "\\n") or ""
+    end,
+  }, require("yanky.picker").actions.put("p", is_visual))
+end
+
 return {
   "gbprod/yanky.nvim",
   event = lifecycle.lazy_events.ui_ready,
@@ -9,14 +29,13 @@ return {
   keys = {
     {
       "<leader>p",
-      function()
-        require("telescope").extensions.yank_history.yank_history()
-      end,
+      yank_history,
       desc = "Yank history",
     },
   },
   dependencies = {
     "kkharji/sqlite.lua",
+    "ibhagwan/fzf-lua",
   },
   opts = {
     ring = {

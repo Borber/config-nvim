@@ -101,7 +101,7 @@ return {
   init = create_neogit_command,
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "nvim-telescope/telescope.nvim",
+    "ibhagwan/fzf-lua",
     "sindrets/diffview.nvim",
     -- 让 Neogit 的 commit popup 能调用 AI commit action。
     "borber/aicommits.nvim",
@@ -180,9 +180,9 @@ return {
         end,
       },
       integrations = {
-        telescope = true,
+        telescope = false,
         diffview = true,
-        fzf_lua = false,
+        fzf_lua = true,
         mini_pick = false,
         snacks = false,
       },

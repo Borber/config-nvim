@@ -3,7 +3,7 @@ local patch = require("patches.toggleterm_open_split")
 return {
   "akinsho/toggleterm.nvim",
   version = "*",
-  dependencies = { "nvim-telescope/telescope.nvim" },
+  dependencies = { "ibhagwan/fzf-lua" },
   cmd = { "ToggleTerm", "TermExec", "TermSelect", "ToggleTermSetName" },
   keys = {
     { "<leader>tt", patch.toggle_default, desc = "Toggle terminal", mode = "n" },

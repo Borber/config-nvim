@@ -1,7 +1,7 @@
 -- ============================================
 -- 最近项目工作流
 -- 记录用户进入过的项目目录，供 Starter 展示；
--- 文件级历史交给 Neovim 的 oldfiles / Telescope oldfiles。
+-- 文件级历史交给 Neovim 的 oldfiles / fzf-lua oldfiles。
 -- ============================================
 local M = {}
 local configured = false
@@ -178,7 +178,7 @@ function M.open_path(path, opts)
   close_current_starter()
 
   if is_directory(resolved_path) then
-    -- 打开目录前先切 cwd，让 Telescope、mini.files 等工具以该项目为上下文。
+    -- 打开目录前先切 cwd，让 fzf-lua、mini.files 等工具以该项目为上下文。
     vim.api.nvim_set_current_dir(resolved_path)
 
     local sessions = require("plugins.mini.sessions")
@@ -193,7 +193,7 @@ function M.open_path(path, opts)
 
   local directory = canonical_path(vim.fn.fnamemodify(resolved_path, ":h"))
   if directory ~= nil then
-    -- 打开文件前先切 cwd，让 Telescope、mini.files 等工具以该文件所在目录为上下文。
+    -- 打开文件前先切 cwd，让 fzf-lua、mini.files 等工具以该文件所在目录为上下文。
     vim.api.nvim_set_current_dir(directory)
   end
 

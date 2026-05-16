@@ -4,7 +4,7 @@
 local M = {}
 
 local function default_select(items, opts, on_choice)
-  require("util.telescope_picker").select(items, opts, on_choice)
+  require("util.fzf_picker").select(items, opts, on_choice)
 end
 
 function M.is_overseer_kind(opts)

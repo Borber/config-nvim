@@ -1,7 +1,7 @@
 -- ============================================
 -- 模块说明
 -- ============================================
--- 集中定义浮窗边框、winhighlight 和配色接线，保证 Telescope / Noice / Lazy / LSP 等浮窗风格一致。
+-- 集中定义浮窗边框、winhighlight 和配色接线，保证 fzf-lua / Noice / Lazy / LSP 等浮窗风格一致。
 local M = {}
 
 M.border = "single"
@@ -31,21 +31,6 @@ local function highlight(name)
   return vim.api.nvim_get_hl(0, { name = name, link = false })
 end
 
-local function telescope_borderchars(overrides)
-  overrides = overrides or {}
-
-  return {
-    overrides.top or char("top"),
-    overrides.right or char("right"),
-    overrides.bottom or char("bottom"),
-    overrides.left or char("left"),
-    overrides.top_left or char("top_left"),
-    overrides.top_right or char("top_right"),
-    overrides.bottom_right or char("bottom_right"),
-    overrides.bottom_left or char("bottom_left"),
-  }
-end
-
 -- 生成普通浮窗的边框字符；传入高亮组时返回带高亮的 borderchars。
 function M.borderchars(group)
   local chars = {
@@ -69,27 +54,6 @@ function M.borderchars(group)
       return { value, group }
     end)
     :totable()
-end
-
--- Telescope 的 borderchars 顺序和普通浮窗不同，这里单独适配。
-function M.telescope_borderchars()
-  return telescope_borderchars()
-end
-
--- 下拉 picker 分 prompt/results/preview 三段，需要额外处理连接处。
-function M.telescope_dropdown_borderchars()
-  return {
-    prompt = telescope_borderchars({
-      bottom = " ",
-      bottom_right = char("right"),
-      bottom_left = char("left"),
-    }),
-    results = telescope_borderchars({
-      top_left = char("left_join"),
-      top_right = char("right_join"),
-    }),
-    preview = telescope_borderchars(),
-  }
 end
 
 -- Noice 使用 { style, padding } 结构，集中入口避免各处重复写。
@@ -150,29 +114,6 @@ function M.title(text, group)
 end
 
 -- ============================================
--- Telescope 默认项
--- ============================================
-function M.telescope_defaults()
-  -- Telescope 默认项集中在这里，保证主 picker 和自定义 picker 的边框/前缀/布局一致。
-  return {
-    borderchars = M.telescope_borderchars(),
-    entry_prefix = "   ",
-    layout_config = {
-      height = 0.8,
-      horizontal = {
-        preview_width = 0.55,
-        prompt_position = "top",
-      },
-      width = 0.87,
-    },
-    prompt_prefix = " " .. vim.fn.nr2char(0xf002) .. "  ",
-    selection_caret = " " .. vim.fn.nr2char(0xf105) .. " ",
-    sorting_strategy = "ascending",
-    winblend = 0,
-  }
-end
-
--- ============================================
 -- 高亮调色板
 -- ============================================
 local function set_hl(group, opts)
@@ -197,24 +138,32 @@ local function current_palette()
 
   local comment = highlight("Comment")
   local cursor_line = highlight("CursorLine")
+  local diagnostic_warn = highlight("DiagnosticWarn")
+  local directory = highlight("Directory")
   local identifier = highlight("Identifier")
+  local pmenu_sel = highlight("PmenuSel")
   local visual = highlight("Visual")
 
-  local selection_bg = cursor_line.bg or visual.bg or normal.bg
+  -- 选中态优先使用真正的选区色，避免亮色主题里 CursorLine 过深时污染浮窗菜单。
+  local selection_bg = visual.bg or pmenu_sel.bg or cursor_line.bg or normal.bg
   local tab_bg = cursor_line.bg or normal.bg
   local tab_active_bg = visual.bg or cursor_line.bg or normal.bg
   local border_fg = highlight("FloatBorder").fg or comment.fg or normal.fg
-  local accent_fg = identifier.fg or border_fg
+  local accent_fg = directory.fg or identifier.fg or border_fg
+  local warn_fg = diagnostic_warn.fg or accent_fg
 
   return {
     normal = normal,
     comment = comment,
     cursor_line = cursor_line,
+    directory = directory,
+    diagnostic_warn = diagnostic_warn,
     selection_bg = selection_bg,
     tab_bg = tab_bg,
     tab_active_bg = tab_active_bg,
     border_fg = border_fg,
     accent_fg = accent_fg,
+    warn_fg = warn_fg,
   }
 end
 
@@ -275,30 +224,58 @@ local function apply_lazy_highlights(palette)
   link("LazyTaskOutput", "NormalFloat")
 end
 
-local function apply_telescope_highlights(palette)
+local function apply_fzf_lua_highlights(palette)
   local normal = palette.normal
 
+  -- fzf-lua 的外层浮窗和内层 fzf 终端各有一套高亮组，需要同时接到统一调色板。
+  set_hl("FzfLuaNormal", { fg = normal.fg, bg = normal.bg })
+  set_hl("FzfLuaPreviewNormal", { fg = normal.fg, bg = normal.bg })
+  set_hl("FzfLuaBorder", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("FzfLuaPreviewBorder", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("FzfLuaTitle", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("FzfLuaPreviewTitle", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("FzfLuaBackdrop", { bg = normal.bg })
+  set_hl("FzfLuaCursor", { fg = normal.fg, bg = palette.selection_bg, bold = true })
+  set_hl("FzfLuaCursorLine", { fg = normal.fg, bg = palette.selection_bg, bold = true })
+  set_hl("FzfLuaSearch", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  set_hl("FzfLuaHeaderBind", { fg = palette.accent_fg, bg = normal.bg })
+  set_hl("FzfLuaHeaderText", { fg = normal.fg, bg = normal.bg })
+
   link_many({
-    "TelescopeNormal",
-    "TelescopePromptNormal",
-    "TelescopeResultsNormal",
-    "TelescopePreviewNormal",
+    "FzfLuaHelpNormal",
+    "FzfLuaFzfNormal",
+    "FzfLuaFzfQuery",
   }, "NormalFloat")
+  set_hl("FzfLuaFzfGutter", { fg = normal.fg, bg = normal.bg })
   link_many({
-    "TelescopeBorder",
-    "TelescopePromptBorder",
-    "TelescopeResultsBorder",
-    "TelescopePreviewBorder",
+    "FzfLuaHelpBorder",
+    "FzfLuaFzfBorder",
+    "FzfLuaFzfScrollbar",
+    "FzfLuaFzfSeparator",
   }, "FloatBorder")
   link_many({
-    "TelescopeTitle",
-    "TelescopePromptTitle",
-    "TelescopeResultsTitle",
-    "TelescopePreviewTitle",
+    "FzfLuaHelpTitle",
+    "FzfLuaFzfHeader",
   }, "FloatTitle")
-  set_hl("TelescopeSelection", { fg = normal.fg, bg = palette.selection_bg, bold = true })
-  set_hl("TelescopeMatching", { fg = palette.accent_fg, bg = normal.bg, bold = true })
-  set_hl("TelescopePromptPrefix", { fg = palette.accent_fg, bg = normal.bg })
+  set_hl("FzfLuaFzfCursorLine", { fg = normal.fg, bg = palette.selection_bg, bold = true })
+  set_hl("FzfLuaFzfMatch", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  set_hl("FzfLuaFzfInfo", { fg = palette.comment.fg, bg = normal.bg })
+  set_hl("FzfLuaFzfPointer", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  link_many({ "FzfLuaFzfMarker", "FzfLuaFzfSpinner", "FzfLuaFzfPrompt" }, "FzfLuaFzfPointer")
+end
+
+local function apply_mini_files_highlights(palette)
+  local normal = palette.normal
+
+  -- mini.files 默认继承 CursorLine / NormalFloat；这里显式覆盖，保证亮色主题下文件树不出现黑底选中态。
+  set_hl("MiniFilesNormal", { fg = normal.fg, bg = normal.bg })
+  set_hl("MiniFilesBorder", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("MiniFilesBorderModified", { fg = palette.warn_fg, bg = normal.bg, bold = true })
+  set_hl("MiniFilesCursorLine", { fg = normal.fg, bg = palette.selection_bg, bold = true })
+  set_hl("MiniFilesDirectory", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  set_hl("MiniFilesFile", { fg = normal.fg, bg = normal.bg })
+  set_hl("MiniFilesTitle", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("MiniFilesTitleFocused", { fg = palette.accent_fg, bg = normal.bg, bold = true })
 end
 
 local function apply_small_plugin_highlights()
@@ -377,7 +354,8 @@ function M.apply_highlights()
   apply_blink_highlights()
   apply_noice_highlights()
   apply_lazy_highlights(palette)
-  apply_telescope_highlights(palette)
+  apply_fzf_lua_highlights(palette)
+  apply_mini_files_highlights(palette)
   apply_small_plugin_highlights()
   apply_outline_highlights(palette)
   apply_editor_highlights(palette)

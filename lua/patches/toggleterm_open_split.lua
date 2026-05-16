@@ -119,37 +119,30 @@ function M.pick_terminal()
     return
   end
 
-  -- 终端选择器复用通用 Telescope 外壳，但保留 toggleterm 自己的打开/聚焦动作。
-  require("util.telescope_picker").dropdown({
-    prompt_title = "Terminals",
-    layout_config = { width = 0.5, height = 0.45 },
-    results = terms,
-    entry_maker = function(term)
+  -- 终端选择器复用通用 fzf-lua 外壳，但保留 toggleterm 自己的打开/聚焦动作。
+  require("util.fzf_picker").select(terms, {
+    prompt = "Terminals",
+    format_item = function(term)
       local name = term:_display_name()
       local state = term:is_open() and "open" or "hidden"
       local dir = term.direction or "?"
-      local display = string.format("%d  %-24s  [%s, %s]", term.id, name, dir, state)
-      return {
-        value = term,
-        display = display,
-        ordinal = tostring(term.id) .. " " .. name .. " " .. dir,
-      }
+      return string.format("%d  %-24s  [%s, %s]", term.id, name, dir, state)
     end,
-    attach_mappings = function(bufnr, map, telescope)
-      local function open_selected()
-        local entry = telescope.action_state.get_selected_entry()
-        telescope.actions.close(bufnr)
-        if entry and entry.value then
-          -- 被选中的终端如果当前是 hidden，也按相同布局规则打开
-          M.with_custom_open_split(function()
-            entry.value:open()
-          end)
-        end
-      end
+  }, function(term)
+    if term == nil then
+      return
+    end
 
-      telescope.actions.select_default:replace(open_selected)
-      return true
-    end,
+    -- 被选中的终端如果当前是 hidden，也按相同布局规则打开
+    M.with_custom_open_split(function()
+      term:open()
+    end)
+  end, {
+    winopts = {
+      width = 0.5,
+      height = 0.45,
+      preview = { hidden = "hidden" },
+    },
   })
 end
 

@@ -1,5 +1,5 @@
 local special_filetypes = {
-  ["TelescopePrompt"] = true,
+  fzf = true,
   minifiles = true,
   noice = true,
   notify = true,

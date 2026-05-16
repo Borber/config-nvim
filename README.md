@@ -1,6 +1,6 @@
 # config-nvim
 
-个人 Neovim 配置，使用 `lazy.nvim` 管理插件。当前配置偏向项目工作流：启动页负责入口和最近路径，`mini.files` 负责文件树，`mini.sessions` 负责项目会话，Telescope / Trouble / Overseer 分别承担查找、诊断列表和任务运行。
+个人 Neovim 配置，使用 `lazy.nvim` 管理插件。当前配置偏向项目工作流：启动页负责入口和最近路径，`mini.files` 负责文件树，`mini.sessions` 负责项目会话，fzf-lua / Trouble / Overseer 分别承担查找、诊断列表和任务运行。
 
 ## 依赖
 
@@ -8,7 +8,7 @@
 - `git`
 - Windows 下使用 bookmarks 时建议通过 Scoop 安装 `sqlite-dll`，配置会自动使用 `~/scoop/apps/sqlite-dll/current/sqlite3.dll`
 - `tree-sitter` CLI：`nvim-treesitter` 使用 `main` 分支，需要本机有 `tree-sitter` 命令（用于编译 parser）
-- 可选：`rg`、`fd`、`cmake`，用于 Telescope / fzf-native 等插件获得更好体验
+- 可选：`rg`、`fd`、`fzf`，用于 fzf-lua 获得更好体验
 - 可选：`just`、`bun`、`npm`、`cargo` 等项目命令，用于 Overseer 自动发现并运行任务
 
 ## 插件概览
@@ -20,7 +20,7 @@
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | 主题 | rose-pine（dawn 变体） |
-| 查找 | telescope.nvim + fzf-native |
+| 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
@@ -85,7 +85,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | 按键 | 功能 |
 |------|------|
 | `<leader>e` | 打开 / 关闭 mini.files 文件树 |
-| `<leader>,` | Buffer 列表（Telescope picker） |
+| `<leader>,` | Buffer 列表（fzf-lua picker） |
 | `<leader>/` | 当前 buffer 内搜索 |
 | `<leader>ff` | 查找文件 |
 | `<leader>fh` | 帮助标签 |
@@ -250,14 +250,14 @@ toggleterm 使用自定义窗口切分策略：
 
 ## Overseer 任务
 
-`<leader>jr` 会从当前文件目录开始搜索 Overseer 模板；当前 buffer 不是普通文件时回退到 cwd。任务模板和 action 选择使用 Telescope picker，仍保留 Overseer 自动发现的所有 providers。
+`<leader>jr` 会从当前文件目录开始搜索 Overseer 模板；当前 buffer 不是普通文件时回退到 cwd。任务模板和 action 选择使用 fzf-lua picker，仍保留 Overseer 自动发现的所有 providers。
 
 任务启动时不会默认展开底部输出；失败后会自动打开输出窗口，或者用 `<leader>jf` 随时打开最近失败任务的输出。
 
 ## 界面约定
 
 - 主题使用 `rose-pine-dawn`（亮色变体）。
-- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，Telescope、Noice、LSP hover、diagnostic float、blink 补全菜单、which-key、Overseer 等入口保持统一。
+- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、which-key、Overseer 等入口保持统一。
 - lualine statusline 使用紧凑模式标签（`N`、`I`、`V`、`T` 等）；branch、diagnostics 和 filetype 会按窗口宽度条件显示，最右侧显示当前 OS 图标。
 - 顶部 tabline 左侧保留独立 Vim 图标区，buffer 列表只显示简洁名称，并用 `●` 标记已修改 buffer。
 - `signcolumn` 固定保留（`yes`），避免诊断、git sign 或书签 sign 出现时正文左右跳动。gitsigns 通过自定义 `statuscolumn` 在行号右侧显示 git 标记。

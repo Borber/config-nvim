@@ -148,7 +148,7 @@ return {
   },
   dependencies = {
     "kkharji/sqlite.lua",
-    "nvim-telescope/telescope.nvim",
+    "ibhagwan/fzf-lua",
   },
   opts = function()
     local ic = icons()
@@ -188,6 +188,7 @@ return {
     }
   end,
   config = function(_, opts)
+    require("patches.bookmarks_fzf_picker").apply()
     require("bookmarks").setup(opts)
     tree_patch.apply_render_patch()
     create_project_commands()

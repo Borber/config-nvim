@@ -58,7 +58,7 @@ local function run_task()
       return
     end
 
-    require("util.telescope_picker").select(task_templates, {
+    require("util.fzf_picker").select(task_templates, {
       prompt = "Task",
       format_item = template_label,
     }, function(tmpl)

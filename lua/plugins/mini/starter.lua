@@ -195,7 +195,7 @@ local function ensure_setup(autoopen)
       {
         name = "Find file",
         action = function()
-          require("telescope.builtin").find_files()
+          require("fzf-lua").files()
         end,
         section = "Actions",
       },
