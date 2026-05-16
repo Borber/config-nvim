@@ -112,6 +112,7 @@ function M.setup()
 
   local function setup_ui_modules()
     setup_icons()
+    require("plugins.mini.clue").setup()
   end
 
   lifecycle.once("ui_ready", function()

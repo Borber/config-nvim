@@ -278,10 +278,19 @@ local function apply_mini_files_highlights(palette)
   set_hl("MiniFilesTitleFocused", { fg = palette.accent_fg, bg = normal.bg, bold = true })
 end
 
+local function apply_mini_clue_highlights(palette)
+  local normal = palette.normal
+
+  set_hl("MiniClueBorder", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("MiniClueTitle", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("MiniClueNextKey", { fg = palette.accent_fg, bg = normal.bg, bold = true })
+  set_hl("MiniClueNextKeyWithPostkeys", { fg = palette.warn_fg, bg = normal.bg, bold = true })
+  set_hl("MiniClueSeparator", { fg = palette.border_fg, bg = normal.bg })
+  set_hl("MiniClueDescGroup", { fg = palette.accent_fg, bg = normal.bg })
+  set_hl("MiniClueDescSingle", { fg = normal.fg, bg = normal.bg })
+end
+
 local function apply_small_plugin_highlights()
-  link("WhichKeyNormal", "NormalFloat")
-  link("WhichKeyBorder", "FloatBorder")
-  link("WhichKeyTitle", "FloatTitle")
   link("GitSignsPreviewBorder", "FloatBorder")
   link("GitSignsPreviewTitle", "FloatTitle")
 end
@@ -356,6 +365,7 @@ function M.apply_highlights()
   apply_lazy_highlights(palette)
   apply_fzf_lua_highlights(palette)
   apply_mini_files_highlights(palette)
+  apply_mini_clue_highlights(palette)
   apply_small_plugin_highlights()
   apply_outline_highlights(palette)
   apply_editor_highlights(palette)
