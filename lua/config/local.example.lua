@@ -25,10 +25,11 @@ return {
   },
 
   minuet = {
-    -- Codestral FIM 补全；不填 api_key/model/endpoint 时复用 aicommits。
+    -- Minuet 专属 Codestral FIM 补全配置。
     -- 这里不读取环境变量，key 应直接放在 local.lua。
-    api_key = "your-codestral-api-key",
+    api_key = "your-codestral-fim-api-key",
     endpoint = "https://codestral.mistral.ai/v1/fim/completions",
+    model = "codestral-latest",
     max_tokens = 256,
   },
 }

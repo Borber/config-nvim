@@ -187,7 +187,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 ## 补全系统
 
 - **blink.cmp** 作为补全引擎，自动来源包括 LSP、Minuet、路径和 buffer 内容。
-- Minuet 候选通过 `minuet-ai.nvim` 的 blink native source 接入，使用 Codestral FIM；默认复用 `local.lua` 里 `aicommits` 的 key/model，也可用 `minuet.api_key` 单独覆盖，插入模式按 `Alt-y` 可手动请求 AI 补全。
+- Minuet 候选通过 `minuet-ai.nvim` 的 blink native source 接入，使用 Codestral FIM；`local.lua` 里的 `minuet` 使用自己的专属 key / model / endpoint，插入模式按 `Alt-y` 可手动请求 AI 补全。
 - Markdown 文件额外启用 snippets 来源。
 - 命令行补全：搜索命令（`/`、`?`）使用当前 buffer 内容；冒号命令同时补命令和已有文本。
 - Noice 命令行浮窗位置由补全菜单感知，避免遮挡。

@@ -30,17 +30,7 @@ local function codestral_fim_endpoint(endpoint)
 end
 
 local function local_minuet_config(local_config)
-  local aicommits_config = type(local_config.aicommits) == "table" and local_config.aicommits or nil
   local minuet_config = {}
-
-  if aicommits_config then
-    minuet_config = {
-      provider = "codestral",
-      api_key = aicommits_config.api_key,
-      endpoint = codestral_fim_endpoint(aicommits_config.endpoint),
-      model = aicommits_config.model,
-    }
-  end
 
   if type(local_config.minuet) == "table" then
     minuet_config = vim.tbl_deep_extend("force", minuet_config, local_config.minuet)
