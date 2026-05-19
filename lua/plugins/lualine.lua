@@ -42,50 +42,6 @@ local function refresh_statusline(force)
   })
 end
 
-local wakatime_status_module = "plugins.lualine.wakatime_status"
-
--- 状态栏渲染阶段只读已加载模块，避免首屏同步 require WakaTime。
-local function loaded_wakatime_status()
-  local wakatime = package.loaded[wakatime_status_module]
-  if type(wakatime) ~= "table" then
-    return nil
-  end
-
-  return wakatime
-end
-
-local function wakatime_component()
-  local wakatime = loaded_wakatime_status()
-  if wakatime == nil then
-    return ""
-  end
-
-  return wakatime.component()
-end
-
-local function has_wakatime_today()
-  local wakatime = loaded_wakatime_status()
-  return wakatime ~= nil and wakatime.has_today()
-end
-
-local function setup_wakatime_refresh()
-  local lifecycle = require("config.lifecycle")
-
-  local function setup()
-    -- 让出一轮调度，等 lualine 首屏完成后再启动 WakaTime 查询。
-    vim.schedule(function()
-      require(wakatime_status_module).setup_refresh()
-    end)
-  end
-
-  lifecycle.once("ui_ready", function()
-    setup()
-  end, {
-    group = vim.api.nvim_create_augroup("ConfigLualineWakaTimeRefresh", { clear = true }),
-    desc = "Start lualine WakaTime refresh after UI startup",
-  })
-end
-
 local function is_branch_probe_buffer(bufnr)
   local buffer_util = require("libs.buffer")
   local path_util = require("libs.path")
@@ -180,14 +136,6 @@ return {
         },
         lualine_c = {
           {
-            -- WakaTime 单独占第三段，用自己的背景和右斜角从 diagnostics 前切开。
-            -- 组件函数只展示缓存文本；真正的外部查询由 UI ready 后的刷新逻辑触发。
-            wakatime_component,
-            cond = has_wakatime_today,
-            color = theme.wakatime_color,
-            separator = { right = "" },
-          },
-          {
             "diagnostics",
             sources = { "nvim_diagnostic" },
             symbols = { error = ic.lsp.error, warn = ic.lsp.warn, info = ic.lsp.info },
@@ -245,6 +193,5 @@ return {
     require("config.lifecycle").setup()
     require("lualine").setup(opts)
     setup_branch_refresh()
-    setup_wakatime_refresh()
   end,
 }

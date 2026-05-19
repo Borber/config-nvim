@@ -1,22 +1,7 @@
 local M = {}
 
--- 只淡化 b / WakaTime 段的背景，让左侧从 mode 主色自然过渡到 diagnostics 底色。
+-- 只淡化 b 段的背景，让左侧从 mode 主色自然过渡到 diagnostics 底色。
 local section_b_blend = 0.18
-local wakatime_blend = 0.1
-
-local mode_accent_names = {
-  n = "rose",
-  i = "foam",
-  v = "iris",
-  V = "iris",
-  ["\22"] = "iris",
-  s = "iris",
-  S = "iris",
-  ["\19"] = "iris",
-  R = "pine",
-  c = "love",
-  t = "rose",
-}
 
 local section_accent_names = {
   normal = "rose",
@@ -36,14 +21,6 @@ local function blend_hex(fg, bg, alpha)
   local b = math.floor(channel(fg, 6) * alpha + channel(bg, 6) * (1 - alpha) + 0.5)
 
   return string.format("#%02x%02x%02x", r, g, b)
-end
-
-local function current_accent(palette)
-  -- WakaTime 是动态组件，颜色跟随当前 mode，而不是只跟启动时主题表。
-  local mode = vim.fn.mode()
-  local name = mode_accent_names[mode] or mode_accent_names[mode:sub(1, 1)] or "rose"
-
-  return palette[name] or palette.rose
 end
 
 local function tune_section(section, palette, accent)
@@ -77,21 +54,6 @@ function M.statusline()
   end
 
   return theme
-end
-
-function M.wakatime_color()
-  local ok, palette = pcall(require, "rose-pine.palette")
-  if not ok then
-    return { gui = "bold" }
-  end
-
-  local accent = current_accent(palette)
-
-  return {
-    fg = accent,
-    bg = blend_hex(accent, palette.surface, wakatime_blend),
-    gui = "bold",
-  }
 end
 
 return M
