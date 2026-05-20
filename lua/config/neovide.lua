@@ -1,8 +1,9 @@
 -- 字体：英文等宽 + 中文回退，按需替换字体名
 local is_windows = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
 local is_macos = vim.fn.has("macunix") == 1
+local is_linux = vim.fn.has("linux") == 1
 local font_family = "Maple Mono NF, LXGW Bright, monospace"
-local default_font_size = is_windows and 17 or 22
+local default_font_size = is_windows and 17 or is_linux and 16 or 22
 
 vim.g.gui_font_size = vim.g.gui_font_size or default_font_size
 vim.g.gui_default_font_size = vim.g.gui_default_font_size or vim.g.gui_font_size

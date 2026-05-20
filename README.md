@@ -278,7 +278,8 @@ toggleterm 使用自定义窗口切分策略：
 
 当 `vim.g.neovide` 为 `true` 时自动加载 `lua/config/neovide.lua`：
 
-- 字体：Maple Mono NF + LXGW Bright 中文回退（Windows 17pt / macOS 21pt）
+- 字体：Maple Mono NF + LXGW Bright 中文回退（Windows 17pt / Linux 20pt / macOS 22pt）
+- 缩放：Linux 与 macOS 使用 1.1，Windows 使用 1.0
 - 刷新率 144Hz，idle 降至 5Hz
 - 亮色主题，光标动画 "pixiedust"
 - 标题栏显示当前工作目录
