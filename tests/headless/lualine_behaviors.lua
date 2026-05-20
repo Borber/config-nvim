@@ -4,6 +4,7 @@ vim.opt.runtimepath:append(repo)
 local tmp_root = vim.fn.tempname()
 vim.fn.delete(tmp_root, "rf")
 vim.fn.mkdir(tmp_root, "p")
+vim.o.columns = 120
 
 local function assert_eq(actual, expected, message)
   if actual ~= expected then
@@ -34,6 +35,11 @@ end
 local refreshes = 0
 local branch_probe_bufs = {}
 local lualine_opts
+local wakatime_loads = 0
+local wakatime_jobs = {}
+local wakatime_total_seconds = 18840
+local original_exepath = vim.fn.exepath
+local original_jobstart = vim.fn.jobstart
 
 package.loaded["lualine"] = {
   setup = function(opts)
@@ -44,6 +50,34 @@ package.loaded["lualine"] = {
   end,
 }
 
+package.loaded["wakatime"] = nil
+package.preload["wakatime"] = function()
+  wakatime_loads = wakatime_loads + 1
+
+  return {}
+end
+
+rawset(vim.fn, "exepath", function(command)
+  return command == "wakatime-cli" and "wakatime-cli" or ""
+end)
+
+rawset(vim.fn, "jobstart", function(command, opts)
+  table.insert(wakatime_jobs, command)
+
+  opts.on_stdout(1, {
+    vim.json.encode({
+      data = {
+        grand_total = {
+          total_seconds = wakatime_total_seconds,
+        },
+      },
+    }),
+  }, "stdout")
+  opts.on_exit(1, 0, "exit")
+
+  return 1
+end)
+
 package.loaded["lualine.components.branch.git_branch"] = {
   find_git_dir = function()
     table.insert(branch_probe_bufs, vim.api.nvim_get_current_buf())
@@ -52,8 +86,11 @@ package.loaded["lualine.components.branch.git_branch"] = {
 
 local lualine_spec = require("plugins.lualine")
 lualine_spec.config(nil, lualine_spec.opts())
-assert_eq(#lualine_opts.sections.lualine_c, 1, "lualine_c should only contain diagnostics")
-assert_eq(lualine_opts.sections.lualine_c[1][1], "diagnostics", "diagnostics should be the first lualine_c component")
+assert_eq(wakatime_loads, 0, "lualine setup should not load WakaTime synchronously")
+assert_eq(package.loaded["plugins.lualine.wakatime_status"], nil, "WakaTime status module should be deferred")
+assert_eq(lualine_opts.sections.lualine_c[1][1](), "", "WakaTime component should be empty before refresh")
+assert_eq(lualine_opts.sections.lualine_c[1].cond(), false, "WakaTime cond should not load status module")
+assert_eq(wakatime_loads, 0, "WakaTime cond should not load WakaTime synchronously")
 
 local project = temp_path("project")
 vim.fn.mkdir(project, "p")
@@ -85,5 +122,45 @@ flush_scheduled()
 assert_eq(refreshes, 1, "real file should refresh lualine branch once")
 assert_eq(branch_probe_bufs[1], file_buf, "branch refresh should run in the real file buffer")
 
+vim.api.nvim_exec_autocmds("User", {
+  pattern = "ConfigUiReady",
+  modeline = false,
+})
+flush_scheduled()
+assert_eq(wakatime_loads, 0, "ConfigUiReady should only set up deferred WakaTime refresh")
+
+vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
+flush_scheduled()
+assert_eq(wakatime_loads, 0, "FocusGained should query WakaTime CLI without loading vim-wakatime")
+assert_eq(#wakatime_jobs, 1, "FocusGained should start one WakaTime CLI query")
+assert_eq(table.concat(wakatime_jobs[1], " "), "wakatime-cli --today --output raw-json", "WakaTime query should request raw JSON from CLI")
+assert_eq(
+  lualine_opts.sections.lualine_c[1][1](),
+  require("libs.icons").ui.time .. " 314" .. vim.fn.nr2char(0x2032),
+  "WakaTime today should render total minutes from JSON seconds"
+)
+assert_eq(lualine_opts.sections.lualine_c[1].separator.right, "", "WakaTime should separate from diagnostics")
+vim.api.nvim_exec_autocmds("BufWritePost", { modeline = false })
+vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
+flush_scheduled()
+assert_eq(#wakatime_jobs, 1, "WakaTime refresh events should respect the refresh interval")
+
+assert_eq(type(lualine_opts.sections.lualine_c[1].color), "function", "WakaTime should keep its own color block")
+
+wakatime_total_seconds = 0
+package.loaded["plugins.lualine.wakatime_status"] = nil
+require("plugins.lualine.wakatime_status").setup_refresh()
+vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
+flush_scheduled()
+assert_eq(#wakatime_jobs, 2, "Zero-minute refresh should still query WakaTime CLI once")
+assert_eq(
+  lualine_opts.sections.lualine_c[1][1](),
+  require("libs.icons").ui.time .. " 0" .. vim.fn.nr2char(0x2032),
+  "WakaTime today should still render zero minutes"
+)
+assert_eq(lualine_opts.sections.lualine_c[1].cond(), true, "WakaTime cond should stay visible at zero minutes when width is enough")
+
+rawset(vim.fn, "exepath", original_exepath)
+rawset(vim.fn, "jobstart", original_jobstart)
 vim.fn.delete(tmp_root, "rf")
 print("headless lualine behavior checks passed")
