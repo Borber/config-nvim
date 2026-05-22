@@ -57,6 +57,18 @@ end
 map("n", "K", open_markdown_target, "Open markdown link")
 map({ "n", "x" }, "<localleader>mx", "<Plug>(MarkdownPlusToggleCheckbox)", "Toggle checkbox")
 
+-- Neovim 默认的 markdown ftplugin 会关闭 r/o，且不认识任务列表前缀。
+-- 这里仅在 markdown buffer 内恢复列表和 checkbox 的换行续写。
+vim.opt_local.formatoptions:append("ro")
+vim.opt_local.comments = {
+  "b:- [ ]",
+  "b:- [x]",
+  "b:-",
+  "b:*",
+  "b:+",
+  "n:>",
+}
+
 -- ufo 的 foldtext handler 会覆盖整行，导致 render-markdown.nvim 的 hl_eol 标题
 -- 背景丢失；这里把当前 buffer 从 ufo detach，改用 treesitter foldexpr + 默认
 -- foldtext，标题背景与表格图标继续由 render-markdown.nvim 渲染。
@@ -100,5 +112,5 @@ function _G.ConfigMarkdownUndoFtplugin(bufnr)
   end
 end
 
-local undo = ("lua _G.ConfigMarkdownUndoFtplugin(%d)"):format(vim.api.nvim_get_current_buf())
+local undo = ("setlocal formatoptions< comments< | lua _G.ConfigMarkdownUndoFtplugin(%d)"):format(vim.api.nvim_get_current_buf())
 vim.b.undo_ftplugin = vim.b.undo_ftplugin and (vim.b.undo_ftplugin .. " | " .. undo) or undo
