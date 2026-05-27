@@ -113,7 +113,7 @@ local function delete_buffer(buf_id)
 end
 
 local function hide_hidden_empty_placeholders()
-  -- 当前窗口是 NeogitStatus 等特殊 buffer 时，mini.bufremove 清场可能造出隐藏的空 listed buffer。
+  -- 当前窗口是特殊 buffer 时，mini.bufremove 清场可能造出隐藏的空 listed buffer。
   -- 它不该出现在顶栏里，但仍可留给后续 :edit 复用。
   for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
     local is_hidden_empty = vim.bo[buf_id].buflisted and #vim.fn.win_findbuf(buf_id) == 0 and buffer_util.is_empty_unnamed(buf_id)

@@ -1,6 +1,6 @@
 -- ============================================
 -- Git 上下文推导工具
--- 从 buffer/目录推导 git root，供 Neogit/Gitsigns 等使用。
+-- 从 buffer/目录推导 git root，供 Git UI/Gitsigns 等使用。
 -- ============================================
 local M = {}
 
@@ -9,7 +9,7 @@ local path_util = require("libs.path")
 local normalize_path = path_util.local_normalized
 
 function M.dir_from_buffer(bufnr)
-  -- Git 上下文只从真实文件 buffer 推导；Neogit/terminal/空白 buffer 交给调用方回退 cwd。
+  -- Git 上下文只从真实文件 buffer 推导；terminal/空白 buffer 交给调用方回退 cwd。
   if bufnr == nil then
     return nil
   end
@@ -49,6 +49,13 @@ function M.root_from(dir)
   end
 
   return path_util.canonical(root)
+end
+
+function M.root_from_buffer_or_cwd(bufnr)
+  local cwd = vim.fn.getcwd()
+  local dir = M.dir_from_buffer(bufnr or 0) or cwd
+
+  return M.root_from(dir) or M.root_from(cwd) or cwd
 end
 
 return M

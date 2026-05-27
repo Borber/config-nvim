@@ -8,6 +8,15 @@ end
 return {
   "borber/aicommits.nvim",
   cmd = { "AICommit", "AICommitHealth", "AICommitDebug" },
+  keys = {
+    {
+      "<leader>gc",
+      function()
+        require("aicommits").commit()
+      end,
+      desc = "AI commit",
+    },
+  },
   opts = function()
     local local_config = local_aicommits_config()
     local float = require("util.float")
@@ -45,9 +54,7 @@ return {
       },
       integrations = {
         neogit = {
-          -- 打开内置 Neogit refresh，但不使用它的 status 页独立 C 映射。
-          -- AI action 仍由 neogit.lua 注入到 NeogitCommitPopup。
-          enabled = true,
+          enabled = false,
         },
       },
     }

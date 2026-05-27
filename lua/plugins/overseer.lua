@@ -1,5 +1,5 @@
 -- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。
--- 这样从特殊 buffer（例如 Neogit/terminal）触发任务时不会拿到无意义路径。
+-- 这样从特殊 buffer（例如 terminal）触发任务时不会拿到无意义路径。
 local function search_params()
   local buffer_util = require("libs.buffer")
   local dir = vim.fn.getcwd()

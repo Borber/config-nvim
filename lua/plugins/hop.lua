@@ -67,7 +67,7 @@ local spec = {
   },
 }
 
--- 给 Neogit 这类 buffer-local 映射复用同一套上下文分发。
+-- 给特殊 buffer-local 映射复用同一套上下文分发。
 spec.hint_by_context = hint_by_context
 
 return spec
