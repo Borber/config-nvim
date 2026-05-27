@@ -115,6 +115,7 @@ return {
     local float = require("util.float")
 
     return {
+      disable_context_highlighting = true,
       kind = "auto",
       floating = {
         border = float.border,
@@ -157,6 +158,10 @@ return {
       },
       commit_select_view = {
         kind = "auto",
+      },
+      commit_view = {
+        kind = "tab",
+        verify_commit = false,
       },
       log_view = {
         kind = "auto",
