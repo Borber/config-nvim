@@ -22,7 +22,7 @@
 | 主题 | rose-pine（dawn 变体） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
-| Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
+| Git | Fugitive + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
 | 笔记 | Markdown + render-markdown.nvim |
 | 终端 | toggleterm.nvim（自定义布局：水平贴底、垂直在右互不侵占） |
@@ -119,9 +119,10 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>gg` | Neogit status |
-| `<leader>gc` | Neogit commit |
-| `<leader>gl` | Neogit log |
+| `<leader>gg` | Fugitive status |
+| `<leader>gc` | Fugitive commit |
+| `<leader>gC` | AI commit staged changes |
+| `<leader>gl` | Fugitive log |
 | `<leader>gh` | Stage hunk（normal / visual） |
 | `<leader>gH` | Reset hunk（normal / visual） |
 | `<leader>gp` | Preview hunk |
@@ -179,7 +180,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>ft` | 搜索 TODO 注释 |
 | `]t` / `[t` | 下一个 / 上一个 TODO 注释 |
 | `[c` | 跳转到 Treesitter 上下文 |
-| `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行；Neogit 未暂存/未跟踪文件行会优先 stage |
+| `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行 |
 | `<leader>qq` / `<leader>qw` / `<leader>qQ` | 退出 / 保存退出 / 强制退出 |
 | `:R` | 重载 Neovim 配置（热更新，不重启） |
 | `:Starter` | 手动打开启动页 |
@@ -219,21 +220,18 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 使用方式：
 
-1. 在 Neogit 中 stage 需要提交的内容。
-2. 按 `c` 打开 Neogit commit popup。
-3. 在 `AI` 分组里按 `C` 执行 `AI Commit`。
-4. 从生成结果中选择 commit message（默认生成 5 条候选）。
+1. 使用 Fugitive status 或其它 Git 工具 stage 需要提交的内容。
+2. 按 `<leader>gC` 或运行 `:AICommit`。
+3. 从生成结果中选择 commit message（默认生成 5 条候选）。
 
 说明：
 
-- `aicommits.nvim` 的 Neogit integration 已开启，用于提交后刷新 Neogit。
-- 插件自带的 Neogit status 页独立 `C` 映射已关闭。
-- AI action 由 `lua/plugins/neogit.lua` 注入到 Neogit commit popup。
+- `aicommits.nvim` 的 Neogit integration 已关闭，AI commit 不再依赖 Neogit popup。
+- Fugitive integration 已开启，用于 AI commit 成功后刷新 Git status。
 
-## Neogit 仓库识别
+## Fugitive 仓库识别
 
-`:Neogit` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
-需要手动指定仓库时，仍然可以使用 Neogit 原生参数，例如 `:Neogit cwd=/path/to/repo`。
+`:Git` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 使用 Fugitive 自己的仓库识别；普通文件 buffer 会按当前文件所属仓库执行，特殊 buffer 回退到当前 cwd。
 
 ## Diffview
 

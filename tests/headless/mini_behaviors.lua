@@ -723,75 +723,13 @@ function tests.mini_files_hop_line_jump_opens_preview_file()
   assert_eq(vim.api.nvim_win_get_cursor(0)[1], 2, "preview line jump should keep selected line")
 end
 
-function tests.neogit_status_s_stages_only_stageable_file_rows()
-  reset_modules("plugins.neogit", "neogit.buffers.status", "plugins.hop")
+function tests.fugitive_git_keys_keep_expected_entry_points()
+  reset_modules("plugins.fugitive")
 
-  vim.cmd("silent! enew!")
-  local status_buf = vim.api.nvim_get_current_buf()
-  local selection = {
-    section = { name = "unstaged" },
-    item = { name = "main.lua" },
-  }
-  local cursor = {
-    file = { name = "main.lua" },
-    hunk = nil,
-  }
-  local staged = false
-  local hopped = false
-
-  local status = {
-    buffer = {
-      handle = status_buf,
-      ui = {
-        get_selection = function()
-          return selection
-        end,
-        get_cursor_location = function()
-          return cursor
-        end,
-      },
-    },
-    _action = function(_, name)
-      assert_eq(name, "n_stage", "Neogit s should reuse the normal stage action")
-      return function()
-        staged = true
-      end
-    end,
-  }
-
-  package.loaded["neogit.buffers.status"] = {
-    instance = function()
-      return status
-    end,
-  }
-  package.loaded["plugins.hop"] = {
-    hint_by_context = function()
-      hopped = true
-    end,
-  }
-
-  local map = require("plugins.neogit").opts().mappings.status.s
-  local function assert_s_behavior(expected_stage, message)
-    staged = false
-    hopped = false
-
-    map()
-
-    assert_eq(staged, expected_stage, message)
-    assert_eq(hopped, not expected_stage, message .. " should use the opposite Hop fallback")
-  end
-
-  assert_s_behavior(true, "s on an unstaged file row should stage it")
-
-  selection.section.name = "untracked"
-  assert_s_behavior(true, "s on an untracked file row should stage it")
-
-  cursor.hunk = { name = "hunk" }
-  assert_s_behavior(false, "s inside a file hunk should not stage")
-
-  cursor.hunk = nil
-  selection.section.name = "staged"
-  assert_s_behavior(false, "s outside stageable sections should not stage")
+  local keys = require("plugins.fugitive").keys
+  assert_eq(keys[1][1], "<leader>gg", "first fugitive key should keep git status entry")
+  assert_eq(keys[2][1], "<leader>gc", "second fugitive key should keep git commit entry")
+  assert_eq(keys[3][1], "<leader>gl", "third fugitive key should keep git log entry")
 end
 
 function tests.session_restore_preserves_requested_cwd()
@@ -866,7 +804,7 @@ local test_order = {
   "hop_global_mapping_uses_words_in_normal_file_buffer",
   "hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer",
   "mini_files_hop_line_jump_opens_preview_file",
-  "neogit_status_s_stages_only_stageable_file_rows",
+  "fugitive_git_keys_keep_expected_entry_points",
   "session_restore_preserves_requested_cwd",
   "session_options_stay_lightweight",
 }
