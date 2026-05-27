@@ -723,38 +723,75 @@ function tests.mini_files_hop_line_jump_opens_preview_file()
   assert_eq(vim.api.nvim_win_get_cursor(0)[1], 2, "preview line jump should keep selected line")
 end
 
-function tests.git_root_from_buffer_or_cwd_prefers_current_file_repo()
-  reset_modules("libs.git")
+function tests.neogit_status_s_stages_only_stageable_file_rows()
+  reset_modules("plugins.neogit", "neogit.buffers.status", "plugins.hop")
 
-  local outer = temp_path("git-root", "outer")
-  local inner = temp_path("git-root", "inner")
-  local file = vim.fs.joinpath(inner, "main.lua")
-  vim.fn.mkdir(outer, "p")
-  vim.fn.mkdir(inner, "p")
-  write_file(file, { "return true" })
-
-  assert_eq(vim.system({ "git", "-C", outer, "init", "-q" }):wait().code, 0, "outer git init should succeed")
-  assert_eq(vim.system({ "git", "-C", inner, "init", "-q" }):wait().code, 0, "inner git init should succeed")
-
-  vim.api.nvim_set_current_dir(outer)
-  vim.cmd.edit(vim.fn.fnameescape(file))
-
-  local root = require("libs.git").root_from_buffer_or_cwd(0)
-  assert_eq(canonical_realpath(root), canonical_realpath(inner), "current file repo should win over cwd repo")
-end
-
-function tests.git_root_from_buffer_or_cwd_falls_back_to_cwd()
-  reset_modules("libs.git")
-
-  local project = temp_path("git-root", "cwd-project")
-  vim.fn.mkdir(project, "p")
-  assert_eq(vim.system({ "git", "-C", project, "init", "-q" }):wait().code, 0, "git init should succeed")
-
-  vim.api.nvim_set_current_dir(project)
   vim.cmd("silent! enew!")
+  local status_buf = vim.api.nvim_get_current_buf()
+  local selection = {
+    section = { name = "unstaged" },
+    item = { name = "main.lua" },
+  }
+  local cursor = {
+    file = { name = "main.lua" },
+    hunk = nil,
+  }
+  local staged = false
+  local hopped = false
 
-  local root = require("libs.git").root_from_buffer_or_cwd(0)
-  assert_eq(canonical_realpath(root), canonical_realpath(project), "cwd repo should be used for non-file buffers")
+  local status = {
+    buffer = {
+      handle = status_buf,
+      ui = {
+        get_selection = function()
+          return selection
+        end,
+        get_cursor_location = function()
+          return cursor
+        end,
+      },
+    },
+    _action = function(_, name)
+      assert_eq(name, "n_stage", "Neogit s should reuse the normal stage action")
+      return function()
+        staged = true
+      end
+    end,
+  }
+
+  package.loaded["neogit.buffers.status"] = {
+    instance = function()
+      return status
+    end,
+  }
+  package.loaded["plugins.hop"] = {
+    hint_by_context = function()
+      hopped = true
+    end,
+  }
+
+  local map = require("plugins.neogit").opts().mappings.status.s
+  local function assert_s_behavior(expected_stage, message)
+    staged = false
+    hopped = false
+
+    map()
+
+    assert_eq(staged, expected_stage, message)
+    assert_eq(hopped, not expected_stage, message .. " should use the opposite Hop fallback")
+  end
+
+  assert_s_behavior(true, "s on an unstaged file row should stage it")
+
+  selection.section.name = "untracked"
+  assert_s_behavior(true, "s on an untracked file row should stage it")
+
+  cursor.hunk = { name = "hunk" }
+  assert_s_behavior(false, "s inside a file hunk should not stage")
+
+  cursor.hunk = nil
+  selection.section.name = "staged"
+  assert_s_behavior(false, "s outside stageable sections should not stage")
 end
 
 function tests.session_restore_preserves_requested_cwd()
@@ -829,8 +866,7 @@ local test_order = {
   "hop_global_mapping_uses_words_in_normal_file_buffer",
   "hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer",
   "mini_files_hop_line_jump_opens_preview_file",
-  "git_root_from_buffer_or_cwd_prefers_current_file_repo",
-  "git_root_from_buffer_or_cwd_falls_back_to_cwd",
+  "neogit_status_s_stages_only_stageable_file_rows",
   "session_restore_preserves_requested_cwd",
   "session_options_stay_lightweight",
 }

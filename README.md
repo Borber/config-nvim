@@ -6,7 +6,6 @@
 
 - Neovim 0.12+
 - `git`
-- 可选：`lazygit`，用于 `<leader>gg` / `<leader>gl` 的 Git TUI
 - Windows 下使用 bookmarks 时建议通过 Scoop 安装 `sqlite-dll`，配置会自动使用 `~/scoop/apps/sqlite-dll/current/sqlite3.dll`
 - `tree-sitter` CLI：`nvim-treesitter` 使用 `main` 分支，需要本机有 `tree-sitter` 命令（用于编译 parser）
 - 可选：`rg`、`fd`、`fzf`，用于 fzf-lua 获得更好体验
@@ -23,7 +22,7 @@
 | 主题 | rose-pine（dawn 变体） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
-| Git | LazyGit + gitsigns + diffview + aicommits（Codestral） |
+| Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
 | 笔记 | Markdown + render-markdown.nvim |
 | 终端 | toggleterm.nvim（自定义布局：水平贴底、垂直在右互不侵占） |
@@ -120,9 +119,9 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>gg` | LazyGit |
-| `<leader>gc` | AI commit staged changes |
-| `<leader>gl` | LazyGit log |
+| `<leader>gg` | Neogit status |
+| `<leader>gc` | Neogit commit |
+| `<leader>gl` | Neogit log |
 | `<leader>gh` | Stage hunk（normal / visual） |
 | `<leader>gH` | Reset hunk（normal / visual） |
 | `<leader>gp` | Preview hunk |
@@ -180,7 +179,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>ft` | 搜索 TODO 注释 |
 | `]t` / `[t` | 下一个 / 上一个 TODO 注释 |
 | `[c` | 跳转到 Treesitter 上下文 |
-| `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行 |
+| `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行；Neogit 未暂存/未跟踪文件行会优先 stage |
 | `<leader>qq` / `<leader>qw` / `<leader>qQ` | 退出 / 保存退出 / 强制退出 |
 | `:R` | 重载 Neovim 配置（热更新，不重启） |
 | `:Starter` | 手动打开启动页 |
@@ -220,19 +219,21 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 使用方式：
 
-1. 使用 LazyGit 或其它 Git 工具 stage 需要提交的内容。
-2. 按 `<leader>gc` 或运行 `:AICommit`。
-3. 从生成结果中选择 commit message（默认生成 5 条候选）。
+1. 在 Neogit 中 stage 需要提交的内容。
+2. 按 `c` 打开 Neogit commit popup。
+3. 在 `AI` 分组里按 `C` 执行 `AI Commit`。
+4. 从生成结果中选择 commit message（默认生成 5 条候选）。
 
 说明：
 
-- `aicommits.nvim` 的 Neogit integration 已关闭，AI commit 不再依赖 Neogit popup。
-- AI commit 只处理已 stage 的变更；提交后如果 LazyGit 已打开，可以在 LazyGit 中刷新查看最新状态。
+- `aicommits.nvim` 的 Neogit integration 已开启，用于提交后刷新 Neogit。
+- 插件自带的 Neogit status 页独立 `C` 映射已关闭。
+- AI action 由 `lua/plugins/neogit.lua` 注入到 Neogit commit popup。
 
-## LazyGit 仓库识别
+## Neogit 仓库识别
 
-`:LazyGit` 和 `<leader>gg` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
-需要打开特定 LazyGit 视图时，可以给 `:LazyGit` 传递参数，例如 `:LazyGit log`。
+`:Neogit` 和 `<leader>gg` / `<leader>gc` / `<leader>gl` 会优先从当前 buffer 的文件目录执行 `git rev-parse --show-toplevel`，再回退到当前 cwd。
+需要手动指定仓库时，仍然可以使用 Neogit 原生参数，例如 `:Neogit cwd=/path/to/repo`。
 
 ## Diffview
 
