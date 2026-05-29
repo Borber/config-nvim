@@ -24,6 +24,26 @@ local function strip_carriage_returns(bufnr)
   vim.fn.winrestview(view)
 end
 
+local function start_terminal_insert(bufnr)
+  if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return
+  end
+
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(bufnr) or vim.api.nvim_get_current_buf() ~= bufnr then
+      return
+    end
+
+    if vim.bo[bufnr].buftype == "terminal" then
+      vim.cmd("startinsert!")
+    end
+  end)
+end
+
 -- 清理混合换行/残留 CR 字符，避免行尾显示 ^M。
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePre" }, {
   group = augroup("config_strip_carriage_returns", { clear = true }),
@@ -41,7 +61,21 @@ vim.api.nvim_create_autocmd("TermOpen", {
     vim.wo.relativenumber = false
     vim.wo.signcolumn = "no"
     vim.bo[event.buf].buflisted = false
-    vim.cmd("startinsert")
+    start_terminal_insert(event.buf)
   end,
   desc = "Prepare terminal buffers",
+})
+
+-- 回到已有终端窗口时恢复输入模式，避免停在 terminal-normal 里还要手动按 i。
+vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "FocusGained" }, {
+  group = augroup("config_term_focus_insert", { clear = true }),
+  callback = function(event)
+    local bufnr = event.buf
+    if bufnr == nil or bufnr == 0 then
+      bufnr = vim.api.nvim_get_current_buf()
+    end
+
+    start_terminal_insert(bufnr)
+  end,
+  desc = "Enter terminal input mode when focused",
 })
