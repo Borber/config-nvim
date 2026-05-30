@@ -9,6 +9,7 @@
 - Windows 下使用 bookmarks 时建议通过 Scoop 安装 `sqlite-dll`，配置会自动使用 `~/scoop/apps/sqlite-dll/current/sqlite3.dll`
 - `tree-sitter` CLI：`nvim-treesitter` 使用 `main` 分支，需要本机有 `tree-sitter` 命令（用于编译 parser）
 - 可选：`rg`、`fd`、`fzf`，用于 fzf-lua 获得更好体验
+- 可选：`curl`，用于 crates.nvim 从 crates.io 拉取 Rust 依赖版本信息
 - 可选：`just`、`bun`、`npm`、`cargo` 等项目命令，用于 Overseer 自动发现并运行任务
 
 ## 插件概览
@@ -19,6 +20,7 @@
 | 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、move、align、bufremove） |
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
+| Rust 依赖 | crates.nvim（Cargo.toml 版本检测、补全、hover、code action） |
 | 主题 | rose-pine（dawn 变体） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
@@ -114,6 +116,16 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>so` | 当前文件结构侧栏（Outline） |
 | `<leader>ss` | 工作区符号搜索 |
 | `]d` / `[d` | 下一条 / 上一条诊断并弹出浮窗 |
+
+### Rust / Cargo
+
+| 入口 | 功能 |
+|------|------|
+| `Cargo.toml` | 自动加载 crates.nvim，显示依赖版本状态 |
+| `K` | 在依赖项上查看 crates.nvim hover |
+| `<leader>ca` | 在依赖项上执行 crates.nvim code action |
+| `:Crates toggle` | 切换依赖版本状态显示 |
+| `:Crates reload` | 重新拉取依赖版本信息 |
 
 ### Git
 

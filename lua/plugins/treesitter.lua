@@ -62,6 +62,25 @@ local function configured_parser_lookup()
 end
 
 local parsers = configured_parser_lookup()
+local parser_start_warnings = {}
+
+local function warn_parser_unavailable(lang, err)
+  if parser_start_warnings[lang] then
+    return
+  end
+
+  parser_start_warnings[lang] = true
+
+  vim.schedule(function()
+    vim.notify(
+      ("Treesitter parser %q is unavailable; run :TSInstallMissingConfigParsers to install configured parsers.\n%s"):format(
+        lang,
+        err
+      ),
+      vim.log.levels.WARN
+    )
+  end)
+end
 
 local function start_configured_parser(bufnr)
   local filetype = vim.bo[bufnr].filetype
@@ -76,7 +95,10 @@ local function start_configured_parser(bufnr)
 
   -- nvim-treesitter main 分支更接近 parser 管理器；这里显式启动高亮，
   -- 避免大项目里只落到传统 syntax 的零散高亮状态。
-  vim.treesitter.start(bufnr, lang)
+  local ok, err = pcall(vim.treesitter.start, bufnr, lang)
+  if not ok then
+    warn_parser_unavailable(lang, err)
+  end
 end
 
 return {
@@ -108,7 +130,7 @@ return {
     })
 
     vim.schedule(function()
-      -- 插件加载后尝试给当前 buffer 启动高亮；缺 parser 时让错误直接暴露。
+      -- 插件加载后尝试给当前 buffer 启动高亮；缺 parser 时只提示安装命令，不打断文件打开。
       start_configured_parser(vim.api.nvim_get_current_buf())
     end)
   end,
