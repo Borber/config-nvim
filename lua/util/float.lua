@@ -132,10 +132,6 @@ end
 
 local function current_palette()
   local normal = highlight("Normal")
-  if normal.bg == nil then
-    return
-  end
-
   local comment = highlight("Comment")
   local cursor_line = highlight("CursorLine")
   local diagnostic_warn = highlight("DiagnosticWarn")
@@ -144,7 +140,9 @@ local function current_palette()
   local pmenu_sel = highlight("PmenuSel")
   local visual = highlight("Visual")
 
-  -- 选中态优先使用真正的选区色，避免亮色主题里 CursorLine 过深时污染浮窗菜单。
+  normal.bg = normal.bg or "NONE"
+
+  -- 选中态优先使用真正的选区色，避免 CursorLine 对比度不合适时污染浮窗菜单。
   local selection_bg = visual.bg or pmenu_sel.bg or cursor_line.bg or normal.bg
   local tab_bg = cursor_line.bg or normal.bg
   local tab_active_bg = visual.bg or cursor_line.bg or normal.bg
@@ -267,7 +265,7 @@ end
 local function apply_mini_files_highlights(palette)
   local normal = palette.normal
 
-  -- mini.files 默认继承 CursorLine / NormalFloat；这里显式覆盖，保证亮色主题下文件树不出现黑底选中态。
+  -- mini.files 默认继承 CursorLine / NormalFloat；这里显式覆盖，保证文件树跟当前主题一致。
   set_hl("MiniFilesNormal", { fg = normal.fg, bg = normal.bg })
   set_hl("MiniFilesBorder", { fg = palette.border_fg, bg = normal.bg })
   set_hl("MiniFilesBorderModified", { fg = palette.warn_fg, bg = normal.bg, bold = true })

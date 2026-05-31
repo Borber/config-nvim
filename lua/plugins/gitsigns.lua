@@ -1,12 +1,14 @@
 local function apply_gitsigns_highlights()
+  local color = require("util.color")
+  local p = require("util.palette").everforest
   local highlights = {
-    GitSignsCurrentLineBlame = { fg = "#9893a5", italic = true },
-    GitSignsAddPreview = { fg = "#286983", bg = "#f1f7f3" },
-    GitSignsDeletePreview = { fg = "#b4637a", bg = "#faecef" },
-    GitSignsAddInline = { fg = "#286983", bg = "#dceee3", bold = true },
-    GitSignsDeleteInline = { fg = "#b4637a", bg = "#f2d8dd", bold = true },
-    GitSignsChangeInline = { fg = "#907aa9", bg = "#ece6f2", bold = true },
-    GitSignsNoEOLPreview = { fg = "#ea9d34", bg = "#fff4dc" },
+    GitSignsCurrentLineBlame = { fg = p.muted, italic = true },
+    GitSignsAddPreview = { fg = p.green, bg = color.blend_hex(p.green, p.base, 0.12) },
+    GitSignsDeletePreview = { fg = p.red, bg = color.blend_hex(p.red, p.base, 0.12) },
+    GitSignsAddInline = { fg = p.green, bg = color.blend_hex(p.green, p.base, 0.28), bold = true },
+    GitSignsDeleteInline = { fg = p.red, bg = color.blend_hex(p.red, p.base, 0.28), bold = true },
+    GitSignsChangeInline = { fg = p.blue, bg = color.blend_hex(p.blue, p.base, 0.24), bold = true },
+    GitSignsNoEOLPreview = { fg = p.gold, bg = color.blend_hex(p.gold, p.base, 0.16) },
   }
 
   for group, highlight in pairs(highlights) do

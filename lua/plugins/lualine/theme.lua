@@ -1,96 +1,101 @@
 local M = {}
+local color = require("util.color")
+local everforest = require("util.palette").everforest
 
--- 只淡化 b / WakaTime 段的背景，让左侧从 mode 主色自然过渡到 diagnostics 底色。
+-- lualine 使用 Everforest 的暖绿色系，避开 rose-pine 默认的粉紫 accent。
 local section_b_blend = 0.18
 local wakatime_blend = 0.1
 
 local mode_accent_names = {
-  n = "rose",
-  i = "foam",
-  v = "iris",
-  V = "iris",
-  ["\22"] = "iris",
-  s = "iris",
-  S = "iris",
-  ["\19"] = "iris",
-  R = "pine",
-  c = "love",
-  t = "rose",
+  n = "green",
+  i = "aqua",
+  v = "blue",
+  V = "blue",
+  ["\22"] = "blue",
+  s = "blue",
+  S = "blue",
+  ["\19"] = "blue",
+  R = "orange",
+  c = "gold",
+  t = "green",
 }
 
 local section_accent_names = {
-  normal = "rose",
-  insert = "foam",
-  visual = "iris",
-  replace = "pine",
-  command = "love",
+  normal = "green",
+  insert = "aqua",
+  visual = "blue",
+  replace = "orange",
+  command = "gold",
 }
-
-local function blend_hex(fg, bg, alpha)
-  local function channel(hex, start)
-    return tonumber(hex:sub(start, start + 1), 16) or 0
-  end
-
-  local r = math.floor(channel(fg, 2) * alpha + channel(bg, 2) * (1 - alpha) + 0.5)
-  local g = math.floor(channel(fg, 4) * alpha + channel(bg, 4) * (1 - alpha) + 0.5)
-  local b = math.floor(channel(fg, 6) * alpha + channel(bg, 6) * (1 - alpha) + 0.5)
-
-  return string.format("#%02x%02x%02x", r, g, b)
-end
 
 local function current_accent(palette)
   -- WakaTime 是动态组件，颜色跟随当前 mode，而不是只跟启动时主题表。
   local mode = vim.fn.mode()
-  local name = mode_accent_names[mode] or mode_accent_names[mode:sub(1, 1)] or "rose"
+  local name = mode_accent_names[mode] or mode_accent_names[mode:sub(1, 1)] or "green"
 
-  return palette[name] or palette.rose
+  return palette[name] or palette.green
 end
 
-local function tune_section(section, palette, accent)
+local function tune_section(section, accent)
   if section == nil then
     return
   end
 
+  section.a = vim.tbl_extend("force", section.a or {}, {
+    fg = everforest.base,
+    bg = accent,
+    gui = "bold",
+  })
   section.b = vim.tbl_extend("force", section.b or {}, {
     fg = accent,
-    bg = blend_hex(accent, palette.surface, section_b_blend),
+    bg = color.blend_hex(accent, everforest.surface, section_b_blend),
     gui = "bold",
   })
   section.c = vim.tbl_extend("force", section.c or {}, {
-    fg = palette.text,
-    bg = palette.surface,
+    fg = everforest.text,
+    bg = "NONE",
   })
 end
 
 function M.statusline()
-  local ok_theme, theme = pcall(require, "lualine.themes.rose-pine")
-  local ok_palette, palette = pcall(require, "rose-pine.palette")
-  if not ok_theme or not ok_palette then
-    return "auto"
-  end
+  local theme = {}
 
-  theme = vim.deepcopy(theme)
-
-  -- 基于 rose-pine 原主题微调，不重写整套 palette，避免和主题更新脱节。
   for section, accent_name in pairs(section_accent_names) do
-    tune_section(theme[section], palette, palette[accent_name])
+    theme[section] = {}
+    tune_section(theme[section], everforest[accent_name])
   end
+
+  theme.inactive = {
+    a = { fg = everforest.muted, bg = "NONE", gui = "bold" },
+    b = { fg = everforest.muted, bg = "NONE" },
+    c = { fg = everforest.muted, bg = "NONE" },
+  }
 
   return theme
 end
 
 function M.wakatime_color()
-  local ok, palette = pcall(require, "rose-pine.palette")
-  if not ok then
-    return { gui = "bold" }
-  end
-
-  local accent = current_accent(palette)
+  local accent = current_accent(everforest)
 
   return {
     fg = accent,
-    bg = blend_hex(accent, palette.surface, wakatime_blend),
+    bg = color.blend_hex(accent, everforest.surface, wakatime_blend),
     gui = "bold",
+  }
+end
+
+function M.buffer_active_color()
+  return {
+    fg = everforest.green,
+    bg = color.blend_hex(everforest.green, everforest.surface, section_b_blend),
+    gui = "bold",
+  }
+end
+
+function M.buffer_inactive_color()
+  return {
+    fg = everforest.muted,
+    bg = everforest.surface,
   }
 end
 

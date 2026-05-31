@@ -43,7 +43,7 @@ vim.keymap.set({ "n", "i", "x", "c", "t" }, "<C-S-v>", paste_system_clipboard, {
 })
 
 vim.opt.linespace = 2
-vim.g.neovide_theme = "light"
+vim.g.neovide_theme = "dark"
 vim.g.neovide_floating_shadow = false
 vim.g.neovide_refresh_rate = 144
 vim.g.neovide_refresh_rate_idle = 5

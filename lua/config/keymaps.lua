@@ -27,10 +27,6 @@ map("c", "<M-l>", "<Right>", { silent = true })
 -- ============================================
 -- 窗口管理
 -- ============================================
-map("n", "<C-h>", "<C-w>h", { silent = true })
-map("n", "<C-j>", "<C-w>j", { silent = true })
-map("n", "<C-k>", "<C-w>k", { silent = true })
-map("n", "<C-l>", "<C-w>l", { silent = true })
 map("n", "<C-Left>", function()
   require("util.window").resize_current_edge("left")
 end, { silent = true, desc = "Move window edge left" })
@@ -61,13 +57,9 @@ map("n", "<leader>qw", "<Cmd>wqa<CR>", { silent = true, desc = "Write and quit a
 map("n", "<leader>qQ", "<Cmd>qa!<CR>", { silent = true, desc = "Force quit all" })
 
 -- ============================================
--- Terminal 模式：双 Esc 退出，<C-hjkl> 直接切窗
+-- Terminal 模式：双 Esc 退出
 -- ============================================
 map("t", "<Esc><Esc>", [[<C-\><C-n>]], { silent = true, desc = "Leave terminal mode" })
-map("t", "<C-h>", [[<C-\><C-n><C-w>h]], { silent = true })
-map("t", "<C-j>", [[<C-\><C-n><C-w>j]], { silent = true })
-map("t", "<C-k>", [[<C-\><C-n><C-w>k]], { silent = true })
-map("t", "<C-l>", [[<C-\><C-n><C-w>l]], { silent = true })
 
 -- ============================================
 -- 终端 / 外部工具

@@ -80,6 +80,10 @@ local function bookmark_tree_label(bookmark)
   return ic.tree.bookmark .. " " .. name
 end
 
+local function bookmark_mark_color()
+  return require("util.palette").everforest.gold
+end
+
 local function create_project_commands()
   vim.api.nvim_create_user_command("BookmarksProjectActivate", function()
     activate_project_list({ create = true, notify = true })
@@ -160,7 +164,7 @@ return {
       signs = {
         mark = {
           icon = ic.ui.bookmark,
-          color = "#e0af68",
+          color = bookmark_mark_color(),
           line_bg = "NONE",
         },
         desc_format = function()

@@ -21,7 +21,7 @@
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | Rust 依赖 | crates.nvim（Cargo.toml 版本检测、补全、hover、code action） |
-| 主题 | rose-pine（dawn 变体） |
+| 主题 | rose-pine loader + Everforest palette（暗色透明） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
@@ -268,7 +268,8 @@ toggleterm 使用自定义窗口切分策略：
 
 ## 界面约定
 
-- 主题使用 `rose-pine-dawn`（亮色变体）。
+- 主题入口使用 `rose-pine-main` 保持透明背景能力；实际编辑区、Treesitter、LSP semantic tokens、lualine、Gitsigns、Neogit 和书签标记统一覆盖为 `lua/util/palette.lua` 中的 Everforest 暗色配色。
+- `Normal` / `NormalFloat` 保持透明，用于透出终端背后的毛玻璃背景；lualine 和部分交互态保留窄底色，保证斜角分隔与选中态可读。
 - 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、which-key、Overseer 等入口保持统一。
 - lualine statusline 使用紧凑模式标签（`N`、`I`、`V`、`T` 等）；branch、diagnostics 和 filetype 会按窗口宽度条件显示，最右侧显示当前 OS 图标。
 - 顶部 tabline 左侧保留独立 Vim 图标区，buffer 列表只显示简洁名称，并用 `●` 标记已修改 buffer。
@@ -293,7 +294,7 @@ toggleterm 使用自定义窗口切分策略：
 - 字体：Maple Mono NF + LXGW Bright 中文回退（Windows 17pt / Linux 20pt / macOS 22pt）
 - 缩放：Linux 与 macOS 使用 1.1，Windows 使用 1.0
 - 刷新率 144Hz，idle 降至 5Hz
-- 亮色主题，光标动画 "pixiedust"
+- 暗色透明主题，光标动画 "pixiedust"
 - 标题栏显示当前工作目录
 - 载入 neov-ime.nvim 管理 IME
 

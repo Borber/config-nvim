@@ -231,6 +231,10 @@ return {
               alternate_file = "",
               directory = ic.basic.dir,
             },
+            buffers_color = {
+              active = theme.buffer_active_color(),
+              inactive = theme.buffer_inactive_color(),
+            },
           },
         },
         lualine_c = {},
