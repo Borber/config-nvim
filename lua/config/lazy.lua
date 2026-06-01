@@ -26,8 +26,8 @@ require("lazy").setup({
     -- 统一从 lua/plugins/ 目录加载插件规格，避免 init.lua 变得臃肿。
     { import = "plugins" },
   },
-  -- 首次安装时优先启用 rose-pine；habamax 是 Neovim 自带兜底主题。
-  install = { colorscheme = { "rose-pine", "habamax" } },
+  -- 首次安装时优先启用 everforest；habamax 是 Neovim 自带兜底主题。
+  install = { colorscheme = { "everforest", "habamax" } },
   -- 关闭后台检查更新和配置变更通知，减少编辑时的消息打扰。
   checker = { enabled = false },
   change_detection = { notify = false },

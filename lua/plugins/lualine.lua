@@ -160,7 +160,7 @@ return {
         globalstatus = true,
         always_divide_middle = false,
         component_separators = { left = "", right = "" },
-        section_separators = { left = "", right = "" },
+        section_separators = { left = "", right = "" },
         disabled_filetypes = { statusline = { "ministarter" } },
       },
       sections = {
@@ -180,12 +180,11 @@ return {
         },
         lualine_c = {
           {
-            -- WakaTime 单独占第三段，用自己的背景和右斜角从 diagnostics 前切开。
+            -- WakaTime 单独占第三段，用自己的背景和 diagnostics 区分。
             -- 组件函数只展示缓存文本；真正的外部查询由 UI ready 后的刷新逻辑触发。
             wakatime_component,
             cond = has_wakatime_today,
             color = theme.wakatime_color,
-            separator = { right = "" },
           },
           {
             "diagnostics",

@@ -2,8 +2,8 @@ local M = {}
 local color = require("util.color")
 local everforest = require("util.palette").everforest
 
--- lualine 使用 Everforest 的暖绿色系，避开 rose-pine 默认的粉紫 accent。
-local section_b_blend = 0.18
+-- lualine 沿用 Everforest hard 的暖绿色系，和主配色保持一致。
+local active_blend = 0.18
 local wakatime_blend = 0.1
 
 local mode_accent_names = {
@@ -48,7 +48,7 @@ local function tune_section(section, accent)
   })
   section.b = vim.tbl_extend("force", section.b or {}, {
     fg = accent,
-    bg = color.blend_hex(accent, everforest.surface, section_b_blend),
+    bg = everforest.surface,
     gui = "bold",
   })
   section.c = vim.tbl_extend("force", section.c or {}, {
@@ -87,7 +87,7 @@ end
 function M.buffer_active_color()
   return {
     fg = everforest.green,
-    bg = color.blend_hex(everforest.green, everforest.surface, section_b_blend),
+    bg = color.blend_hex(everforest.green, everforest.surface, active_blend),
     gui = "bold",
   }
 end
