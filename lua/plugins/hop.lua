@@ -9,6 +9,19 @@ local special_filetypes = {
   trouble = true,
 }
 
+local hop_palette = require("util.palette").everforest
+
+local function apply_highlights()
+  local set_hl = vim.api.nvim_set_hl
+
+  set_hl(0, "HopNextKey", { fg = hop_palette.base, bg = hop_palette.red, bold = true })
+  set_hl(0, "HopNextKey1", { fg = hop_palette.base, bg = hop_palette.gold, bold = true })
+  set_hl(0, "HopNextKey2", { fg = hop_palette.base, bg = hop_palette.purple, bold = true })
+  set_hl(0, "HopPreview", { fg = hop_palette.base, bg = hop_palette.aqua, bold = true })
+  set_hl(0, "HopCursor", { fg = hop_palette.base, bg = hop_palette.orange, bold = true })
+  set_hl(0, "HopUnmatched", { fg = hop_palette.muted })
+end
+
 local function is_normal_file_buffer(buf_id)
   return vim.bo[buf_id].buftype == "" and vim.bo[buf_id].modifiable and not special_filetypes[vim.bo[buf_id].filetype]
 end
@@ -64,7 +77,16 @@ local spec = {
     keys = "werasdfcvuiojkl",
     jump_on_sole_occurrence = true,
     dim_unmatched = false,
+    hl_mode = "replace",
   },
+  config = function(_, opts)
+    require("hop").setup(opts)
+    apply_highlights()
+    vim.api.nvim_create_autocmd("ColorScheme", {
+      group = vim.api.nvim_create_augroup("ConfigHopHighlights", { clear = true }),
+      callback = apply_highlights,
+    })
+  end,
 }
 
 -- 给 Neogit 这类 buffer-local 映射复用同一套上下文分发。

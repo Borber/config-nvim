@@ -1,7 +1,7 @@
 -- ============================================
 -- 模块说明
 -- ============================================
--- 集中定义浮窗边框、winhighlight 和配色接线，保证 fzf-lua / Noice / Lazy / LSP 等浮窗风格一致。
+-- 集中定义浮窗边框、winhighlight 和配色接线，保证 fzf-lua / Noice / LSP 等浮窗风格一致。
 local M = {}
 
 M.border = "single"
@@ -144,8 +144,6 @@ local function current_palette()
 
   -- 选中态优先使用真正的选区色，避免 CursorLine 对比度不合适时污染浮窗菜单。
   local selection_bg = visual.bg or pmenu_sel.bg or cursor_line.bg or normal.bg
-  local tab_bg = cursor_line.bg or normal.bg
-  local tab_active_bg = visual.bg or cursor_line.bg or normal.bg
   local border_fg = highlight("FloatBorder").fg or comment.fg or normal.fg
   local accent_fg = directory.fg or identifier.fg or border_fg
   local warn_fg = diagnostic_warn.fg or accent_fg
@@ -157,8 +155,6 @@ local function current_palette()
     directory = directory,
     diagnostic_warn = diagnostic_warn,
     selection_bg = selection_bg,
-    tab_bg = tab_bg,
-    tab_active_bg = tab_active_bg,
     border_fg = border_fg,
     accent_fg = accent_fg,
     warn_fg = warn_fg,
@@ -198,28 +194,6 @@ local function apply_noice_highlights()
   link("NoicePopupmenu", "Pmenu")
   link("NoicePopupmenuBorder", "FloatBorder")
   link("NoiceCmdlinePopupTitle", "FloatTitle")
-end
-
-local function apply_lazy_highlights(palette)
-  local normal = palette.normal
-
-  set_hl("LazyNormal", { fg = normal.fg, bg = normal.bg })
-  set_hl("LazyBackdrop", { bg = normal.bg })
-  set_hl("LazyH1", { fg = palette.accent_fg, bg = normal.bg, bold = true })
-  set_hl("LazyH2", { fg = palette.border_fg, bg = normal.bg, bold = true })
-  set_hl("LazyButton", { fg = normal.fg, bg = normal.bg })
-  set_hl("LazyButtonActive", { fg = normal.fg, bg = palette.selection_bg, bold = true })
-  set_hl("LazySpecial", { fg = palette.accent_fg, bg = normal.bg, bold = true })
-  set_hl("LazyProgressDone", { fg = palette.accent_fg, bg = normal.bg })
-  set_hl("LazyProgressTodo", { fg = palette.comment.fg, bg = normal.bg })
-  set_hl("LazyTab", { fg = normal.fg, bg = palette.tab_bg })
-  set_hl("LazyTabKey", { fg = palette.accent_fg, bg = palette.tab_bg, bold = true })
-  set_hl("LazyTabSep", { fg = palette.tab_bg, bg = normal.bg })
-  set_hl("LazyTabActive", { fg = normal.fg, bg = palette.tab_active_bg, bold = true })
-  set_hl("LazyTabActiveKey", { fg = palette.accent_fg, bg = palette.tab_active_bg, bold = true })
-  set_hl("LazyTabActiveSep", { fg = palette.tab_active_bg, bg = normal.bg })
-  link_many({ "LazyDimmed", "LazyProp" }, "Comment")
-  link("LazyTaskOutput", "NormalFloat")
 end
 
 local function apply_fzf_lua_highlights(palette)
@@ -360,7 +334,6 @@ function M.apply_highlights()
   apply_base_highlights(palette)
   apply_blink_highlights()
   apply_noice_highlights()
-  apply_lazy_highlights(palette)
   apply_fzf_lua_highlights(palette)
   apply_mini_files_highlights(palette)
   apply_mini_clue_highlights(palette)

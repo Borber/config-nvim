@@ -16,11 +16,6 @@ if not vim.uv.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-local float = require("util.float")
-local icons = require("libs.icons")
-
-require("config.lazy_ui").setup()
-
 require("lazy").setup({
   spec = {
     -- 统一从 lua/plugins/ 目录加载插件规格，避免 init.lua 变得臃肿。
@@ -31,15 +26,6 @@ require("lazy").setup({
   -- 关闭后台检查更新和配置变更通知，减少编辑时的消息打扰。
   checker = { enabled = false },
   change_detection = { notify = false },
-  ui = {
-    -- Lazy 主面板也接入共享浮窗外观，避免成为唯一无边框的大面板。
-    size = { width = 0.87, height = 0.82 },
-    border = float.border,
-    backdrop = 100,
-    title = " " .. icons.ui.rocket .. " Lazy ",
-    title_pos = "center",
-    throttle = 1000 / 45,
-  },
   performance = {
     rtp = {
       disabled_plugins = {
