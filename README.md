@@ -263,7 +263,7 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 
 - Linux 优先使用 `fcitx5-remote`，默认英文输入法为 `keyboard-us`；没有 Fcitx5 时回退到 `ibus` 和 `xkb:us::eng`。
 - macOS 优先使用 `macism`，其次使用 `im-select`，默认英文输入源为 `com.apple.keylayout.ABC`。
-- `InsertEnter` 恢复上一次输入法；`InsertLeave` 和 `CmdlineLeave` 切回英文输入源。
+- `VimEnter`、`FocusGained`、`InsertLeave` 和 `CmdlineLeave` 切回英文输入源；`InsertEnter` 恢复上一次输入法。
 - 机器差异通过 `lua/config/local.lua` 的 `input_method.default_command` 和 `input_method.default_im_select` 覆盖；`enabled = false` 可关闭。
 
 ## 终端布局

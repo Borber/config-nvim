@@ -16,7 +16,8 @@ return {
   },
 
   input_method = {
-    -- 终端 Neovim 下按模式切换系统输入法；没有可用命令时自动不启用。
+    -- 终端 Neovim 下按模式切换系统输入法；启动和聚焦时先切英文。
+    -- 没有可用命令时自动不启用。
     -- Linux/Fcitx5 默认使用 fcitx5-remote + keyboard-us。
     -- macOS 可用 macism 或 im-select 查看本机英文输入源 ID 后覆盖。
     enabled = true,

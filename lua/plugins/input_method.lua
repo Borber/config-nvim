@@ -87,7 +87,7 @@ local function input_method_options()
 
   local defaults = detected_options() or {}
   local options = vim.tbl_deep_extend("force", {
-    set_default_events = { "InsertLeave", "CmdlineLeave" },
+    set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
     set_previous_events = { "InsertEnter" },
     async_switch_im = true,
   }, defaults, sanitized_options(local_options))
@@ -102,7 +102,7 @@ end
 
 return {
   "keaising/im-select.nvim",
-  event = "VeryLazy",
+  lazy = false,
   cond = function()
     return input_method_options() ~= nil
   end,
