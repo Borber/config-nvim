@@ -28,7 +28,7 @@ return {
     "milanglacier/minuet-ai.nvim",
   },
   build = function()
-    require("blink.cmp").build():wait(60000)
+    require("blink.cmp").build():pwait(60000)
   end,
   config = function(_, opts)
     -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
