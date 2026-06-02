@@ -4,8 +4,3 @@ require("config.keymaps")
 require("config.notes").setup()
 require("config.autocmds")
 require("config.lazy")
-
--- Neovide 配置
-if vim.g.neovide then
-  require("config.neovide")
-end

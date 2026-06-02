@@ -11,6 +11,7 @@
 - 可选：`rg`、`fd`、`fzf`，用于 fzf-lua 获得更好体验
 - 可选：`curl`，用于 crates.nvim 从 crates.io 拉取 Rust 依赖版本信息
 - 可选：`just`、`bun`、`npm`、`cargo` 等项目命令，用于 Overseer 自动发现并运行任务
+- 可选：`fcitx5-remote`、`ibus`、`macism` 或 `im-select`，用于终端 Neovim 按模式切换系统输入法
 
 ## 插件概览
 
@@ -34,7 +35,7 @@
 | Treesitter | nvim-treesitter（main 分支）+ treesitter-context |
 | 导航 | hop.nvim（普通文件按词跳转，部分特殊界面跨窗口按行跳转） |
 | 按键 | which-key.nvim |
-| Neovide | neov-ime.nvim（IME 管理） |
+| 输入法 | im-select.nvim（终端 Neovim 按模式切换系统输入法） |
 
 ## 本地私密配置
 
@@ -58,6 +59,11 @@ return {
   notes = {
     root = "~/Dropbox/note",
     drawer_width = 48,
+  },
+  input_method = {
+    enabled = true,
+    -- default_command = "macism",
+    -- default_im_select = "com.apple.keylayout.ABC",
   },
   aicommits = {
     api_key = "your-codestral-api-key",
@@ -251,6 +257,15 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 
 Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview 自己的关闭流程。
 
+## 输入法切换
+
+终端 Neovim 使用 im-select.nvim 调用系统输入法命令；检测不到可用命令时不加载插件。
+
+- Linux 优先使用 `fcitx5-remote`，默认英文输入法为 `keyboard-us`；没有 Fcitx5 时回退到 `ibus` 和 `xkb:us::eng`。
+- macOS 优先使用 `macism`，其次使用 `im-select`，默认英文输入源为 `com.apple.keylayout.ABC`。
+- `InsertEnter` 恢复上一次输入法；`InsertLeave` 和 `CmdlineLeave` 切回英文输入源。
+- 机器差异通过 `lua/config/local.lua` 的 `input_method.default_command` 和 `input_method.default_im_select` 覆盖；`enabled = false` 可关闭。
+
 ## 终端布局
 
 toggleterm 使用自定义窗口切分策略：
@@ -286,17 +301,6 @@ toggleterm 使用自定义窗口切分策略：
 - 每次 `build`（插件安装/更新时）自动更新全部已配置 parser。
 - 启动后补装可能缺失的 parser。
 - `:TSInstallConfigParsers` 可手动安装全部已配置 parser。
-
-## Neovide
-
-当 `vim.g.neovide` 为 `true` 时自动加载 `lua/config/neovide.lua`：
-
-- 字体：Maple Mono NF + LXGW Bright 中文回退（Windows 17pt / Linux 20pt / macOS 22pt）
-- 缩放：Linux 与 macOS 使用 1.1，Windows 使用 1.0
-- 刷新率 144Hz，idle 降至 5Hz
-- 暗色透明主题，光标动画 "pixiedust"
-- 标题栏显示当前工作目录
-- 载入 neov-ime.nvim 管理 IME
 
 ## 配置热更新
 

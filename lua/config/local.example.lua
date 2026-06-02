@@ -15,6 +15,15 @@ return {
     drawer_width = 48,
   },
 
+  input_method = {
+    -- 终端 Neovim 下按模式切换系统输入法；没有可用命令时自动不启用。
+    -- Linux/Fcitx5 默认使用 fcitx5-remote + keyboard-us。
+    -- macOS 可用 macism 或 im-select 查看本机英文输入源 ID 后覆盖。
+    enabled = true,
+    -- default_command = "macism",
+    -- default_im_select = "com.apple.keylayout.ABC",
+  },
+
   aicommits = {
     -- Codestral API key。不要把真实 key 写进 example 文件。
     api_key = "your-codestral-api-key",
