@@ -15,7 +15,6 @@ local function leader_clues()
     { mode = "n", keys = "<Leader>n", desc = "+notes" },
     { mode = "n", keys = "<Leader>q", desc = "+quit" },
     { mode = "n", keys = "<Leader>s", desc = "+symbol" },
-    { mode = "n", keys = "<Leader>t", desc = "+terminal" },
     { mode = "n", keys = "<Leader>u", desc = "+ui" },
 
     { mode = "x", keys = "<Leader>c", desc = "+code" },

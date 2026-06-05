@@ -76,7 +76,7 @@ local function is_clearable_buffer(buf_id)
     return false
   end
 
-  if buffer_util.is_terminal(buf_id) then
+  if vim.bo[buf_id].buftype == "terminal" then
     return not is_terminal_running(buf_id)
   end
 

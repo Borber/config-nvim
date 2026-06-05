@@ -60,12 +60,6 @@ function M.is_listed_normal_file(bufnr)
   return vim.bo[bufnr].buflisted and vim.bo[bufnr].buftype == "" and vim.api.nvim_buf_get_name(bufnr) ~= ""
 end
 
-function M.is_terminal(bufnr)
-  -- starter 清场时终端有特殊规则：运行中的 terminal 要保留。
-  bufnr = resolve_bufnr(bufnr)
-  return bufnr ~= nil and vim.bo[bufnr].buftype == "terminal"
-end
-
 function M.is_empty_unnamed(bufnr)
   bufnr = resolve_bufnr(bufnr)
   if bufnr == nil or not vim.api.nvim_buf_is_loaded(bufnr) then
