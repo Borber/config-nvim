@@ -70,21 +70,6 @@ assert_true(diffview_closed, "Diffview close should be delegated")
 package.loaded["diffview"] = old_diffview
 package.loaded["diffview.lib"] = old_diffview_lib
 
-local old_toggleterm = package.loaded["toggleterm.terminal"]
-local toggleterm_closed = false
-package.loaded["toggleterm.terminal"] = {
-  identify = function()
-    return nil, {
-      close = function()
-        toggleterm_closed = true
-      end,
-    }
-  end,
-}
-vim.bo.filetype = "toggleterm"
-assert_true(window.close_current(), "toggleterm window should report closed")
-assert_true(toggleterm_closed, "toggleterm close should be delegated")
-
 deleted_buf = nil
 deleted_force = nil
 vim.bo.filetype = ""
@@ -95,6 +80,5 @@ assert_eq(deleted_force, false, "buffer fallback should not force-delete")
 
 package.loaded["mini.files"] = old_minifiles
 package.loaded["mini.bufremove"] = old_bufremove
-package.loaded["toggleterm.terminal"] = old_toggleterm
 
 print("headless window close checks passed")

@@ -28,7 +28,7 @@
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
 | 任务 | overseer.nvim |
 | 笔记 | Markdown + render-markdown.nvim |
-| 终端 | toggleterm.nvim（自定义布局：水平贴底、垂直在右互不侵占） |
+| 终端 | 内置 `:terminal`（轻量兼容）+ 外部终端入口 |
 | 格式化 | conform.nvim |
 | UI | noice.nvim（命令行 / 消息浮窗）、lualine.nvim（状态栏 / tabline）、render-markdown.nvim、markdown-plus.nvim |
 | 书签 | bookmarks.nvim（按项目自动切换列表） |
@@ -160,11 +160,6 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>tt` | 切换默认终端（水平） |
-| `<leader>th` | 新建水平终端（贴底） |
-| `<leader>tv` | 新建垂直终端（右侧） |
-| `<leader>to` | 终端选择器 |
-| `<leader>tr` | 重命名终端 |
 | `<leader>tn` | 外部终端 |
 
 ### 任务（Overseer）
@@ -266,14 +261,11 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 - `VimEnter`、`FocusGained`、`InsertLeave` 和 `CmdlineLeave` 切回英文输入源；`InsertEnter` 恢复上一次输入法。
 - 机器差异通过 `lua/config/local.lua` 的 `input_method.default_command` 和 `input_method.default_im_select` 覆盖；`enabled = false` 可关闭。
 
-## 终端布局
+## 终端
 
-toggleterm 使用自定义窗口切分策略：
-
-- **水平终端**：全部在底部横条内，内部左右切分，贴编辑器底部、全宽。
-- **垂直终端**：全部在右侧竖条内，内部上下切分。竖条只占 content 区域高度，底部让位给水平终端。
-- 同一方向的终端共享区域，不会互相抢占；`<leader>to` 可打开终端选择器。
-- 终端尺寸随窗口缩放，但保留最低可用尺寸（水平 ≥12 行，垂直 ≥30 列）。
+- 不再额外维护 `toggleterm` 布局；编辑器内只保留 Neovim 原生 `:terminal`。
+- `<leader>tn` 会在当前项目目录打开系统外部终端。
+- 偶尔使用内置终端时，只做最小处理：打开时隐藏行号、不进入普通 buffer 列表、直接进入插入模式；切回终端后手动按 `i`。
 
 ## Overseer 任务
 
@@ -322,5 +314,5 @@ nvim --headless -u NONE -i NONE -n -S tests/headless/mini_behaviors.lua +qa
 
 - `lua/config/lifecycle.lua` 统一管理 `ConfigUiReady` / `ConfigBackground` / `ConfigFilePost`。
 - `lua/plugins/mini/project.lua` 统一 recent、session、home 规则。
-- `lua/patches/` 统一收口 blink / noice / bookmarks / overseer / toggleterm 的内部 patch。
+- `lua/patches/` 统一收口 blink / noice / bookmarks / overseer 的内部 patch。
 - 细节说明见 `doc/lifecycle-and-patches.md`。

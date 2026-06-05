@@ -42,7 +42,6 @@ return {
         "noice",
         "notify",
         "qf",
-        "toggleterm",
       },
     },
     ui = {

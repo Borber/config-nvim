@@ -261,50 +261,6 @@ function tests.bookmarks_tree_icons_and_refresh()
   end)
 end
 
-function tests.toggleterm_open_split_restores_original_hook()
-  with_clean_state(function()
-    reset_modules("patches.toggleterm_open_split", "toggleterm.ui", "toggleterm.terminal", "toggleterm.config")
-
-    local original_open_split = function()
-      error("original open_split should not be called directly")
-    end
-    local ui = {
-      open_split = original_open_split,
-      resize_split = function() end,
-      save_window_size = function() end,
-    }
-
-    package.loaded["toggleterm.ui"] = ui
-    package.loaded["toggleterm.config"] = {
-      get = function()
-        return false
-      end,
-    }
-    package.loaded["toggleterm.terminal"] = {
-      get_all = function()
-        return {}
-      end,
-      Terminal = {
-        new = function(_, opts)
-          return {
-            direction = opts.direction,
-            __set_options = function() end,
-            open = function(self)
-              require("toggleterm.ui").open_split(10, self)
-            end,
-          }
-        end,
-      },
-    }
-
-    vim.cmd("silent! only")
-    local patch = require("patches.toggleterm_open_split")
-    patch.open_new("horizontal")()
-
-    assert_eq(ui.open_split, original_open_split, "toggleterm open_split should be restored after open_new")
-  end)
-end
-
 local test_order = {
   "lifecycle_once_runs_immediately_after_ready",
   "lifecycle_on_handles_multiple_emissions",
@@ -312,7 +268,6 @@ local test_order = {
   "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
   "bookmarks_tree_icons_and_refresh",
-  "toggleterm_open_split_restores_original_hook",
 }
 
 for _, name in ipairs(test_order) do

@@ -41,7 +41,7 @@ local function setup_editing_modules()
   -- indentscope 对特殊 buffer 无意义，按 filetype/buftype 禁用。
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("ConfigIndentscopeDisable", { clear = true }),
-    pattern = { "help", "lazy", "mason", "ministarter", "Outline", "Trouble", "toggleterm", "neogit*" },
+    pattern = { "help", "lazy", "mason", "ministarter", "Outline", "Trouble", "neogit*" },
     callback = function()
       vim.b.miniindentscope_disable = true
     end,

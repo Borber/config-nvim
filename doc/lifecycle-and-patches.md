@@ -11,7 +11,6 @@
 - `lua/patches/noice_signature.lua`
 - `lua/patches/bookmarks_tree.lua`
 - `lua/patches/overseer_select.lua`
-- `lua/patches/toggleterm_open_split.lua`
 
 ## 备注
 

@@ -134,25 +134,6 @@ local function close_diffview()
   return true
 end
 
-local function close_toggleterm(ft)
-  if ft ~= "toggleterm" then
-    return false
-  end
-
-  local terminal = package.loaded["toggleterm.terminal"]
-  if terminal == nil or type(terminal.identify) ~= "function" then
-    return false
-  end
-
-  local _, term = terminal.identify()
-  if term == nil or type(term.close) ~= "function" then
-    return false
-  end
-
-  term:close()
-  return true
-end
-
 local function close_outline(ft)
   if ft ~= "Outline" then
     return false
@@ -255,7 +236,7 @@ function M.close_current()
   local ft = current_filetype()
 
   -- 先交给拥有整组 UI 的插件清理，再按容器层级从外到内关闭。
-  if close_mini_files(ft) or close_diffview() or close_toggleterm(ft) or close_outline(ft) then
+  if close_mini_files(ft) or close_diffview() or close_outline(ft) then
     return true
   end
 

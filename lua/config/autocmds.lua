@@ -24,26 +24,6 @@ local function strip_carriage_returns(bufnr)
   vim.fn.winrestview(view)
 end
 
-local function start_terminal_insert(bufnr)
-  if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
-    return
-  end
-
-  if vim.bo[bufnr].buftype ~= "terminal" then
-    return
-  end
-
-  vim.schedule(function()
-    if not vim.api.nvim_buf_is_valid(bufnr) or vim.api.nvim_get_current_buf() ~= bufnr then
-      return
-    end
-
-    if vim.bo[bufnr].buftype == "terminal" then
-      vim.cmd("startinsert!")
-    end
-  end)
-end
-
 -- 清理混合换行/残留 CR 字符，避免行尾显示 ^M。
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePre" }, {
   group = augroup("config_strip_carriage_returns", { clear = true }),
@@ -53,29 +33,23 @@ vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePre" }, {
   desc = "Strip stray carriage returns from file buffers",
 })
 
--- 打开内置终端时关闭行号/sign 并立即进入插入模式
+-- 终端现在只保留轻量兼容：打开时做最小窗口整理，不再为焦点切回单独维护模式状态。
 vim.api.nvim_create_autocmd("TermOpen", {
   group = augroup("config_term_open", { clear = true }),
   callback = function(event)
     vim.wo.number = false
     vim.wo.relativenumber = false
-    vim.wo.signcolumn = "no"
     vim.bo[event.buf].buflisted = false
-    start_terminal_insert(event.buf)
-  end,
-  desc = "Prepare terminal buffers",
-})
 
--- 回到已有终端窗口时恢复输入模式，避免停在 terminal-normal 里还要手动按 i。
-vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "FocusGained" }, {
-  group = augroup("config_term_focus_insert", { clear = true }),
-  callback = function(event)
-    local bufnr = event.buf
-    if bufnr == nil or bufnr == 0 then
-      bufnr = vim.api.nvim_get_current_buf()
-    end
+    vim.schedule(function()
+      if not vim.api.nvim_buf_is_valid(event.buf) or vim.api.nvim_get_current_buf() ~= event.buf then
+        return
+      end
 
-    start_terminal_insert(bufnr)
+      if vim.bo[event.buf].buftype == "terminal" then
+        vim.cmd("startinsert!")
+      end
+    end)
   end,
-  desc = "Enter terminal input mode when focused",
+  desc = "Prepare terminal buffer on open",
 })
