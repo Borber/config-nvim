@@ -40,16 +40,7 @@ vim.api.nvim_create_autocmd("TermOpen", {
     vim.wo.number = false
     vim.wo.relativenumber = false
     vim.bo[event.buf].buflisted = false
-
-    vim.schedule(function()
-      if not vim.api.nvim_buf_is_valid(event.buf) or vim.api.nvim_get_current_buf() ~= event.buf then
-        return
-      end
-
-      if vim.bo[event.buf].buftype == "terminal" then
-        vim.cmd("startinsert!")
-      end
-    end)
+    vim.cmd("startinsert!")
   end,
   desc = "Prepare terminal buffer on open",
 })

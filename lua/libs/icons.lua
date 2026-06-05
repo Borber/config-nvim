@@ -100,7 +100,6 @@ M.ui = {
   vim = "",
   quit = "󰈆",
   session = "",
-  terminal = "",
   code = "",
   keys = "",
   hunk = "",
