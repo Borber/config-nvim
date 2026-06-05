@@ -6,7 +6,7 @@ local function local_aicommits_config()
 end
 
 return {
-  "borber/aicommits.nvim",
+  "404pilo/aicommits.nvim",
   cmd = { "AICommit", "AICommitHealth", "AICommitDebug" },
   opts = function()
     local local_config = local_aicommits_config()
@@ -28,12 +28,11 @@ return {
           max_tokens = 500,
         },
       },
-      input = {
-        mode = "rich",
-        rich = {
-          chunk_chars = 6000,
-          max_chunks_per_file = 10,
-        },
+      large_diff = {
+        -- 官方主线已改为 large_diff 配置；保持总是先做摘要再生成 commit message。
+        mode = "always",
+        chunk_chars = 6000,
+        max_chunks_per_file = 10,
       },
       ui = {
         use_custom_picker = true,
@@ -45,9 +44,12 @@ return {
       },
       integrations = {
         neogit = {
-          -- 打开内置 Neogit refresh，但不使用它的 status 页独立 C 映射。
-          -- AI action 仍由 neogit.lua 注入到 NeogitCommitPopup。
+          -- 直接使用插件内置的 NeogitStatus 独立 `C` 映射，不再维护本地 popup action。
           enabled = true,
+          mappings = {
+            enabled = true,
+            key = "C",
+          },
         },
       },
     }

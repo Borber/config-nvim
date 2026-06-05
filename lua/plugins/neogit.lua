@@ -103,8 +103,7 @@ return {
     "nvim-lua/plenary.nvim",
     "ibhagwan/fzf-lua",
     "sindrets/diffview.nvim",
-    -- 让 Neogit 的 commit popup 能调用 AI commit action。
-    "borber/aicommits.nvim",
+    "404pilo/aicommits.nvim",
   },
   keys = {
     { "<leader>gg", open_neogit(), desc = "Git status" },
@@ -174,15 +173,6 @@ return {
       },
       stash = {
         kind = "auto",
-      },
-      builders = {
-        NeogitCommitPopup = function(builder)
-          -- 把 AI commit 放进 `c` commit popup 内部，而不是 Neogit status 的独立快捷键。
-          -- `-C` 仍然是 Git 原生 reuse-message 参数；这里的 `C` 是 popup action。
-          builder:new_action_group("AI"):action("C", "AI Commit", function()
-            require("aicommits").commit()
-          end)
-        end,
       },
       integrations = {
         telescope = false,
