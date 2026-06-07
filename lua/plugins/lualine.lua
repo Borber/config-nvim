@@ -28,20 +28,6 @@ local function short_mode(mode)
   return mode_labels[mode] or mode:sub(1, 1)
 end
 
-local function refresh_statusline(force)
-  local ok, lualine = pcall(require, "lualine")
-  if not ok then
-    return
-  end
-
-  lualine.refresh({
-    scope = "tabpage",
-    place = { "statusline" },
-    trigger = "autocmd",
-    force = force == true,
-  })
-end
-
 local wakatime_status_module = "plugins.lualine.wakatime_status"
 
 -- 状态栏渲染阶段只读已加载模块，避免首屏同步 require WakaTime。
@@ -126,7 +112,7 @@ local function refresh_branch_statusline(preferred_bufnr)
   -- 用真实文件 buffer 的上下文刷新 git_dir，否则首次打开仓库时要等 BufEnter 才能看到分支。
   vim.api.nvim_buf_call(bufnr, git_branch.find_git_dir)
 
-  refresh_statusline(true)
+  require("plugins.lualine.refresh").statusline(true)
 end
 
 local function setup_branch_refresh()

@@ -59,6 +59,18 @@ local function detected_options()
   return nil
 end
 
+-- 检测结果单独缓存：即使上层 options 缓存被清除，也不会重新 fork 子进程。
+local detected_defaults = nil
+local detected_done = false
+
+local function ensure_detected()
+  if not detected_done then
+    detected_done = true
+    detected_defaults = detected_options()
+  end
+  return detected_defaults
+end
+
 local function has_value(value)
   return type(value) == "string" and value ~= ""
 end
@@ -85,7 +97,7 @@ local function input_method_options()
     return nil
   end
 
-  local defaults = detected_options() or {}
+  local defaults = ensure_detected() or {}
   local options = vim.tbl_deep_extend("force", {
     set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
     set_previous_events = { "InsertEnter" },

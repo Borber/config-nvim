@@ -10,20 +10,6 @@ local today = {
 
 local refresh_interval = 5 * 60 * 1000
 
-local function refresh_statusline(force)
-  local ok, lualine = pcall(require, "lualine")
-  if not ok then
-    return
-  end
-
-  lualine.refresh({
-    scope = "tabpage",
-    place = { "statusline" },
-    trigger = "autocmd",
-    force = force == true,
-  })
-end
-
 local function append_output(lines, data)
   if type(data) ~= "table" then
     return
@@ -87,7 +73,7 @@ local function request_today()
       vim.schedule(function()
         today.pending = false
         today.text = exit_code == 0 and format_today(output) or ""
-        refresh_statusline()
+        require("plugins.lualine.refresh").statusline()
       end)
     end,
   })
@@ -96,7 +82,7 @@ local function request_today()
     today.pending = false
     today.text = ""
     vim.schedule(function()
-      refresh_statusline()
+      require("plugins.lualine.refresh").statusline()
     end)
   end
 end
