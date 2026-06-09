@@ -233,6 +233,7 @@ return {
   config = function(_, opts)
     require("config.lifecycle").setup()
     require("lualine").setup(opts)
+    require("plugins.lualine.theme").apply_highlights()
     setup_branch_refresh()
     setup_wakatime_refresh()
   end,

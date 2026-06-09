@@ -57,6 +57,12 @@ local function tune_section(section, accent)
   })
 end
 
+function M.apply_highlights()
+  -- 中段空白和未单独着色的状态栏组件都交还给终端背景，透明/毛玻璃效果由终端负责呈现。
+  vim.api.nvim_set_hl(0, "StatusLine", { fg = everforest.text, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "StatusLineNC", { fg = everforest.muted, bg = "NONE" })
+end
+
 function M.statusline()
   local theme = {}
 
