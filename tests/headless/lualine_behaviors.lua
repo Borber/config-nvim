@@ -139,13 +139,14 @@ assert_eq(
   require("libs.icons").ui.time .. " 314" .. vim.fn.nr2char(0x2032),
   "WakaTime today should render total minutes from JSON seconds"
 )
-assert_eq(lualine_opts.sections.lualine_c[1].separator.right, "", "WakaTime should separate from diagnostics")
 vim.api.nvim_exec_autocmds("BufWritePost", { modeline = false })
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()
 assert_eq(#wakatime_jobs, 1, "WakaTime refresh events should respect the refresh interval")
 
 assert_eq(type(lualine_opts.sections.lualine_c[1].color), "function", "WakaTime should keep its own color block")
+assert_eq(lualine_opts.options.section_separators.left, "", "statusline should keep flat section separators")
+assert_eq(lualine_opts.options.section_separators.right, "", "statusline should keep flat section separators")
 
 wakatime_total_seconds = 0
 package.loaded["plugins.lualine.wakatime_status"] = nil
