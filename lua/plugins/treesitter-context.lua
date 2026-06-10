@@ -1,3 +1,5 @@
+local lifecycle = require("config.lifecycle")
+
 local disabled_filetypes = {
   help = true,
   man = true,
@@ -15,7 +17,7 @@ end
 
 return {
   "nvim-treesitter/nvim-treesitter-context",
-  event = { "BufReadPost", "BufNewFile" },
+  event = lifecycle.lazy_events.file_post,
   dependencies = {
     "nvim-treesitter/nvim-treesitter",
   },

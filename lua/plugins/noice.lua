@@ -1,6 +1,8 @@
+local lifecycle = require("config.lifecycle")
+
 return {
   "folke/noice.nvim",
-  event = "VeryLazy",
+  event = lifecycle.lazy_events.ui_ready,
   dependencies = {
     "MunifTanjim/nui.nvim",
   },

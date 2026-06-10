@@ -1,3 +1,5 @@
+local lifecycle = require("config.lifecycle")
+
 local function yank_history()
   local is_visual = vim.fn.mode() == "v" or vim.fn.mode() == "V"
   if is_visual then
@@ -20,7 +22,7 @@ end
 
 return {
   "gbprod/yanky.nvim",
-  event = "VeryLazy",
+  event = lifecycle.lazy_events.ui_ready,
   init = function()
     require("util.sqlite").configure_clib()
   end,
