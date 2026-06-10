@@ -1,5 +1,3 @@
-local lifecycle = require("config.lifecycle")
-
 -- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API。
 -- Mason 只负责安装和手动管理；LSP 本体等首个真实文件出现后再加载。
 
@@ -37,7 +35,7 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    event = lifecycle.lazy_events.ui_ready,
+    event = { "BufReadPre", "BufNewFile" },
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       local registry = require("lsp")

@@ -75,6 +75,10 @@ local function has_value(value)
   return type(value) == "string" and value ~= ""
 end
 
+local function supported_platform()
+  return vim.fn.has("macunix") == 1 or vim.fn.has("linux") == 1
+end
+
 local function sanitized_options(options)
   local result = vim.deepcopy(options)
   result.enabled = nil
@@ -97,7 +101,11 @@ local function input_method_options()
     return nil
   end
 
-  local defaults = ensure_detected() or {}
+  local defaults = {}
+  if not (has_value(local_options.default_command) and has_value(local_options.default_im_select)) then
+    defaults = ensure_detected() or {}
+  end
+
   local options = vim.tbl_deep_extend("force", {
     set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
     set_previous_events = { "InsertEnter" },
@@ -114,12 +122,17 @@ end
 
 return {
   "keaising/im-select.nvim",
-  lazy = false,
+  event = "VeryLazy",
   cond = function()
-    return input_method_options() ~= nil
+    local local_options = read_local_options()
+    return local_options.enabled ~= false and supported_platform()
   end,
   opts = input_method_options,
   config = function(_, opts)
+    if opts == nil then
+      return
+    end
+
     require("im_select").setup(opts)
   end,
 }

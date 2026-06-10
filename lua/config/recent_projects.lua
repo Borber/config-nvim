@@ -16,6 +16,10 @@ local canonical_path = path_util.canonical_absolute
 local is_directory = path_util.is_directory
 local path_exists = path_util.exists
 
+local function is_headless()
+  return #vim.api.nvim_list_uis() == 0
+end
+
 local function load_recent_projects()
   -- 旧文件里可能存过文件路径；读取时统一折叠成它所在的项目目录。
   if recent_projects ~= nil then
@@ -142,6 +146,10 @@ function M.setup()
   end
 
   configured = true
+
+  if is_headless() then
+    return
+  end
 
   local group = vim.api.nvim_create_augroup("ConfigRecentProjects", { clear = true })
 

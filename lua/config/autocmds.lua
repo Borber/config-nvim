@@ -3,7 +3,6 @@
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
 local buffer_util = require("libs.buffer")
-require("config.lifecycle").setup()
 
 local function strip_carriage_returns(bufnr)
   local target_bufnr = buffer_util.normal_writable(bufnr)

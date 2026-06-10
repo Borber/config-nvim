@@ -257,12 +257,11 @@ end
 
 M.toggle = toggle_notes_file("index.md")
 M.toggle_inbox = toggle_notes_file("inbox.md")
+M.toggle_journal = function()
+  toggle_notes_file(journal_file(today_date()))()
+end
 
 function M.setup()
-  local toggle_journal = function()
-    toggle_notes_file(journal_file(today_date()))()
-  end
-
   api.nvim_create_user_command("Notes", M.toggle, {
     desc = "Toggle global Markdown notes drawer",
     force = true,
@@ -273,14 +272,14 @@ function M.setup()
     force = true,
   })
 
-  api.nvim_create_user_command("NotesJournal", toggle_journal, {
+  api.nvim_create_user_command("NotesJournal", M.toggle_journal, {
     desc = "Toggle global Markdown journal",
     force = true,
   })
 
   vim.keymap.set("n", "<leader>nn", M.toggle, { silent = true, desc = "Toggle notes" })
   vim.keymap.set("n", "<leader>ni", M.toggle_inbox, { silent = true, desc = "Toggle notes inbox" })
-  vim.keymap.set("n", "<leader>nj", toggle_journal, { silent = true, desc = "Toggle notes journal" })
+  vim.keymap.set("n", "<leader>nj", M.toggle_journal, { silent = true, desc = "Toggle notes journal" })
 end
 
 return M

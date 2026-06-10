@@ -1,8 +1,6 @@
-local lifecycle = require("config.lifecycle")
-
 return {
   "luukvbaal/statuscol.nvim",
-  event = lifecycle.lazy_events.ui_ready,
+  event = { "BufReadPost", "BufNewFile" },
   opts = function()
     local builtin = require("statuscol.builtin")
 

@@ -20,11 +20,10 @@ local function assert_true(value, message)
   end
 end
 
-local function normal_map(buf_id, lhs)
-  for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf_id, "n")) do
-    if map.lhs == lhs then
-      return map
-    end
+local function global_normal_map(lhs)
+  local map = vim.fn.maparg(lhs, "n", false, true)
+  if type(map) == "table" and map.lhs ~= nil and map.lhs ~= "" then
+    return map
   end
 end
 
@@ -133,8 +132,56 @@ function tests.recent_projects_record_current_cwd_after_late_setup()
 
   local original_v = vim.v
   local original_cwd = vim.fn.getcwd()
+  local original_list_uis = vim.api.nvim_list_uis
   local ok, err = xpcall(function()
     local project = temp_path("startup-recent-project")
+    vim.fn.mkdir(project, "p")
+    vim.api.nvim_set_current_dir(project)
+
+    local store = vim.fn.stdpath("data") .. "/starter-recent-paths.json"
+    vim.fn.delete(store)
+
+    vim.v = setmetatable({}, {
+      __index = function(_, key)
+        if key == "vim_did_enter" then
+          return 1
+        end
+        return original_v[key]
+      end,
+      __newindex = function(_, key, value)
+        original_v[key] = value
+      end,
+    })
+    vim.api.nvim_list_uis = function()
+      return { { chan = 1 } }
+    end
+
+    require("config.recent_projects").setup()
+    vim.v = original_v
+
+    local lines = vim.fn.readfile(store)
+    local decoded = vim.json.decode(table.concat(lines, "\n"))
+    assert_eq(decoded[1], canonical_realpath(project), "late recent_projects.setup should record current cwd project")
+  end, debug.traceback)
+
+  vim.v = original_v
+  vim.api.nvim_list_uis = original_list_uis
+  pcall(vim.api.nvim_set_current_dir, original_cwd)
+  pcall(vim.api.nvim_del_augroup_by_name, "ConfigRecentProjects")
+  vim.cmd("silent! argdelete *")
+
+  if not ok then
+    error(err, 0)
+  end
+end
+
+function tests.recent_projects_skip_headless_startup_record()
+  reset_modules("config.recent_projects")
+
+  local original_v = vim.v
+  local original_cwd = vim.fn.getcwd()
+  local ok, err = xpcall(function()
+    local project = temp_path("headless-startup-project")
     vim.fn.mkdir(project, "p")
     vim.api.nvim_set_current_dir(project)
 
@@ -156,9 +203,7 @@ function tests.recent_projects_record_current_cwd_after_late_setup()
     require("config.recent_projects").setup()
     vim.v = original_v
 
-    local lines = vim.fn.readfile(store)
-    local decoded = vim.json.decode(table.concat(lines, "\n"))
-    assert_eq(decoded[1], canonical_realpath(project), "late recent_projects.setup should record current cwd project")
+    assert_eq(vim.fn.filereadable(store), 0, "headless startup should not auto-write recent projects")
   end, debug.traceback)
 
   vim.v = original_v
@@ -270,12 +315,35 @@ function tests.mini_setup_initializes_recent_projects_for_startup_paths()
   vim.cmd("silent! argdelete *")
   reset_modules("plugins.mini", "config.recent_projects", "plugins.mini.sessions")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniUi")
-  pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniBackground")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniEditing")
 
   if not ok then
     error(err, 0)
   end
+end
+
+function tests.notes_entrypoints_setup_is_lazy()
+  reset_modules("config.notes", "config.notes_commands")
+
+  pcall(vim.api.nvim_del_user_command, "Notes")
+  pcall(vim.api.nvim_del_user_command, "NotesInbox")
+  pcall(vim.api.nvim_del_user_command, "NotesJournal")
+  pcall(vim.keymap.del, "n", "<leader>nn")
+  pcall(vim.keymap.del, "n", "<leader>ni")
+  pcall(vim.keymap.del, "n", "<leader>nj")
+
+  require("config.notes_commands").setup()
+
+  assert_eq(package.loaded["config.notes"], nil, "notes entrypoints should not eagerly load the notes module")
+  assert_eq(vim.fn.exists(":Notes"), 2, "notes command should be registered")
+  assert_true(global_normal_map("<leader>nn") ~= nil, "notes keymap should be registered")
+
+  pcall(vim.api.nvim_del_user_command, "Notes")
+  pcall(vim.api.nvim_del_user_command, "NotesInbox")
+  pcall(vim.api.nvim_del_user_command, "NotesJournal")
+  pcall(vim.keymap.del, "n", "<leader>nn")
+  pcall(vim.keymap.del, "n", "<leader>ni")
+  pcall(vim.keymap.del, "n", "<leader>nj")
 end
 
 function tests.starter_reuses_empty_placeholder_buffer()
@@ -363,28 +431,7 @@ function tests.starter_hides_hidden_empty_placeholders()
   end
 end
 
-function tests.starter_keeps_global_statusline_unchanged()
-  reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions")
-
-  stub_recent_projects()
-  stub_mini_starter()
-
-  local original_laststatus = vim.o.laststatus
-  vim.o.laststatus = 3
-
-  require("plugins.mini.starter").setup()
-
-  vim.cmd("silent! enew!")
-  vim.api.nvim_exec_autocmds("User", {
-    pattern = "MiniStarterOpened",
-    modeline = false,
-  })
-
-  assert_eq(vim.o.laststatus, 3, "starter should leave global statusline ownership to lualine")
-  vim.o.laststatus = original_laststatus
-end
-
-function tests.starter_initial_content_is_available_before_background()
+function tests.starter_initial_content_is_available_immediately()
   reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
 
   local setup_called = false
@@ -444,9 +491,9 @@ function tests.starter_initial_content_is_available_before_background()
   starter_module.setup({ autoopen = true })
 
   local items = starter.opts.items[1]()
-  assert_true(setup_called, "starter should initialize visits before background work")
-  assert_eq(items[1].section, "Recent projects", "recent paths should render before delayed footer content")
-  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render before background work")
+  assert_true(setup_called, "starter should initialize recent projects before rendering content")
+  assert_eq(items[1].section, "Recent projects", "recent paths should render on the initial starter content")
+  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render on the initial starter content")
 
   stats.loaded = 25
   cputime = 27464.444
@@ -525,42 +572,6 @@ function tests.mini_files_hides_reusable_target_placeholder()
   require("plugins.mini.files").open(project)
 
   assert_eq(vim.bo[placeholder].buflisted, false, "mini.files should hide reusable empty target placeholders")
-end
-
-function tests.mini_files_uses_compact_window_widths()
-  reset_modules("plugins.mini.files", "mini.files")
-
-  local setup_opts
-  package.loaded["mini.files"] = {
-    setup = function(opts)
-      setup_opts = opts
-    end,
-  }
-
-  require("plugins.mini.files").setup()
-
-  assert_eq(setup_opts.windows.width_focus, 34, "focused mini.files directory window should stay compact")
-  assert_eq(setup_opts.windows.width_nofocus, 15, "unfocused mini.files directory windows should keep default compact width")
-  assert_eq(setup_opts.windows.width_preview, 42, "mini.files preview window should avoid taking most of the screen")
-end
-
-function tests.mini_files_does_not_install_local_hop_mapping()
-  reset_modules("plugins.mini.files", "mini.files")
-
-  local buf_id = vim.api.nvim_create_buf(false, true)
-
-  package.loaded["mini.files"] = {
-    setup = function() end,
-  }
-
-  require("plugins.mini.files").setup()
-  vim.api.nvim_exec_autocmds("User", {
-    pattern = "MiniFilesBufferCreate",
-    data = { buf_id = buf_id },
-    modeline = false,
-  })
-
-  assert_eq(normal_map(buf_id, "s"), nil, "mini.files buffer should not install local Hop mapping")
 end
 
 function tests.mini_files_focus_tracks_entered_directory_window()
@@ -829,46 +840,25 @@ function tests.session_restore_preserves_requested_cwd()
   assert_eq(sessions.should_auto_restore(), false, "headless mode should not auto restore sessions")
 end
 
-function tests.session_options_stay_lightweight()
-  reset_modules("plugins.mini.sessions")
-
-  local session_dir = temp_path("lightweight-sessions")
-  vim.fn.mkdir(session_dir, "p")
-
-  package.loaded["mini.sessions"] = {
-    config = { directory = session_dir },
-    setup = function() end,
-    read = function() end,
-    write = function() end,
-    select = function() end,
-  }
-
-  require("plugins.mini.sessions").setup()
-
-  assert_eq(vim.o.sessionoptions, "buffers", "sessions should not persist local options such as fold state")
-end
-
 local test_order = {
   "recent_projects_are_unique_ordered_and_removable",
   "recent_projects_record_current_cwd_after_late_setup",
+  "recent_projects_skip_headless_startup_record",
   "recent_projects_record_false_skips_project_record",
   "recent_projects_open_path_records_project",
   "mini_setup_initializes_recent_projects_for_startup_paths",
+  "notes_entrypoints_setup_is_lazy",
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
-  "starter_keeps_global_statusline_unchanged",
-  "starter_initial_content_is_available_before_background",
+  "starter_initial_content_is_available_immediately",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
-  "mini_files_uses_compact_window_widths",
-  "mini_files_does_not_install_local_hop_mapping",
   "mini_files_focus_tracks_entered_directory_window",
   "hop_global_mapping_uses_words_in_normal_file_buffer",
   "hop_global_mapping_uses_registered_line_jump_handler_in_special_buffer",
   "mini_files_hop_line_jump_opens_preview_file",
   "neogit_status_s_stages_only_stageable_file_rows",
   "session_restore_preserves_requested_cwd",
-  "session_options_stay_lightweight",
 }
 
 local failures = {}

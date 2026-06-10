@@ -8,13 +8,11 @@ local state = require("state.lifecycle")
 
 M.user_patterns = {
   ui_ready = "ConfigUiReady",
-  background = "ConfigBackground",
   file_post = "ConfigFilePost",
 }
 
 M.lazy_events = {
   ui_ready = "User ConfigUiReady",
-  background = "User ConfigBackground",
   file_post = "User ConfigFilePost",
 }
 
@@ -120,16 +118,8 @@ local function setup_lazy_layers()
     once = true,
     callback = function()
       M.emit("ui_ready")
-
-      vim.defer_fn(function()
-        if vim.v.exiting ~= vim.NIL then
-          return
-        end
-
-        M.emit("background")
-      end, 800)
     end,
-    desc = "Split VeryLazy follow-up work into ordered config layers",
+    desc = "Emit ConfigUiReady after VeryLazy",
   })
 end
 

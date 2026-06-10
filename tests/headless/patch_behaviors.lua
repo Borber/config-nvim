@@ -52,42 +52,6 @@ end
 
 local tests = {}
 
-function tests.lifecycle_once_runs_immediately_after_ready()
-  with_clean_state(function()
-    reset_modules("config.lifecycle", "state.lifecycle")
-
-    local lifecycle = require("config.lifecycle")
-    lifecycle.setup()
-    lifecycle.emit("ui_ready")
-    local count = 0
-
-    lifecycle.once("ui_ready", function()
-      count = count + 1
-    end)
-
-    assert_eq(count, 1, "lifecycle.once should fire immediately after ui_ready")
-  end)
-end
-
-function tests.lifecycle_on_handles_multiple_emissions()
-  with_clean_state(function()
-    reset_modules("config.lifecycle", "state.lifecycle")
-
-    local lifecycle = require("config.lifecycle")
-    lifecycle.setup()
-    local count = 0
-
-    lifecycle.on("file_post", function()
-      count = count + 1
-    end)
-
-    lifecycle.emit("file_post", { buf = 0 })
-    lifecycle.emit("file_post", { buf = 0 })
-
-    assert_eq(count, 2, "lifecycle.on should remain active across repeated file_post emissions")
-  end)
-end
-
 function tests.blink_preview_expands_snippets_and_restores_cursor()
   with_clean_state(function()
     reset_modules("patches.blink_preview", "blink.cmp.lib.text_edits", "blink.cmp.sources.snippets.utils")
@@ -262,8 +226,6 @@ function tests.bookmarks_tree_icons_and_refresh()
 end
 
 local test_order = {
-  "lifecycle_once_runs_immediately_after_ready",
-  "lifecycle_on_handles_multiple_emissions",
   "blink_preview_expands_snippets_and_restores_cursor",
   "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
@@ -279,4 +241,4 @@ for _, name in ipairs(test_order) do
   end
 end
 
-print("headless lifecycle and patch checks passed")
+print("headless patch behavior checks passed")

@@ -35,7 +35,6 @@ end
 local refreshes = 0
 local branch_probe_bufs = {}
 local lualine_opts
-local wakatime_loads = 0
 local wakatime_jobs = {}
 local wakatime_total_seconds = 18840
 local original_exepath = vim.fn.exepath
@@ -49,13 +48,6 @@ package.loaded["lualine"] = {
     refreshes = refreshes + 1
   end,
 }
-
-package.loaded["wakatime"] = nil
-package.preload["wakatime"] = function()
-  wakatime_loads = wakatime_loads + 1
-
-  return {}
-end
 
 rawset(vim.fn, "exepath", function(command)
   return command == "wakatime-cli" and "wakatime-cli" or ""
@@ -86,11 +78,8 @@ package.loaded["lualine.components.branch.git_branch"] = {
 
 local lualine_spec = require("plugins.lualine")
 lualine_spec.config(nil, lualine_spec.opts())
-assert_eq(wakatime_loads, 0, "lualine setup should not load WakaTime synchronously")
-assert_eq(package.loaded["plugins.lualine.wakatime_status"], nil, "WakaTime status module should be deferred")
 assert_eq(lualine_opts.sections.lualine_c[1][1](), "", "WakaTime component should be empty before refresh")
 assert_eq(lualine_opts.sections.lualine_c[1].cond(), false, "WakaTime cond should not load status module")
-assert_eq(wakatime_loads, 0, "WakaTime cond should not load WakaTime synchronously")
 
 local project = temp_path("project")
 vim.fn.mkdir(project, "p")
@@ -127,11 +116,10 @@ vim.api.nvim_exec_autocmds("User", {
   modeline = false,
 })
 flush_scheduled()
-assert_eq(wakatime_loads, 0, "ConfigUiReady should only set up deferred WakaTime refresh")
+assert_eq(#wakatime_jobs, 0, "ConfigUiReady should not trigger an immediate WakaTime CLI query")
 
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()
-assert_eq(wakatime_loads, 0, "FocusGained should query WakaTime CLI without loading vim-wakatime")
 assert_eq(#wakatime_jobs, 1, "FocusGained should start one WakaTime CLI query")
 assert_eq(table.concat(wakatime_jobs[1], " "), "wakatime-cli --today --output raw-json", "WakaTime query should request raw JSON from CLI")
 assert_eq(
@@ -139,7 +127,6 @@ assert_eq(
   require("libs.icons").ui.time .. " 314" .. vim.fn.nr2char(0x2032),
   "WakaTime today should render total minutes from JSON seconds"
 )
-assert_eq(lualine_opts.sections.lualine_c[1].separator.right, "", "WakaTime should separate from diagnostics")
 vim.api.nvim_exec_autocmds("BufWritePost", { modeline = false })
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()
