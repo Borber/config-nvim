@@ -91,6 +91,10 @@ assert_eq(package.loaded["plugins.lualine.wakatime_status"], nil, "WakaTime stat
 assert_eq(lualine_opts.sections.lualine_c[1][1](), "", "WakaTime component should be empty before refresh")
 assert_eq(lualine_opts.sections.lualine_c[1].cond(), false, "WakaTime cond should not load status module")
 assert_eq(wakatime_loads, 0, "WakaTime cond should not load WakaTime synchronously")
+assert_eq(vim.api.nvim_get_hl(0, { name = "StatusLine" }).bg, nil, "StatusLine background should stay transparent")
+assert_eq(vim.api.nvim_get_hl(0, { name = "StatusLineNC" }).bg, nil, "StatusLineNC background should stay transparent")
+assert_eq(vim.api.nvim_get_hl(0, { name = "StatusLineTerm" }).bg, nil, "StatusLineTerm background should stay transparent")
+assert_eq(vim.api.nvim_get_hl(0, { name = "StatusLineTermNC" }).bg, nil, "StatusLineTermNC background should stay transparent")
 
 local project = temp_path("project")
 vim.fn.mkdir(project, "p")

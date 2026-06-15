@@ -59,8 +59,11 @@ end
 
 function M.apply_highlights()
   -- 中段空白和未单独着色的状态栏组件都交还给终端背景，透明/毛玻璃效果由终端负责呈现。
+  -- fzf-lua 这类 picker 聚焦到 terminal buffer 时会走 StatusLineTerm，也要保持同样的透明基线。
   vim.api.nvim_set_hl(0, "StatusLine", { fg = everforest.text, bg = "NONE" })
   vim.api.nvim_set_hl(0, "StatusLineNC", { fg = everforest.muted, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "StatusLineTerm", { fg = everforest.text, bg = "NONE" })
+  vim.api.nvim_set_hl(0, "StatusLineTermNC", { fg = everforest.muted, bg = "NONE" })
 end
 
 function M.statusline()
