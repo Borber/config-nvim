@@ -19,6 +19,51 @@ local function cmdline_menu_position()
   return { row, math.max(position.screenpos.col - 4, 0) }
 end
 
+-- blink 的 cargo build 继承 Neovim 进程环境；平台差异只在构建期间临时注入。
+local blink_build_env_by_system = {
+  Darwin = {
+    RUSTFLAGS = { "-C link-arg=-undefined", "-C link-arg=dynamic_lookup" },
+  },
+  Linux = {},
+  Windows_NT = {},
+}
+
+local function append_env_flags(name, flags)
+  local value = vim.env[name] or ""
+
+  for _, flag in ipairs(flags) do
+    if value == "" then
+      value = flag
+    elseif not value:find(flag, 1, true) then
+      value = value .. " " .. flag
+    end
+  end
+
+  vim.env[name] = value ~= "" and value or nil
+end
+
+local function with_blink_build_env(callback)
+  local build_env = blink_build_env_by_system[vim.uv.os_uname().sysname] or {}
+  local restore = {}
+
+  for name, flags in pairs(build_env) do
+    table.insert(restore, { name = name, value = vim.env[name] })
+    append_env_flags(name, flags)
+  end
+
+  local ok, result = pcall(callback)
+
+  for _, item in ipairs(restore) do
+    vim.env[item.name] = item.value
+  end
+
+  if not ok then
+    error(result, 0)
+  end
+
+  return result
+end
+
 return {
   "saghen/blink.cmp",
   event = { "InsertEnter", "CmdlineEnter" },
@@ -28,7 +73,9 @@ return {
     "milanglacier/minuet-ai.nvim",
   },
   build = function()
-    require("blink.cmp").build():pwait(60000)
+    with_blink_build_env(function()
+      require("blink.cmp").build():pwait(60000)
+    end)
   end,
   config = function(_, opts)
     -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
