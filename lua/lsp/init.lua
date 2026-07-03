@@ -26,6 +26,7 @@ local override_names = {
   "lua_ls",
   "rust_analyzer",
   "clangd",
+  "taplo",
 }
 
 local function load_override(name)
@@ -38,17 +39,30 @@ local function load_override(name)
 end
 
 local function configure_default_capabilities()
-  -- ufo 的 lsp provider 需要 foldingRange capability；跟随 LSP 注册阶段写入，
-  -- 避免折叠插件的 lazy spec 在启动期触碰 vim.lsp.config。
-  vim.lsp.config("*", {
-    capabilities = {
-      textDocument = {
-        foldingRange = {
-          dynamicRegistration = false,
-          lineFoldingOnly = true,
+  local capabilities = {
+    textDocument = {
+      completion = {
+        completionItem = {
+          snippetSupport = true,
         },
       },
+      foldingRange = {
+        dynamicRegistration = false,
+        lineFoldingOnly = true,
+      },
     },
+  }
+
+  local ok, blink = pcall(require, "blink.cmp")
+  if ok and type(blink.get_lsp_capabilities) == "function" then
+    capabilities = blink.get_lsp_capabilities(capabilities)
+  end
+
+  -- ufo 的 lsp provider 需要 foldingRange capability；同时在 LSP 真正启动前
+  -- 主动合并 blink 的 completion capabilities，避免 InsertEnter 才加载补全时
+  -- 首个 taplo/rust-analyzer client 缺少 snippet/schema 相关协商能力。
+  vim.lsp.config("*", {
+    capabilities = capabilities,
   })
 end
 

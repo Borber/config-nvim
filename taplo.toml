@@ -1,0 +1,10 @@
+# Cargo manifests rely on Taplo schema completion for keys such as
+# `default-features`, `workspace`, `optional`, `package`, and target tables.
+# Bind the Cargo schema globally here instead of relying on catalog auto-match.
+
+[[rule]]
+include = ["**/Cargo.toml"]
+
+[rule.schema]
+url = "https://json.schemastore.org/cargo.json"
+enabled = true
