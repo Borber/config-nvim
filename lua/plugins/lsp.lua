@@ -37,7 +37,7 @@ return {
   },
   {
     "neovim/nvim-lspconfig",
-    event = lifecycle.lazy_events.ui_ready,
+    event = lifecycle.lazy_events.file_post,
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       local registry = require("lsp")

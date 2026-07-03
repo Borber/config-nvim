@@ -18,11 +18,11 @@
 | 类别 | 插件 |
 |------|------|
 | 插件管理 | lazy.nvim |
-| 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、move、align、bufremove） |
+| 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、align、bufremove、clue） |
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | Rust 依赖 | crates.nvim（Cargo.toml 版本检测、补全、hover、code action） |
-| 主题 | rose-pine loader + Everforest palette（暗色透明） |
+| 主题 | everforest（暗色透明） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
@@ -34,7 +34,7 @@
 | 书签 | bookmarks.nvim（按项目自动切换列表） |
 | Treesitter | nvim-treesitter（main 分支）+ treesitter-context |
 | 导航 | hop.nvim（普通文件按词跳转，部分特殊界面跨窗口按行跳转） |
-| 按键 | which-key.nvim |
+| 按键提示 | mini.clue |
 | 输入法 | im-select.nvim（终端 Neovim 按模式切换系统输入法） |
 
 ## 本地私密配置
@@ -96,6 +96,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 | `<leader>,` | Buffer 列表（fzf-lua picker） |
 | `<leader>/` | 当前 buffer 内搜索 |
 | `<leader>ff` | 查找文件 |
+| `<leader>fF` | 查找文件（包含常见重目录） |
 | `<leader>fh` | 帮助标签 |
 | `<leader>fr` | 最近打开文件 |
 | `<leader>fH` | 命令历史 |
@@ -187,7 +188,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>?</> | 查看当前 buffer 键位（which-key） |
+| `<leader>` / `<localleader>` | 显示分组键位线索（mini.clue） |
 | `<leader>cf` | 格式化当前文件 |
 | `<leader>ft` | 搜索 TODO 注释 |
 | `]t` / `[t` | 下一个 / 上一个 TODO 注释 |
@@ -218,7 +219,9 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 ## 加载与保存约定
 
-- `ConfigFilePost` 会在 UI 已进入且首个真实文件 buffer 出现后触发，用于延后加载 gitsigns、treesitter-context、todo-comments 等文件型插件。
+- `ConfigUiReady` 会在 `VeryLazy` 后触发，用于加载 Noice、gitsigns、statuscol、yanky 和 mini UI 兼容层等 UI 增强。
+- `ConfigBackground` 会在 UI ready 后延迟触发，用于输入法自动探测这类不该阻塞首屏的后台工作。
+- `ConfigFilePost` 会在 UI 已进入且首个真实文件 buffer 出现后触发，用于延后加载 LSP、Treesitter、treesitter-context、todo-comments 等文件型插件。
 - 自动保存覆盖以下场景：`InsertLeave`、`BufLeave`、`FocusLost`、`VimLeavePre`。只作用于正常、可写、有文件名且已修改的文件 buffer；terminal、help、quickfix、无名 buffer 和只读 buffer 不会被强行写盘。
 - 读取和写入文件时会清理残留 `\r`，降低混合换行导致的 `^M` 噪音。
 
@@ -258,7 +261,7 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 
 - Linux 优先使用 `fcitx5-remote`，默认英文输入法为 `keyboard-us`；没有 Fcitx5 时回退到 `ibus` 和 `xkb:us::eng`。
 - macOS 优先使用 `macism`，其次使用 `im-select`，默认英文输入源为 `com.apple.keylayout.ABC`。
-- `VimEnter`、`FocusGained`、`InsertLeave` 和 `CmdlineLeave` 切回英文输入源；`InsertEnter` 恢复上一次输入法。
+- 输入法插件在 `ConfigBackground` 或首次 `InsertEnter` 后加载；`FocusGained`、`InsertLeave` 和 `CmdlineLeave` 切回英文输入源，`InsertEnter` 恢复上一次输入法。
 - 机器差异通过 `lua/config/local.lua` 的 `input_method.default_command` 和 `input_method.default_im_select` 覆盖；`enabled = false` 可关闭。
 
 ## 终端
@@ -275,9 +278,9 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 
 ## 界面约定
 
-- 主题入口使用 `rose-pine-main` 保持透明背景能力；实际编辑区、Treesitter、LSP semantic tokens、lualine、Gitsigns、Neogit 和书签标记统一覆盖为 `lua/util/palette.lua` 中的 Everforest 暗色配色。
+- 主题入口使用 everforest hard 暗色透明配置；主题的 `after/syntax/` 性能生成缓存按本机产物忽略，不进入版本控制。
 - `Normal` / `NormalFloat` 保持透明，用于透出终端背后的毛玻璃背景；lualine 和部分交互态保留窄底色，保证斜角分隔与选中态可读。
-- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、which-key、Overseer 等入口保持统一。
+- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、mini.clue、Overseer 等入口保持统一。
 - lualine statusline 使用紧凑模式标签（`N`、`I`、`V`、`T` 等）；branch、diagnostics 和 filetype 会按窗口宽度条件显示，最右侧显示当前 OS 图标。
 - 顶部 tabline 左侧保留独立 Vim 图标区，buffer 列表只显示简洁名称，并用 `●` 标记已修改 buffer。
 - `signcolumn` 固定保留（`yes`），避免诊断、git sign 或书签 sign 出现时正文左右跳动。gitsigns 通过自定义 `statuscolumn` 在行号右侧显示 git 标记。
@@ -291,7 +294,7 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 - 使用 nvim-treesitter `main` 分支，通过 `FileType` autocmd 按已配置 parser 显式启动高亮。
 - 预装 parser：markdown、markdown_inline、html、lua、vim、vimdoc、rust、toml、c、cpp、cmake、gn、ninja、bash、json、typescript、javascript。
 - 每次 `build`（插件安装/更新时）自动更新全部已配置 parser。
-- 启动后补装可能缺失的 parser。
+- 缺失 parser 时会提示安装命令，不在打开文件时自动下载。
 - `:TSInstallConfigParsers` 可手动安装全部已配置 parser。
 
 ## 配置热更新
@@ -313,6 +316,6 @@ nvim --headless -u NONE -i NONE -n -S tests/headless/mini_behaviors.lua +qa
 ## 结构收口
 
 - `lua/config/lifecycle.lua` 统一管理 `ConfigUiReady` / `ConfigBackground` / `ConfigFilePost`。
-- `lua/plugins/mini/project.lua` 统一 recent、session、home 规则。
+- `lua/config/project.lua` 统一 recent、session、home 规则。
 - `lua/patches/` 统一收口 blink / noice / bookmarks / overseer 的内部 patch。
 - 细节说明见 `doc/lifecycle-and-patches.md`。

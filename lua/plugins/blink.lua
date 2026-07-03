@@ -19,6 +19,28 @@ local function cmdline_menu_position()
   return { row, math.max(position.screenpos.col - 4, 0) }
 end
 
+local function with_blink_build_env(callback)
+  if vim.uv.os_uname().sysname ~= "Darwin" then
+    return callback()
+  end
+
+  local original_rustflags = vim.env.RUSTFLAGS
+  local required_flags = "-C link-arg=-undefined -C link-arg=dynamic_lookup"
+
+  if not original_rustflags or original_rustflags == "" then
+    vim.env.RUSTFLAGS = required_flags
+  elseif not original_rustflags:find("dynamic_lookup", 1, true) then
+    vim.env.RUSTFLAGS = original_rustflags .. " " .. required_flags
+  end
+
+  local ok, err = pcall(callback)
+  vim.env.RUSTFLAGS = original_rustflags
+
+  if not ok then
+    error(err)
+  end
+end
+
 return {
   "saghen/blink.cmp",
   event = { "InsertEnter", "CmdlineEnter" },
@@ -28,7 +50,9 @@ return {
     "milanglacier/minuet-ai.nvim",
   },
   build = function()
-    require("blink.cmp").build():pwait(60000)
+    with_blink_build_env(function()
+      require("blink.cmp").build():pwait(60000)
+    end)
   end,
   config = function(_, opts)
     -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。

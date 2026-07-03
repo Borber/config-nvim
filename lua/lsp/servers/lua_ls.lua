@@ -1,9 +1,36 @@
+local path_util = require("libs.path")
+local library_cache = nil
+local library_cache_token = nil
+
+local function stat_token(path)
+  local stat = path_util.stat(path)
+  if stat == nil then
+    return path .. ":missing"
+  end
+
+  local mtime = stat.mtime or {}
+  return table.concat({
+    path,
+    stat.type or "",
+    tostring(stat.size or 0),
+    tostring(mtime.sec or 0),
+    tostring(mtime.nsec or 0),
+  }, ":")
+end
+
 local function lua_ls_library()
-  local path_util = require("libs.path")
-  local library = { vim.env.VIMRUNTIME }
   local lazy_root = vim.fs.joinpath(vim.fn.stdpath("data"), "lazy")
+  local token = stat_token(lazy_root)
+
+  if library_cache ~= nil and library_cache_token == token then
+    return library_cache
+  end
+
+  local library = { vim.env.VIMRUNTIME }
 
   if not path_util.is_directory(lazy_root) then
+    library_cache = library
+    library_cache_token = token
     return library
   end
 
@@ -17,6 +44,8 @@ local function lua_ls_library()
     end
   end
 
+  library_cache = library
+  library_cache_token = token
   return library
 end
 

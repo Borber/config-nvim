@@ -1,3 +1,5 @@
+local lifecycle = require("config.lifecycle")
+
 local function read_local_options()
   local ok, local_config = pcall(require, "config.local")
   if not ok or type(local_config) ~= "table" or type(local_config.input_method) ~= "table" then
@@ -75,6 +77,14 @@ local function has_value(value)
   return type(value) == "string" and value ~= ""
 end
 
+local function has_command(value)
+  return has_value(value) or (type(value) == "table" and has_value(value[1]))
+end
+
+local function has_complete_options(options)
+  return has_command(options.default_command) and has_value(options.default_im_select)
+end
+
 local function sanitized_options(options)
   local result = vim.deepcopy(options)
   result.enabled = nil
@@ -82,29 +92,38 @@ local function sanitized_options(options)
   return result
 end
 
-local has_cached_options = false
 local cached_options = nil
+local disabled = false
 
-local function input_method_options()
-  if has_cached_options then
-    return cached_options
-  end
+local function input_method_options(opts)
+  opts = opts or {}
 
-  has_cached_options = true
-
-  local local_options = read_local_options()
-  if local_options.enabled == false then
+  if disabled then
     return nil
   end
 
-  local defaults = ensure_detected() or {}
+  if cached_options ~= nil then
+    return cached_options
+  end
+
+  local local_options = read_local_options()
+  if local_options.enabled == false then
+    disabled = true
+    return nil
+  end
+
+  local defaults = {}
+  if opts.detect == true and not has_complete_options(local_options) then
+    defaults = ensure_detected() or {}
+  end
+
   local options = vim.tbl_deep_extend("force", {
-    set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
+    set_default_events = { "FocusGained", "InsertLeave", "CmdlineLeave" },
     set_previous_events = { "InsertEnter" },
     async_switch_im = true,
   }, defaults, sanitized_options(local_options))
 
-  if not has_value(options.default_command) or not has_value(options.default_im_select) then
+  if not has_complete_options(options) then
     return nil
   end
 
@@ -114,12 +133,13 @@ end
 
 return {
   "keaising/im-select.nvim",
-  lazy = false,
-  cond = function()
-    return input_method_options() ~= nil
-  end,
-  opts = input_method_options,
-  config = function(_, opts)
+  event = { lifecycle.lazy_events.background, "InsertEnter" },
+  config = function()
+    local opts = input_method_options({ detect = true })
+    if opts == nil then
+      return
+    end
+
     require("im_select").setup(opts)
   end,
 }
