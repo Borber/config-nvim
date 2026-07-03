@@ -3,42 +3,7 @@
 -- ============================================
 local augroup = vim.api.nvim_create_augroup
 local buffer_util = require("libs.buffer")
-local path_util = require("libs.path")
 require("config.lifecycle").setup()
-
-local cr_scan_limit = 5 * 1024 * 1024
-
-local function buffer_size(bufnr)
-  local name = vim.api.nvim_buf_get_name(bufnr)
-  if name ~= "" then
-    local stat = path_util.stat(name)
-    if stat ~= nil and stat.size ~= nil then
-      return stat.size
-    end
-  end
-
-  local ok, offset = pcall(vim.api.nvim_buf_get_offset, bufnr, vim.api.nvim_buf_line_count(bufnr))
-  return ok and offset >= 0 and offset or nil
-end
-
-local function has_carriage_return(bufnr)
-  local size = buffer_size(bufnr)
-  if size ~= nil and size > cr_scan_limit then
-    return false
-  end
-
-  local line_count = vim.api.nvim_buf_line_count(bufnr)
-  for start = 0, line_count - 1, 512 do
-    local finish = math.min(start + 512, line_count)
-    for _, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, start, finish, false)) do
-      if line:find("\r", 1, true) ~= nil then
-        return true
-      end
-    end
-  end
-
-  return false
-end
 
 local function strip_carriage_returns(bufnr)
   local target_bufnr = buffer_util.normal_writable(bufnr)
@@ -46,7 +11,7 @@ local function strip_carriage_returns(bufnr)
     return
   end
 
-  if vim.bo[target_bufnr].binary or not has_carriage_return(target_bufnr) then
+  if vim.bo[target_bufnr].binary then
     return
   end
 

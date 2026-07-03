@@ -26,18 +26,18 @@
 - 风险：bookmarks.nvim 内部 tree 模块路径、渲染函数或 `vim.g.bookmark_tree_view_ctx` 结构变化后，图标替换或宽度修正可能失效。
 - 最小回归：执行 `:BookmarksProjectTree`，展开/折叠图标应是配置图标；窗口 resize 后 tree 宽度应回到配置值。
 
-## aicommits Neogit integration
+## Neogit commit popup action
 
-- 文件：`lua/plugins/aicommits.lua`
-- 目标入口：`aicommits.nvim` 的 Neogit integration 配置。
-- 目的：把 AI commit 接入交给 aicommits 上游集成，避免继续维护本地 Neogit popup builder patch。
-- 风险：aicommits 或 Neogit integration API 变化后，Neogit 内部入口可能不再出现或无法调用生成流程。
-- 最小回归：`:AICommit`、`:AICommitHealth` 可用；从 Neogit 触发 AI commit 时能正常进入候选生成流程。
+- 文件：`lua/plugins/neogit.lua`
+- 目标入口：`opts.builders.NeogitCommitPopup`
+- 目的：把 AI commit action 放在 Neogit commit popup 内部，保持 Neogit status 页和 commit popup 的职责边界。
+- 风险：Neogit popup builder API 或 popup 名称变化后，`C` action 可能不再出现。
+- 最小回归：打开 Neogit commit popup，AI 分组内应有 `C` / `AI Commit`，并调用 `aicommits.commit()`。
 
 ## Overseer vim.ui.select route
 
 - 文件：`lua/plugins/overseer.lua`
 - 目标入口：`vim.ui.select`
-- 目的：只把 `kind=overseer*` 的模板/action 选择路由到 fzf-lua picker，其它调用继续走原始 `vim.ui.select`。
+- 目的：只把 `kind=overseer*` 的模板/action 选择路由到 Telescope picker，其它调用继续走原始 `vim.ui.select`。
 - 风险：Overseer 改变 `kind` 命名后，模板或 action 选择可能回退到默认 UI。
-- 最小回归：`<leader>jr` 运行任务时应打开 fzf-lua 风格选择器；非 Overseer 的 `vim.ui.select` 不应被这个路由影响。
+- 最小回归：`<leader>jr` 运行任务时应打开 Telescope 风格选择器；非 Overseer 的 `vim.ui.select` 不应被这个路由影响。

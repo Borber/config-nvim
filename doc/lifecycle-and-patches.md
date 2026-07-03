@@ -3,7 +3,7 @@
 ## 生命周期
 
 - `lua/config/lifecycle.lua` 统一管理 `ConfigUiReady`、`ConfigBackground`、`ConfigFilePost`。
-- `lua/config/project.lua` 统一 recent、session、home 规则。
+- `lua/plugins/mini/project.lua` 统一 recent、session、home 规则。
 
 ## Patch
 

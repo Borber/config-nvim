@@ -23,30 +23,6 @@ local function fzf()
   return require("fzf-lua")
 end
 
-local daily_file_excludes = {
-  ".git",
-  ".cache",
-  ".next",
-  ".turbo",
-  "build",
-  "coverage",
-  "dist",
-  "node_modules",
-  "target",
-}
-
-local function fd_opts(excludes)
-  local opts = { "--color=never", "--type f", "--hidden", "--follow" }
-  for _, exclude in ipairs(excludes) do
-    table.insert(opts, "--exclude " .. exclude)
-  end
-
-  return table.concat(opts, " ")
-end
-
-local daily_fd_opts = fd_opts(daily_file_excludes)
-local full_fd_opts = fd_opts({ ".git" })
-
 local function live_grep_current_text()
   return function()
     fzf().live_grep({
@@ -72,13 +48,6 @@ return {
         fzf().files()
       end,
       desc = "Find files",
-    },
-    {
-      "<leader>fF",
-      function()
-        fzf().files({ fd_opts = full_fd_opts })
-      end,
-      desc = "Find files (all)",
     },
     {
       "<leader>fg",
@@ -180,7 +149,7 @@ return {
         },
       },
       files = {
-        fd_opts = daily_fd_opts,
+        fd_opts = "--color=never --type f --hidden --follow --exclude .git",
       },
       grep = {
         rg_opts = "--column --line-number --no-heading --color=always --smart-case --hidden --glob !.git/*",

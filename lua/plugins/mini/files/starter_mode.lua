@@ -49,7 +49,7 @@ function M.confirm_selected_entry()
     return
   end
 
-  -- 最终确认的路径统一交给 recent_projects.open_path，确保 recent / cwd / session 流程一致。
+  -- 最终确认的路径统一交给 visits.open_path，确保 recent / cwd / session 流程一致。
   open_path(entry.path)
 end
 
