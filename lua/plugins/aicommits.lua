@@ -44,11 +44,11 @@ return {
       },
       integrations = {
         neogit = {
-          -- 直接使用插件内置的 NeogitStatus 独立 `C` 映射，不再维护本地 popup action。
+          -- 保留提交后的 Neogit 刷新，但不占用 status 页的独立 `C`。
+          -- AI action 由 neogit.lua 注入到 NeogitCommitPopup。
           enabled = true,
           mappings = {
-            enabled = true,
-            key = "C",
+            enabled = false,
           },
         },
       },

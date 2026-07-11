@@ -174,6 +174,14 @@ return {
       stash = {
         kind = "auto",
       },
+      builders = {
+        NeogitCommitPopup = function(builder)
+          -- AI commit 只属于提交确认流程，避免 status 页出现职责重复的快捷键。
+          builder:new_action_group("AI"):action("C", "AI Commit", function()
+            require("aicommits").commit()
+          end)
+        end,
+      },
       integrations = {
         telescope = false,
         diffview = true,

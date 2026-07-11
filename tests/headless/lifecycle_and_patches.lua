@@ -261,6 +261,58 @@ function tests.bookmarks_tree_icons_and_refresh()
   end)
 end
 
+function tests.ai_commit_is_available_only_in_neogit_commit_popup()
+  with_clean_state(function()
+    reset_modules("plugins.aicommits", "plugins.neogit")
+
+    local old_local_config = package.loaded["config.local"]
+    local old_aicommits = package.loaded["aicommits"]
+    package.loaded["config.local"] = {
+      aicommits = {},
+    }
+
+    local aicommits_spec = require("plugins.aicommits")
+    local aicommits_opts = aicommits_spec.opts()
+    assert_true(aicommits_opts.integrations.neogit.enabled, "aicommits should keep the Neogit refresh integration")
+    assert_eq(aicommits_opts.integrations.neogit.mappings.enabled, false, "aicommits should not map C in Neogit status")
+
+    local neogit_spec = require("plugins.neogit")
+    local neogit_opts = neogit_spec.opts()
+    local popup_builder = {
+      groups = {},
+    }
+
+    function popup_builder:new_action_group(name)
+      table.insert(self.groups, name)
+      return self
+    end
+
+    function popup_builder:action(key, name, callback)
+      self.action_key = key
+      self.action_name = name
+      self.action_callback = callback
+      return self
+    end
+
+    neogit_opts.builders.NeogitCommitPopup(popup_builder)
+    assert_eq(popup_builder.groups[1], "AI", "Neogit commit popup should include an AI action group")
+    assert_eq(popup_builder.action_key, "C", "AI commit popup action should use C")
+    assert_eq(popup_builder.action_name, "AI Commit", "AI popup action should be labeled clearly")
+
+    local commit_calls = 0
+    package.loaded["aicommits"] = {
+      commit = function()
+        commit_calls = commit_calls + 1
+      end,
+    }
+    popup_builder.action_callback()
+    assert_eq(commit_calls, 1, "AI commit popup action should call aicommits.commit")
+
+    package.loaded["config.local"] = old_local_config
+    package.loaded["aicommits"] = old_aicommits
+  end)
+end
+
 local test_order = {
   "lifecycle_once_runs_immediately_after_ready",
   "lifecycle_on_handles_multiple_emissions",
@@ -268,6 +320,7 @@ local test_order = {
   "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
   "bookmarks_tree_icons_and_refresh",
+  "ai_commit_is_available_only_in_neogit_commit_popup",
 }
 
 for _, name in ipairs(test_order) do
