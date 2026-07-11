@@ -12,5 +12,10 @@ return {
       return bo.buftype == "" and not bo.readonly and vim.api.nvim_buf_get_name(bufnr) ~= "" and bo.filetype ~= "gitcommit"
     end,
     debounce_delay = 500,
+    trigger_events = {
+      immediate_save = { "BufLeave", "FocusLost", "VimLeavePre" },
+      defer_save = { "InsertLeave" },
+      cancel_deferred_save = { "InsertEnter" },
+    },
   },
 }

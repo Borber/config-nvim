@@ -47,7 +47,7 @@ opt.listchars = {
 opt.fileformats = { "unix", "dos" } -- 识别 LF/CRLF；新文件默认使用 LF
 opt.hidden = true -- 切换缓冲区时保留未保存修改
 opt.autoread = true -- 外部进程改动文件后，配合 checktime 自动回读。
-opt.autowriteall = true -- 切换窗口等操作时自动保存
+opt.autowriteall = false -- 自动写盘只由 auto-save.nvim 管理，保证其开关语义完整。
 opt.undofile = true -- 跨启动保留撤销历史
 opt.confirm = true -- 关闭/切换未保存 buffer 时给出确认
 

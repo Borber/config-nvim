@@ -219,7 +219,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 ## 加载与保存约定
 
 - `ConfigFilePost` 会在 UI 已进入且首个真实文件 buffer 出现后触发，用于延后加载 gitsigns、treesitter-context、todo-comments 等文件型插件。
-- 自动保存覆盖以下场景：`InsertLeave`、`BufLeave`、`FocusLost`、`VimLeavePre`。只作用于正常、可写、有文件名且已修改的文件 buffer；terminal、help、quickfix、无名 buffer 和只读 buffer 不会被强行写盘。
+- 自动保存仅由 `auto-save.nvim` 管理，`<leader>ua` 可完整开启或关闭。保存事件固定为 `InsertLeave`、`BufLeave`、`FocusLost`、`VimLeavePre`，不会因 `TextChanged` 在编辑中写盘。只作用于正常、可写、有文件名且已修改的文件 buffer；terminal、help、quickfix、无名 buffer 和只读 buffer 不会被强行写盘。
 - 读取和写入文件时会清理残留 `\r`，降低混合换行导致的 `^M` 噪音。
 
 ## Bookmarks
