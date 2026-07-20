@@ -44,11 +44,11 @@ return {
       },
       integrations = {
         neogit = {
-          -- 保留提交后的 Neogit 刷新，但不占用 status 页的独立 `C`。
-          -- AI action 由 neogit.lua 注入到 NeogitCommitPopup。
+          -- status 页保留直达入口；commit popup 的同键 action 由 neogit.lua 注入。
           enabled = true,
           mappings = {
-            enabled = false,
+            enabled = true,
+            key = "C",
           },
         },
       },

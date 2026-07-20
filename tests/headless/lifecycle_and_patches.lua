@@ -261,7 +261,7 @@ function tests.bookmarks_tree_icons_and_refresh()
   end)
 end
 
-function tests.ai_commit_is_available_only_in_neogit_commit_popup()
+function tests.ai_commit_is_available_from_neogit_status_and_commit_popup()
   with_clean_state(function()
     reset_modules("plugins.aicommits", "plugins.neogit")
 
@@ -274,7 +274,8 @@ function tests.ai_commit_is_available_only_in_neogit_commit_popup()
     local aicommits_spec = require("plugins.aicommits")
     local aicommits_opts = aicommits_spec.opts()
     assert_true(aicommits_opts.integrations.neogit.enabled, "aicommits should keep the Neogit refresh integration")
-    assert_eq(aicommits_opts.integrations.neogit.mappings.enabled, false, "aicommits should not map C in Neogit status")
+    assert_true(aicommits_opts.integrations.neogit.mappings.enabled, "aicommits should map C in Neogit status")
+    assert_eq(aicommits_opts.integrations.neogit.mappings.key, "C", "Neogit status mapping should use C")
 
     local neogit_spec = require("plugins.neogit")
     local neogit_opts = neogit_spec.opts()
@@ -320,7 +321,7 @@ local test_order = {
   "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
   "bookmarks_tree_icons_and_refresh",
-  "ai_commit_is_available_only_in_neogit_commit_popup",
+  "ai_commit_is_available_from_neogit_status_and_commit_popup",
 }
 
 for _, name in ipairs(test_order) do

@@ -30,9 +30,9 @@
 
 - 文件：`lua/plugins/neogit.lua`
 - 目标入口：`opts.builders.NeogitCommitPopup`
-- 目的：把 AI commit action 放在 Neogit commit popup 内部，保持 Neogit status 页和 commit popup 的职责边界。
+- 目的：在 Neogit commit popup 内提供可发现的 AI commit action，同时保留 status 页的直达 `C`。
 - 风险：Neogit popup builder API 或 popup 名称变化后，`C` action 可能不再出现。
-- 最小回归：打开 Neogit commit popup，AI 分组内应有 `C` / `AI Commit`，并调用 `aicommits.commit()`。
+- 最小回归：status 页的 `C` 可直接触发 AI Commit；打开 commit popup 后，AI 分组也应有 `C` / `AI Commit` 并调用 `aicommits.commit()`。
 
 ## Overseer vim.ui.select route
 

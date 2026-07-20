@@ -58,7 +58,7 @@
 - Overseer 任务入口应保留所有自动发现的 providers，不要静默缩窄到 `just` 或单一构建系统。
 - Overseer 模板和 action 选择使用 Telescope picker；任务启动时不默认展开输出，失败后自动打开错误输出。
 - Windows 下调试 `just` / shell 问题时，先查 PATH、PowerShell profile、Scoop shim 和子进程继承，不要先做应用层特判。
-- Neogit 行为应和 Gitsigns / Diffview / aicommits 保持职责边界；AI commit action 放在 Neogit commit popup 内，不要恢复 status 页独立 `C` 映射。
+- Neogit 行为应和 Gitsigns / Diffview / aicommits 保持职责边界；AI commit 在 status 页保留直达 `C`，并在 commit popup 内提供同键的可发现入口。
 
 ## 验证
 

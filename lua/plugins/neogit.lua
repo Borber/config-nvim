@@ -176,7 +176,7 @@ return {
       },
       builders = {
         NeogitCommitPopup = function(builder)
-          -- AI commit 只属于提交确认流程，避免 status 页出现职责重复的快捷键。
+          -- 与 status 页的直达键并存，保证提交确认流程内也能发现此动作。
           builder:new_action_group("AI"):action("C", "AI Commit", function()
             require("aicommits").commit()
           end)

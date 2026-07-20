@@ -233,15 +233,14 @@ AI commit 使用 `404pilo/aicommits.nvim`，通过 OpenAI-compatible Chat Comple
 使用方式：
 
 1. 在 Neogit 中 stage 需要提交的内容。
-2. 按 `c` 打开 Neogit commit popup。
-3. 在 `AI` 分组里按 `C` 执行 `AI Commit`。
-4. 从生成结果中选择 commit message（默认生成 5 条候选）。
+2. 在 Neogit status 页按 `C` 直接执行 `AI Commit`，或按 `c` 打开 commit popup 后在 `AI` 分组里按 `C`。
+3. 从生成结果中选择 commit message（默认生成 5 条候选）。
 
 说明：
 
 - `aicommits.nvim` 的 Neogit integration 已开启，用于提交后刷新 Neogit。
-- 插件自带的 Neogit status 页独立 `C` 映射已关闭。
-- AI action 由 `lua/plugins/neogit.lua` 注入到 Neogit commit popup。
+- Neogit status 页和 commit popup 都提供 `C`；两个 buffer 独立，不会发生映射冲突。
+- popup 内的 AI action 由 `lua/plugins/neogit.lua` 注入。
 
 ## Neogit 仓库识别
 
