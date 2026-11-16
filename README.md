@@ -20,7 +20,7 @@
 | 插件管理 | lazy.nvim |
 | 启动页 / 文件树 | mini.nvim（starter、files、sessions、surround、pairs、move、align、bufremove） |
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
-| LSP | nvim-lspconfig + mason（lua_ls、rust_analyzer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
+| LSP | nvim-lspconfig + mason（lua_ls、rust_glancer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | Rust 依赖 | crates.nvim（Cargo.toml 版本检测、补全、hover、code action） |
 | 主题 | rose-pine loader + Everforest palette（暗色透明） |
 | 查找 | fzf-lua |
@@ -83,8 +83,29 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 ## LSP 配置
 
 - `lua/lsp/init.lua` 是 LSP server 注册中心，统一维护启用的 server 名单。
-- `nvim-lspconfig` 提供默认 `cmd`、`filetypes` 和项目根目录识别；`lua/lsp/servers/` 只保留本地覆盖，例如 `lua_ls.lua`、`clangd.lua`、`rust_analyzer.lua`。
+- `nvim-lspconfig` 提供默认 `cmd`、`filetypes` 和项目根目录识别；`lua/lsp/servers/` 只保留本地覆盖，例如 `lua_ls.lua`、`clangd.lua`、`rust_glancer.lua`。
 - `lua/plugins/lsp.lua` 只负责插件接线：诊断显示、Mason 配置、启用 LSP 和 `LspAttach` 快捷键。
+- Rust 使用 Glancer，启动和保存时运行 `cargo check`，配置通过 `init_options` 发送；不再启用 rust-analyzer。补全、跳转和诊断入口沿用现有 LSP 快捷键，格式化仍由 Conform 调用 `rustfmt`。
+- Glancer 的模块级修改通常需要保存后才完整生效；过程宏和 build script 支持存在限制，详见[上游使用限制](https://rust-glancer.github.io/docs/usage/LIMITATIONS.html)。
+
+### 工具安装与检查
+
+- `:ConfigToolsCheck` 检查全部 LSP、格式化工具以及 ShellCheck、Node、Cargo、Tree-sitter CLI、C 编译器，并显示缺失工具的安装方法。
+- 缺失服务器时只提示一次并跳过启动；JSON、ESLint、TypeScript 仍优先使用项目根目录下的 `node_modules/.bin`，不会因为缺少全局安装而禁用项目本地服务器。
+- Mason 保留手动管理，工具不会在普通启动时自动下载安装。Mason 的 bin 追加到 PATH，优先使用系统或专用目录中的工具。
+- 手动下载的工具可放在 `stdpath("data")/tools/bin`，配置会把该目录加入 Neovim 的 PATH；配套资源可放在相邻的 `tools/packages` 下。
+- bun 工具可隔离安装到 `tools/node`：用 `BUN_INSTALL_GLOBAL_DIR` 指向该目录，`BUN_INSTALL_BIN` 指向 `tools/bin`；依赖版本和 overrides 保存在该目录的 `package.json` 与 `bun.lock` 中。
+
+Node 工具默认使用 bun 安装，并确保 bun 的全局 bin 目录在 PATH 中。当前 `ts_ls` 需要 TypeScript 6 的 `tsserver`，不使用 TypeScript 7：
+
+```sh
+bun add --global typescript@6 typescript-language-server vscode-langservers-extracted bash-language-server @fsouza/prettierd
+rustup component add rust-src rustfmt
+```
+
+LuaLS、Taplo、shfmt、ShellCheck 可通过 `:MasonInstall lua-language-server taplo shfmt shellcheck` 补齐；`clangd` 和 Tree-sitter CLI 使用系统包管理器安装。Glancer 从[正式发行页](https://github.com/rust-glancer/rust-glancer/releases)下载对应平台的服务器二进制；Mason 注册表可能滞后，安装前核对版本。
+
+已知：Taplo 0.10.0 与当前 SchemaStore 在线目录的标识不兼容，自动 schema 关联会在 LSP 日志告警；`Cargo.toml` 仍通过 `taplo.toml` 显式绑定 schema。
 
 ## 常用入口
 
