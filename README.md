@@ -308,10 +308,10 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 
 ## Treesitter
 
-- 使用 nvim-treesitter `main` 分支，通过 `FileType` autocmd 按已配置 parser 显式启动高亮。
-- 预装 parser：markdown、markdown_inline、html、lua、vim、vimdoc、rust、toml、c、cpp、cmake、gn、ninja、bash、json、typescript、javascript。
+- 使用 nvim-treesitter `main` 分支，插件本体在启动时加载，通过 `FileType` autocmd 按已配置 parser 显式启动高亮。
+- 已配置 parser：markdown、markdown_inline、html、lua、vim、vimdoc、rust、toml、c、cpp、cmake、gn、ninja、bash、json、typescript、tsx、javascript。
 - 每次 `build`（插件安装/更新时）自动更新全部已配置 parser。
-- 启动后补装可能缺失的 parser。
+- 启动时不下载或编译 parser；`:TSInstallMissingConfigParsers` 手动补装缺失项。
 - `:TSInstallConfigParsers` 可手动安装全部已配置 parser。
 
 ## 配置热更新

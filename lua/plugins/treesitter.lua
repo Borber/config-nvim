@@ -1,10 +1,8 @@
-local lifecycle = require("config.lifecycle")
-
 -- nvim-treesitter main 分支：API 与 master 分支完全不同
 --   * setup 仅接受 install_dir 等少量选项，ensure_installed/auto_install 无效
 --   * 需要显式调用 install() 安装解析器
---   * Neovim 0.11+ 已自动为已安装 parser 的 filetype 启用高亮
---   * 当前配置延后到首个真实文件后加载，缺失 parser 交给显式命令处理
+--   * 插件不支持延迟加载；高亮仍按 FileType 显式启用
+--   * 缺失 parser 交给显式命令处理，启动时不下载或编译
 local ensure_installed = {
   "markdown",
   "markdown_inline",
@@ -23,6 +21,7 @@ local ensure_installed = {
   "bash",
   "json",
   "typescript",
+  "tsx",
   "javascript",
 }
 
@@ -73,10 +72,7 @@ local function warn_parser_unavailable(lang, err)
 
   vim.schedule(function()
     vim.notify(
-      ("Treesitter parser %q is unavailable; run :TSInstallMissingConfigParsers to install configured parsers.\n%s"):format(
-        lang,
-        err
-      ),
+      ("Treesitter parser %q is unavailable; run :TSInstallMissingConfigParsers to install configured parsers.\n%s"):format(lang, err),
       vim.log.levels.WARN
     )
   end)
@@ -104,7 +100,7 @@ end
 return {
   "nvim-treesitter/nvim-treesitter",
   branch = "main",
-  event = lifecycle.lazy_events.file_post,
+  lazy = false,
   cmd = { "TSInstallConfigParsers", "TSInstallMissingConfigParsers" },
   build = update_configured_parsers,
   config = function()
