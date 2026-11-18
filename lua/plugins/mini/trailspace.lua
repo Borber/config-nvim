@@ -20,6 +20,11 @@ function M.setup()
         return
       end
 
+      -- Markdown 的行尾双空格表示硬换行，空白交给显式格式化处理。
+      if vim.bo[event.buf].filetype == "markdown" then
+        return
+      end
+
       -- mini.trailspace 操作当前 buffer，这里显式切到触发保存的 buffer。
       vim.api.nvim_buf_call(event.buf, function()
         trailspace.trim()
