@@ -1,27 +1,3 @@
--- Overseer 模板搜索以当前文件目录为主；当前不是普通文件时退回 cwd。
--- 这样从特殊 buffer（例如 Neogit/terminal）触发任务时不会拿到无意义路径。
-local function search_params()
-  local buffer_util = require("libs.buffer")
-  local dir = vim.fn.getcwd()
-  if buffer_util.is_normal_file(0) then
-    local bufname = vim.api.nvim_buf_get_name(0)
-    dir = vim.fn.fnamemodify(bufname, ":p:h")
-  end
-
-  return {
-    dir = dir,
-    filetype = vim.bo.filetype,
-  }
-end
-
-local function template_label(tmpl)
-  if tmpl.desc and tmpl.desc ~= "" then
-    return string.format("%s  %s", tmpl.name, tmpl.desc)
-  end
-
-  return tmpl.name
-end
-
 local function setup_failure_output(overseer)
   -- 失败时自动打开输出，弥补任务列表默认收起时不容易看到错误详情的问题。
   overseer.add_template_hook({}, function(task_defn, util)
@@ -33,42 +9,6 @@ local function setup_failure_output(overseer)
       direction = "dock",
       focus = true,
     })
-  end)
-end
-
-local function run_task()
-  local overseer = require("overseer")
-  local template = require("overseer.template")
-  local params = search_params()
-
-  template.list(params, function(templates)
-    local task_templates = vim
-      .iter(templates)
-      :filter(function(tmpl)
-        return not tmpl.hide
-      end)
-      :totable()
-
-    table.sort(task_templates, function(a, b)
-      return a.name < b.name
-    end)
-
-    if #task_templates == 0 then
-      vim.notify("No tasks found", vim.log.levels.WARN)
-      return
-    end
-
-    require("util.fzf_picker").select(task_templates, {
-      prompt = "Task",
-      format_item = template_label,
-    }, function(tmpl)
-      if tmpl then
-        overseer.run_task({
-          name = tmpl.name,
-          search_params = params,
-        })
-      end
-    end)
   end)
 end
 
@@ -101,11 +41,12 @@ return {
     "OverseerOpen",
     "OverseerClose",
     "OverseerToggle",
+    "OverseerRun",
     "OverseerShell",
     "OverseerTaskAction",
   },
   keys = {
-    { "<leader>jr", run_task, desc = "Run task" },
+    { "<leader>jr", "<Cmd>OverseerRun<CR>", desc = "Run task" },
     { "<leader>jo", "<Cmd>OverseerToggle<CR>", desc = "Toggle tasks" },
     { "<leader>jc", "<Cmd>OverseerClose<CR>", desc = "Close tasks" },
     { "<leader>ja", "<Cmd>OverseerTaskAction<CR>", desc = "Task action" },
