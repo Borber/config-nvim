@@ -33,6 +33,45 @@ vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePre" }, {
   desc = "Strip stray carriage returns from file buffers",
 })
 
+-- Markdown 的标题折叠由 Treesitter 处理；其它文件优先使用支持折叠的 LSP。
+local treesitter_foldexpr = "v:lua.vim.treesitter.foldexpr()"
+local lsp_foldexpr = "v:lua.vim.lsp.foldexpr()"
+
+local function update_foldexpr(bufnr)
+  if not buffer_util.is_normal_file(bufnr) then
+    return
+  end
+
+  local foldexpr = treesitter_foldexpr
+  if vim.bo[bufnr].filetype ~= "markdown" and #vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/foldingRange" }) > 0 then
+    foldexpr = lsp_foldexpr
+  end
+
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    local opts = vim.wo[win][0]
+    local current = opts.foldexpr
+    if current ~= foldexpr and (current == treesitter_foldexpr or current == lsp_foldexpr) then
+      opts.foldexpr = foldexpr
+    end
+  end
+end
+
+vim.api.nvim_create_autocmd({ "BufWinEnter", "FileType", "LspAttach", "LspDetach" }, {
+  group = augroup("ConfigFolding", { clear = true }),
+  callback = function(event)
+    if event.event == "BufWinEnter" or event.event == "FileType" then
+      update_foldexpr(event.buf)
+      return
+    end
+
+    -- LspAttach / LspDetach 触发时，client 的 buffer 关联还没更新。
+    vim.schedule(function()
+      update_foldexpr(event.buf)
+    end)
+  end,
+  desc = "Use native LSP folding when available",
+})
+
 -- 终端现在只保留轻量兼容：打开时做最小窗口整理，不再为焦点切回单独维护模式状态。
 vim.api.nvim_create_autocmd("TermOpen", {
   group = augroup("config_term_open", { clear = true }),

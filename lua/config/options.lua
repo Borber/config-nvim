@@ -62,8 +62,8 @@ opt.timeoutlen = 850 -- 缩短 leader 组合键等待时间
 -- ============================================
 -- 折叠显示
 -- ============================================
--- nvim-ufo 在 VeryLazy 后接管 foldmethod / foldexpr / foldtext；基础展开状态提前写入，
--- 避免首个真实文件在 provider 接管前出现默认折叠。
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 opt.foldlevel = 99
 opt.foldlevelstart = 99
 opt.foldenable = true

@@ -299,23 +299,6 @@ local function apply_editor_highlights(palette)
     bg = cursor_line.bg or normal.bg,
     italic = true,
   })
-  set_hl("ConfigFoldPrefix", {
-    fg = palette.accent_fg,
-    bold = true,
-  })
-  set_hl("ConfigFoldMuted", {
-    fg = comment.fg,
-  })
-  set_hl("ConfigFoldPreview", {
-    fg = comment.fg,
-    italic = true,
-  })
-  set_hl("ConfigFoldTail", {
-    fg = palette.accent_fg,
-    bold = true,
-    italic = true,
-  })
-
   -- mini.indentscope：使用比注释色更浅的线条，安静地标示当前作用域。
   set_hl("MiniIndentscopeSymbol", {
     fg = palette.border_fg,

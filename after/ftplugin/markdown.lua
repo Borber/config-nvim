@@ -60,18 +60,8 @@ map("n", "o", "<Plug>(MarkdownPlusNewListItemBelow)", "New markdown list item be
 map("n", "O", "<Plug>(MarkdownPlusNewListItemAbove)", "New markdown list item above")
 map({ "n", "x" }, "<localleader>mx", "<Plug>(MarkdownPlusToggleCheckbox)", "Toggle checkbox")
 
--- ufo 的 foldtext handler 会覆盖整行，导致 render-markdown.nvim 的 hl_eol 标题
--- 背景丢失；这里把当前 buffer 从 ufo detach，改用 treesitter foldexpr + 默认
--- foldtext，标题背景与表格图标继续由 render-markdown.nvim 渲染。
-do
-  local ok, ufo = pcall(require, "ufo")
-  if ok then
-    pcall(ufo.detach)
-  end
-  vim.opt_local.foldmethod = "expr"
-  vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-  vim.opt_local.foldtext = ""
-end
+-- 折叠后保留标题行的高亮，供 render-markdown 渲染背景。
+vim.opt_local.foldtext = ""
 
 local function has_buffer_keymap(bufnr, mode, lhs)
   if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -106,5 +96,5 @@ function _G.ConfigMarkdownUndoFtplugin(bufnr)
   end
 end
 
-local undo = ("lua _G.ConfigMarkdownUndoFtplugin(%d)"):format(vim.api.nvim_get_current_buf())
+local undo = ("setlocal foldtext< | lua _G.ConfigMarkdownUndoFtplugin(%d)"):format(vim.api.nvim_get_current_buf())
 vim.b.undo_ftplugin = vim.b.undo_ftplugin and (vim.b.undo_ftplugin .. " | " .. undo) or undo
