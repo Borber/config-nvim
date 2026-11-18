@@ -78,23 +78,33 @@ end
 function M.toggle()
   M.setup()
 
-  starter_mode.disable()
-
   local minifiles = require("mini.files")
-  if minifiles.close() then
+  local closed = minifiles.close()
+  if closed == false then
+    return
+  end
+
+  starter_mode.disable()
+  if closed then
     return
   end
 
   explorer.open_root()
 end
 
-function M.open(path)
+function M.open(path, opts)
   M.setup()
+  opts = opts or {}
 
   local root = path or vim.fn.getcwd()
-  require("mini.files").close()
-  -- Starter 的 Open 进入的是“选择路径”模式，先打开再允许 <S-CR> 最终确认。
-  starter_mode.enable()
+  if require("mini.files").close() == false then
+    return
+  end
+  if opts.confirm then
+    starter_mode.enable()
+  else
+    starter_mode.disable()
+  end
   explorer.open_root(root)
 end
 

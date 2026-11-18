@@ -207,7 +207,7 @@ local function ensure_setup(autoopen)
       {
         name = "Open",
         action = function()
-          require("plugins.mini.files").open(project.home_directory() or vim.fn.expand("~"))
+          require("plugins.mini.files").open(project.home_directory() or vim.fn.expand("~"), { confirm = true })
         end,
         section = "Actions",
       },

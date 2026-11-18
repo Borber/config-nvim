@@ -270,7 +270,6 @@ function tests.mini_setup_initializes_recent_projects_for_startup_paths()
   vim.cmd("silent! argdelete *")
   reset_modules("plugins.mini", "config.recent_projects", "plugins.mini.sessions")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniUi")
-  pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniBackground")
   pcall(vim.api.nvim_del_augroup_by_name, "ConfigMiniEditing")
 
   if not ok then
@@ -384,7 +383,7 @@ function tests.starter_keeps_global_statusline_unchanged()
   vim.o.laststatus = original_laststatus
 end
 
-function tests.starter_initial_content_is_available_before_background()
+function tests.starter_initial_content_is_available_during_setup()
   reset_modules("plugins.mini.starter", "config.recent_projects", "plugins.mini.sessions", "lazy", "lazy.stats", "libs.icons", "mini.files", "mini.bufremove")
 
   local setup_called = false
@@ -444,9 +443,9 @@ function tests.starter_initial_content_is_available_before_background()
   starter_module.setup({ autoopen = true })
 
   local items = starter.opts.items[1]()
-  assert_true(setup_called, "starter should initialize visits before background work")
+  assert_true(setup_called, "starter should initialize recent projects during setup")
   assert_eq(items[1].section, "Recent projects", "recent paths should render before delayed footer content")
-  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render before background work")
+  assert_eq(starter.opts.footer(), "R Loaded 7/42 plugins in 12.35 ms", "startup footer should render during setup")
 
   stats.loaded = 25
   cputime = 27464.444
@@ -456,6 +455,103 @@ function tests.starter_initial_content_is_available_before_background()
   assert_eq(starter.opts.footer(), "", "manual starter reopen should hide the startup-only footer")
 
   reset_modules("lazy", "lazy.stats", "libs.icons")
+end
+
+function tests.starter_actions_keep_confirmation_local_to_open()
+  reset_modules("plugins.mini.starter", "plugins.mini.files")
+  local opened
+  local project_opened
+  stub_recent_projects({
+    open_path = function(path, opts)
+      project_opened = { path = path, opts = opts }
+    end,
+  })
+  local starter = stub_mini_starter()
+  package.loaded["plugins.mini.files"] = {
+    open = function(path, opts)
+      opened = { path = path, opts = opts }
+    end,
+  }
+
+  require("plugins.mini.starter").setup()
+  for _, item in ipairs(starter.opts.items) do
+    if type(item) == "table" and (item.name == "Open" or item.name == "Config") then
+      item.action()
+    end
+  end
+  assert_true(opened.opts.confirm, "Starter Open should explicitly request confirmation mode")
+  assert_eq(project_opened.path, vim.fn.stdpath("config"), "Config should use project opening")
+  assert_eq(project_opened.opts.record, false, "Config should keep recording disabled")
+  reset_modules("plugins.mini.files")
+end
+
+function tests.mini_files_confirmation_is_temporary_and_records_only_final_path()
+  reset_modules("plugins.mini.files")
+  local opened_buffers = {}
+  local selected_path = temp_path("confirmed-project")
+  local records = {}
+  stub_recent_projects({
+    open_path = function(path)
+      records[#records + 1] = path
+    end,
+  })
+  package.loaded["mini.files"] = {
+    setup = function() end,
+    close = function()
+      vim.api.nvim_exec_autocmds("User", { pattern = "MiniFilesExplorerClose", modeline = false })
+      return true
+    end,
+    open = function()
+      local buf = vim.api.nvim_create_buf(false, true)
+      opened_buffers[#opened_buffers + 1] = buf
+      vim.api.nvim_exec_autocmds("User", {
+        pattern = "MiniFilesBufferCreate",
+        data = { buf_id = buf },
+        modeline = false,
+      })
+    end,
+    get_fs_entry = function()
+      return { path = selected_path, fs_type = "directory" }
+    end,
+    get_explorer_state = function() end,
+    go_in = function() end,
+  }
+
+  local files = require("plugins.mini.files")
+  files.open(tmp_root)
+  assert_eq(normal_map(opened_buffers[#opened_buffers], "<S-CR>"), nil, "ordinary open should have no confirmation mapping")
+
+  files.open(tmp_root, { confirm = true })
+  local confirm = normal_map(opened_buffers[#opened_buffers], "<S-CR>")
+  assert_true(confirm ~= nil, "Starter Open should install confirmation")
+  require("plugins.mini.files.explorer").open_entry()
+  assert_eq(#records, 0, "browsing directories should not record paths")
+  local close = package.loaded["mini.files"].close
+  package.loaded["mini.files"].close = function()
+    return false
+  end
+  confirm.callback()
+  assert_eq(#records, 0, "cancelling explorer close should not record or switch projects")
+  local buffer_count = #opened_buffers
+  files.open(tmp_root)
+  files.toggle()
+  assert_eq(#opened_buffers, buffer_count, "cancelling close should leave the existing explorer intact")
+  package.loaded["mini.files"].close = close
+  confirm.callback()
+  assert_eq(records[1], selected_path, "confirmation should open exactly the selected project")
+  confirm.callback()
+  assert_eq(#records, 1, "a stale confirmation callback should do nothing after close")
+
+  files.open(tmp_root)
+  assert_eq(normal_map(opened_buffers[#opened_buffers], "<S-CR>"), nil, "confirmation should not leak into a later open")
+  package.loaded["mini.files"].close = function()
+    return nil
+  end
+  files.toggle()
+  assert_eq(normal_map(opened_buffers[#opened_buffers], "<S-CR>"), nil, "ordinary toggle should have no confirmation mapping")
+  for _, buf in ipairs(opened_buffers) do
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
 end
 
 function tests.mini_files_opens_from_root_and_focuses_current_branch()
@@ -475,9 +571,7 @@ function tests.mini_files_opens_from_root_and_focuses_current_branch()
 
   package.loaded["mini.files"] = {
     setup = function() end,
-    close = function()
-      return false
-    end,
+    close = function() end,
     open = function(path)
       opened_root = path
     end,
@@ -513,9 +607,7 @@ function tests.mini_files_hides_reusable_target_placeholder()
 
   package.loaded["mini.files"] = {
     setup = function() end,
-    close = function()
-      return false
-    end,
+    close = function() end,
     open = function() end,
     get_explorer_state = function()
       return { target_window = target_win }
@@ -857,7 +949,9 @@ local test_order = {
   "starter_reuses_empty_placeholder_buffer",
   "starter_hides_hidden_empty_placeholders",
   "starter_keeps_global_statusline_unchanged",
-  "starter_initial_content_is_available_before_background",
+  "starter_initial_content_is_available_during_setup",
+  "starter_actions_keep_confirmation_local_to_open",
+  "mini_files_confirmation_is_temporary_and_records_only_final_path",
   "mini_files_opens_from_root_and_focuses_current_branch",
   "mini_files_hides_reusable_target_placeholder",
   "mini_files_uses_compact_window_widths",
