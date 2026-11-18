@@ -35,7 +35,6 @@ local function open_neogit(args)
     end
 
     require("neogit").open(opts)
-    require("plugins.neogit.loading").start(opts)
   end
 end
 
