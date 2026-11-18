@@ -22,7 +22,7 @@
 | 补全 | blink.cmp + minuet-ai.nvim + friendly-snippets |
 | LSP | nvim-lspconfig + mason（lua_ls、rust_glancer、clangd、ts_ls、eslint、jsonls、bashls、taplo） |
 | Rust 依赖 | crates.nvim（Cargo.toml 版本检测、补全、hover、code action） |
-| 主题 | rose-pine loader + Everforest palette（暗色透明） |
+| 主题 | Everforest（暗色透明） |
 | 查找 | fzf-lua |
 | 诊断 | trouble.nvim |
 | Git | Neogit + gitsigns + diffview + aicommits（Codestral） |
@@ -34,7 +34,7 @@
 | 书签 | bookmarks.nvim（按项目自动切换列表） |
 | Treesitter | nvim-treesitter（main 分支）+ treesitter-context |
 | 导航 | hop.nvim（普通文件按词跳转，部分特殊界面跨窗口按行跳转） |
-| 按键 | which-key.nvim |
+| 按键 | mini.clue |
 | 输入法 | im-select.nvim（终端 Neovim 按模式切换系统输入法） |
 
 ## 本地私密配置
@@ -44,7 +44,7 @@
 第一次使用时复制示例文件：
 
 ```sh
-cp lua\config\local.example.lua lua\config\local.lua
+cp lua/config/local.example.lua lua/config/local.lua
 ```
 
 然后在 `lua/config/local.lua` 里填写本机配置，例如 LSP 诊断静音路径和 Codestral API key：
@@ -83,7 +83,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 ## LSP 配置
 
 - `lua/lsp/init.lua` 是 LSP server 注册中心，统一维护启用的 server 名单。
-- `nvim-lspconfig` 提供默认 `cmd`、`filetypes` 和项目根目录识别；`lua/lsp/servers/` 只保留本地覆盖，例如 `lua_ls.lua`、`clangd.lua`、`rust_glancer.lua`。
+- `nvim-lspconfig` 提供默认 `cmd`、`filetypes` 和项目根目录识别；`after/lsp/` 通过 Neovim 的原生合并机制提供本地覆盖，例如 `lua_ls.lua`、`clangd.lua`、`rust_glancer.lua`。
 - `lua/plugins/lsp.lua` 只负责插件接线：诊断显示、Mason 配置、启用 LSP 和 `LspAttach` 快捷键。
 - Rust 使用 Glancer，启动和保存时运行 `cargo check`，配置通过 `init_options` 发送；不再启用 rust-analyzer。补全、跳转和诊断入口沿用现有 LSP 快捷键，格式化仍由 Conform 调用 `rustfmt`。
 - Glancer 的模块级修改通常需要保存后才完整生效；过程宏和 build script 支持存在限制，详见[上游使用限制](https://rust-glancer.github.io/docs/usage/LIMITATIONS.html)。
@@ -92,7 +92,7 @@ LSP 诊断也可以通过项目内标记文件静音：在项目根或子目录�
 
 - `:ConfigToolsCheck` 检查全部 LSP、格式化工具以及 ShellCheck、Node、Cargo、Tree-sitter CLI、C 编译器，并显示缺失工具的安装方法。
 - 缺失服务器时只提示一次并跳过启动；JSON、ESLint、TypeScript 仍优先使用项目根目录下的 `node_modules/.bin`，不会因为缺少全局安装而禁用项目本地服务器。
-- Mason 保留手动管理，工具不会在普通启动时自动下载安装。Mason 的 bin 追加到 PATH，优先使用系统或专用目录中的工具。
+- `config.tools` 在启动时加入工具目录。PATH 优先查 `tools/bin` 和系统目录，再查 `mason/bin`。Mason 在运行管理命令时按需加载。
 - 手动下载的工具可放在 `stdpath("data")/tools/bin`，配置会把该目录加入 Neovim 的 PATH；配套资源可放在相邻的 `tools/packages` 下。
 - bun 工具可隔离安装到 `tools/node`：用 `BUN_INSTALL_GLOBAL_DIR` 指向该目录，`BUN_INSTALL_BIN` 指向 `tools/bin`；依赖版本和 overrides 保存在该目录的 `package.json` 与 `bun.lock` 中。
 
@@ -121,7 +121,7 @@ LuaLS、Taplo、shfmt、ShellCheck 可通过 `:MasonInstall lua-language-server 
 | `<leader>fr` | 最近打开文件 |
 | `<leader>fH` | 命令历史 |
 | `<leader>fg` | 全局搜索（live grep） |
-| `<leader>fw` | 搜索光标词 / 选区文本 |
+| `<leader>fw` | 普通模式搜索光标词，视觉模式搜索当前选区 |
 | `<leader>x` | 关闭光标所在层级（窗口 / buffer / 特殊界面） |
 | `<leader>X` | 强制删除当前 buffer |
 | `<leader>bn` / `<leader>bp` | 下一个 / 上一个 buffer |
@@ -208,21 +208,20 @@ LuaLS、Taplo、shfmt、ShellCheck 可通过 `:MasonInstall lua-language-server 
 
 | 按键 | 功能 |
 |------|------|
-| `<leader>?</> | 查看当前 buffer 键位（which-key） |
 | `<leader>cf` | 格式化当前文件 |
 | `<leader>ft` | 搜索 TODO 注释 |
 | `]t` / `[t` | 下一个 / 上一个 TODO 注释 |
 | `[c` | 跳转到 Treesitter 上下文 |
 | `s` | hop.nvim 按上下文跳转：普通文件按词，特殊界面按行；Neogit 未暂存/未跟踪文件行会优先 stage |
 | `<leader>qq` / `<leader>qw` / `<leader>qQ` | 退出 / 保存退出 / 强制退出 |
-| `:R` | 重载 Neovim 配置（热更新，不重启） |
 | `:Starter` | 手动打开启动页 |
 
 ## 补全系统
 
-- **blink.cmp** 作为补全引擎，自动来源包括 LSP、Minuet、路径和 buffer 内容。
-- Minuet 候选通过 `minuet-ai.nvim` 的 blink native source 接入，使用 Codestral FIM；`local.lua` 里的 `minuet` 使用自己的专属 key / model / endpoint，插入模式按 `Alt-y` 可手动请求 AI 补全。
+- **blink.cmp** 在首次进入插入模式或命令行模式时加载，自动补全来源包括 LSP、路径和 buffer 内容。
+- 插入模式按 `Alt-y` 按需加载 Minuet 并请求 AI 补全。Codestral FIM 使用 `local.lua` 里 `minuet` 的专属 key / model / endpoint。
 - Markdown 文件额外启用 snippets 来源。
+- 候选预览沿用 Blink 原生行为：多行内容只预览首行，接受候选时插入完整内容。
 - 命令行补全：搜索命令（`/`、`?`）使用当前 buffer 内容；冒号命令同时补命令和已有文本。
 - Noice 命令行浮窗位置由补全菜单感知，避免遮挡。
 
@@ -239,13 +238,15 @@ LuaLS、Taplo、shfmt、ShellCheck 可通过 `:MasonInstall lua-language-server 
 
 ## 加载与保存约定
 
-- `ConfigFilePost` 会在 UI 已进入且首个真实文件 buffer 出现后触发，用于延后加载 gitsigns、treesitter-context、todo-comments 等文件型插件。
+- UI 阶段直接使用 lazy.nvim 的 `VeryLazy`；`ConfigFilePost` 在 UI 已进入且首个真实文件 buffer 出现后触发一次，用于加载 LSP、gitsigns、treesitter-context、todo-comments 等文件型插件。目录占位、无名和特殊 buffer 不触发该事件，尚未落盘的命名文件可以触发。
+- LSP 初始化时在原生 capabilities 上补充 Blink 的协商差异。TODO 搜索、书签选择和 Yanky 历史在打开 picker 时按需加载 fzf-lua。
 - 自动保存仅由 `auto-save.nvim` 管理，`<leader>ua` 可完整开启或关闭。保存事件固定为 `InsertLeave`、`BufLeave`、`FocusLost`、`VimLeavePre`，不会因 `TextChanged` 在编辑中写盘。只作用于正常、可写、有文件名且已修改的文件 buffer；terminal、help、quickfix、无名 buffer 和只读 buffer 不会被强行写盘。
 - 读取和写入文件时会清理残留 `\r`，降低混合换行导致的 `^M` 噪音。
+- 普通文件保存前清理行尾空格和文件尾空行；Markdown 跳过这项自动清理，保留双空格硬换行和空行，格式调整交给显式格式化。
 
 ## Bookmarks
 
-书签按当前 cwd 自动切换到同名项目列表，避免不同项目混用同一个 bookmarks 列表。树视图固定宽度为 50，并隐藏 number、signcolumn、foldcolumn 等额外栏位；目录折叠图标和书签图标会统一替换成更紧凑的样式。
+书签按当前 cwd 的目录名自动切换项目列表；不同路径的同名目录会共用列表。树视图固定宽度为 50，并隐藏 number、signcolumn、foldcolumn 等额外栏位；目录折叠图标和书签图标会统一替换成更紧凑的样式。
 
 ## AI Commit
 
@@ -289,22 +290,22 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 
 ## Overseer 任务
 
-`<leader>jr` 会从当前文件目录开始搜索 Overseer 模板；当前 buffer 不是普通文件时回退到 cwd。任务模板和 action 选择使用 fzf-lua picker，仍保留 Overseer 自动发现的所有 providers。
+`<leader>jr` 使用 Overseer 的所有自动发现 providers，从当前文件目录搜索模板，特殊或未命名 buffer 则使用 cwd。只有一个模板时直接运行，有多个模板时用 fzf-lua 选择。任务 action 也使用 fzf-lua。
 
 任务启动时不会默认展开底部输出；失败后会自动打开输出窗口，或者用 `<leader>jf` 随时打开最近失败任务的输出。
 
 ## 界面约定
 
-- 主题入口使用 `rose-pine-main` 保持透明背景能力；实际编辑区、Treesitter、LSP semantic tokens、lualine、Gitsigns、Neogit 和书签标记统一覆盖为 `lua/util/palette.lua` 中的 Everforest 暗色配色。
+- 主题入口使用 `everforest`，并用 `lua/util/palette.lua` 统一 lualine、Gitsigns、Neogit 和书签标记等配色。
 - `Normal` / `NormalFloat` 保持透明，用于透出终端背后的毛玻璃背景；lualine 和部分交互态保留窄底色，保证斜角分隔与选中态可读。
-- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、which-key、Overseer 等入口保持统一。
+- 所有浮窗尽量复用 `lua/util/float.lua` 的单线边框和高亮约定，fzf-lua、Noice、LSP hover、diagnostic float、blink 补全菜单、mini.clue、Overseer 等入口保持统一。
 - lualine statusline 使用紧凑模式标签（`N`、`I`、`V`、`T` 等）；branch、diagnostics 和 filetype 会按窗口宽度条件显示，最右侧显示当前 OS 图标。
 - 顶部 tabline 左侧保留独立 Vim 图标区，buffer 列表只显示简洁名称，并用 `●` 标记已修改 buffer。
 - `signcolumn` 固定保留（`yes`），避免诊断、git sign 或书签 sign 出现时正文左右跳动。gitsigns 通过自定义 `statuscolumn` 在行号右侧显示 git 标记。
-- Treesitter 折叠行使用自定义格式（`◇` 前缀 + 首行预览 + 尾部信息）。
+- 折叠使用 Neovim 原生 LSP 和 Treesitter。普通文件优先用 LSP 的折叠范围，Markdown 用 Treesitter 折叠标题。`zM` / `zR` 关闭 / 展开全部折叠。
 - Markdown 链接相关快捷键放在 `after/ftplugin/markdown.lua`，Lua 文件局部设置放在 `after/ftplugin/lua.lua`。
 - Markdown 笔记默认使用全局 `~/Dropbox/note` 根目录，可通过 `lua/config/local.lua` 的 `notes.root` 覆盖；journal 按 `journal/YYYY/MM/W/YYYY-MM-DD.md` 分层；右侧抽屉 buffer 不进入普通 buffer 列表，避免污染项目工作流。
-- Noice 在补全菜单显示时自动抑制 LSP signature popup，避免浮窗抢焦点。
+- 在插入模式按 `Ctrl-s` 打开原生 LSP 签名帮助。Noice 负责命令行和消息浮窗。
 
 ## Treesitter
 
@@ -314,25 +315,24 @@ Diffview 关闭交给全局 `<leader>x`，在 Diffview tab 内会调用 Diffview
 - 启动时不下载或编译 parser；`:TSInstallMissingConfigParsers` 手动补装缺失项。
 - `:TSInstallConfigParsers` 可手动安装全部已配置 parser。
 
-## 配置热更新
-
-`:R` 命令会清除 `config`、`custom`、`libs`、`lsp`、`plugins`、`util` 命名空间下的已加载模块，然后重新 source `init.lua`，实现不重启 Neovim 的配置热更新。Lazy 已初始化时只刷新插件规格，不重复执行 `lazy.setup()`。
-
 ## Headless 验证
 
-关键交互边界可以用 Neovim headless 脚本验证：
+安装配置依赖的插件后，在仓库根目录运行全部回归脚本：
 
 ```sh
-nvim --headless -u NONE -i NONE -n -S tests/headless/mini_behaviors.lua +qa
+nvim --headless -u NONE -i NONE -n -l tests/run.lua
 ```
 
-## 结构收口补充
+每个脚本在独立 Neovim 进程运行，失败返回非零退出码。覆盖生命周期、Starter / 文件树 / 会话、保存清理、LSP、状态栏和窗口行为。单独检查项目交互可运行：
 
-- `lua/state/lifecycle.lua` 持有生命周期状态，热重载时不需要回写全局变量。
+```sh
+nvim --headless -u NONE -i NONE -n -l tests/headless/mini_behaviors.lua
+```
 
-## 结构收口
+## 结构与维护
 
-- `lua/config/lifecycle.lua` 统一管理 `ConfigUiReady` / `ConfigBackground` / `ConfigFilePost`。
-- `lua/plugins/mini/project.lua` 统一 recent、session、home 规则。
-- `lua/patches/` 统一收口 blink / noice / bookmarks / overseer 的内部 patch。
-- 细节说明见 `doc/lifecycle-and-patches.md`。
+- `lua/config/lifecycle.lua` 提供原生 `VeryLazy` 和一次性 `ConfigFilePost` 的订阅与晚订阅回放。
+- `lua/config/project.lua` 统一 recent、session、home 规则，`lua/config/recent_projects.lua` 负责最近路径与项目打开。
+- `lua/libs/` 存放路径、buffer 等基础能力，`lua/util/` 存放浮窗、picker 等配置工具。
+- `lua/patches/` 集中维护 Bookmarks 和 Overseer 的内部适配；Neogit popup 扩展留在插件配置中。
+- 修改配置后重启 Neovim 生效。生命周期和内部适配的边界见 [生命周期说明](doc/lifecycle-and-patches.md) 与 [Patch 维护记录](doc/internal-patches.md)。
