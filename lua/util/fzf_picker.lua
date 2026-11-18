@@ -1,7 +1,7 @@
 -- ============================================
 -- fzf-lua Picker 通用封装
 -- 提供符合 vim.ui.select 协议的 picker，
--- 供 Overseer / ToggleTerm / Yanky 等模块复用。
+-- 供 Overseer / Bookmarks / Yanky 等模块复用。
 -- ============================================
 local M = {}
 

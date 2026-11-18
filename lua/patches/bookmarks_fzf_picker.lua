@@ -1,53 +1,55 @@
 -- ============================================
 -- bookmarks.nvim fzf-lua picker
 -- ============================================
-local M = {}
-
-local function default_bookmark_display(bookmark, bookmarks)
-  local max_name = 15
-  local max_filename = 20
-  local max_filepath = 20
-
-  for _, item in ipairs(bookmarks) do
-    max_name = math.max(max_name, #(item.name or ""))
-    max_filename = math.max(max_filename, #vim.fn.fnamemodify(item.location.path, ":t"))
-    max_filepath = math.max(max_filepath, #vim.fn.pathshorten(item.location.path))
+local function fit_column(text, width)
+  local cells = vim.fn.strdisplaywidth(text)
+  if cells > width then
+    local prefix
+    local length = width - 2
+    repeat
+      prefix = vim.fn.strcharpart(text, 0, length, true)
+      cells = vim.fn.strdisplaywidth(prefix)
+      length = length - 1
+    until cells <= width - 2
+    text = prefix .. ".."
+    cells = cells + 2
   end
 
-  max_name = math.min(max_name, 30)
-  max_filename = math.min(max_filename, 30)
-  max_filepath = math.min(max_filepath, 40)
-
-  local name = bookmark.name or ""
-  local filename = vim.fn.fnamemodify(bookmark.location.path, ":t")
-  local path = vim.fn.pathshorten(bookmark.location.path)
-
-  if #name > max_name then
-    name = name:sub(1, max_name - 2) .. ".."
-  else
-    name = name .. string.rep(" ", max_name - #name)
-  end
-
-  if #filename > max_filename then
-    filename = filename:sub(1, max_filename - 2) .. ".."
-  else
-    filename = filename .. string.rep(" ", max_filename - #filename)
-  end
-
-  if #path > max_filepath then
-    path = path:sub(1, max_filepath - 2) .. ".."
-  else
-    path = path .. string.rep(" ", max_filepath - #path)
-  end
-
-  return string.format("%s | %s | %s", name, filename, path)
+  return text .. string.rep(" ", width - cells)
 end
 
 local function bookmark_display(bookmarks)
+  local config = vim.g.bookmarks_config
+  local display = config and config.picker and config.picker.entry_display
+  if type(display) == "function" then
+    return function(bookmark)
+      return display(bookmark, bookmarks)
+    end
+  end
+
+  local rows = {}
+  local widths = { 15, 20, 20 }
+  local limits = { 30, 30, 40 }
+  for _, bookmark in ipairs(bookmarks) do
+    local path = bookmark.location.path
+    local columns = {
+      vim.fn.strtrans(bookmark.name or ""),
+      vim.fn.strtrans(vim.fn.fnamemodify(path, ":t")),
+      vim.fn.strtrans(vim.fn.pathshorten(path)),
+    }
+    rows[bookmark] = columns
+    for i, text in ipairs(columns) do
+      widths[i] = math.min(limits[i], math.max(widths[i], vim.fn.strdisplaywidth(text)))
+    end
+  end
+
   return function(bookmark)
-    local configured = vim.g.bookmarks_config and vim.g.bookmarks_config.picker and vim.g.bookmarks_config.picker.entry_display
-    local display = type(configured) == "function" and configured or default_bookmark_display
-    return display(bookmark, bookmarks)
+    local columns = rows[bookmark]
+    return table.concat({
+      fit_column(columns[1], widths[1]),
+      fit_column(columns[2], widths[2]),
+      fit_column(columns[3], widths[3]),
+    }, " | ")
   end
 end
 
@@ -135,13 +137,9 @@ local function pick_commands(opts)
   end)
 end
 
-function M.apply()
-  package.loaded["bookmarks.picker"] = {
-    pick_bookmark = pick_bookmark,
-    grep_bookmark = grep_bookmark,
-    pick_bookmark_list = pick_bookmark_list,
-    pick_commands = pick_commands,
-  }
-end
-
-return M
+return {
+  pick_bookmark = pick_bookmark,
+  grep_bookmark = grep_bookmark,
+  pick_bookmark_list = pick_bookmark_list,
+  pick_commands = pick_commands,
+}

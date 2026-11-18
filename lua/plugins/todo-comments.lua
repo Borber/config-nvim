@@ -5,7 +5,7 @@ return {
   -- TODO 扫描不阻塞首屏；文件可见后再补上跳转和列表能力。
   event = lifecycle.lazy_events.file_post,
   cmd = { "TodoTrouble", "TodoFzfLua" },
-  dependencies = { "nvim-lua/plenary.nvim", "ibhagwan/fzf-lua" },
+  dependencies = { "nvim-lua/plenary.nvim" },
   opts = {},
   keys = {
     {

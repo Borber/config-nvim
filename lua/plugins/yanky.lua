@@ -35,7 +35,6 @@ return {
   },
   dependencies = {
     "kkharji/sqlite.lua",
-    "ibhagwan/fzf-lua",
   },
   opts = {
     ring = {

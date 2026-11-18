@@ -123,6 +123,10 @@ return {
   "LintaoAmons/bookmarks.nvim",
   init = function()
     require("util.sqlite").configure_clib()
+    -- 上游在插件脚本注册命令时缓存 picker。
+    package.preload["bookmarks.picker"] = function()
+      return require("patches.bookmarks_fzf_picker")
+    end
   end,
   cmd = {
     "BookmarkRebindOrphanNode",
@@ -152,7 +156,6 @@ return {
   },
   dependencies = {
     "kkharji/sqlite.lua",
-    "ibhagwan/fzf-lua",
   },
   opts = function()
     local ic = icons()
@@ -192,7 +195,6 @@ return {
     }
   end,
   config = function(_, opts)
-    require("patches.bookmarks_fzf_picker").apply()
     require("bookmarks").setup(opts)
     tree_patch.apply_render_patch()
     create_project_commands()

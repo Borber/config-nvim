@@ -166,6 +166,43 @@ function tests.lifecycle_file_post_handles_file_opened_before_ui()
   vim.api.nvim_buf_delete(file, { force = true })
 end
 
+function tests.bookmarks_picker_aligns_display_columns()
+  with_clean_state(function()
+    local bookmarks = {
+      { name = string.rep("书", 20), location = { path = "/project/章.md" } },
+      { name = "short", location = { path = "/project/note.md" } },
+    }
+    package.loaded["bookmarks.domain.repo"] = {
+      ensure_and_get_active_list = function()
+        return { name = "project" }
+      end,
+    }
+    package.loaded["bookmarks.domain.node"] = {
+      get_all_bookmarks = function()
+        return bookmarks
+      end,
+    }
+    local labels
+    local original_picker = package.loaded["util.fzf_picker"]
+    package.loaded["util.fzf_picker"] = {
+      select = function(items, opts)
+        labels = vim.tbl_map(opts.format_item, items)
+      end,
+    }
+    require("plugins.bookmarks").init()
+    local picker = require("bookmarks.picker")
+    assert_eq(picker, require("patches.bookmarks_fzf_picker"), "Plugin scripts should capture the fzf picker before configuration")
+    picker.pick_bookmark(function() end)
+    package.loaded["util.fzf_picker"] = original_picker
+
+    local first = vim.split(labels[1], " | ", { plain = true })
+    local second = vim.split(labels[2], " | ", { plain = true })
+    assert_eq(first[1], string.rep("书", 14) .. "..", "Truncation should keep complete Chinese characters")
+    assert_deep_eq(vim.tbl_map(vim.fn.strdisplaywidth, first), { 30, 20, 20 }, "Long names should cap the column at 30 cells")
+    assert_deep_eq(vim.tbl_map(vim.fn.strdisplaywidth, second), { 30, 20, 20 }, "Short names should align with the same columns")
+  end)
+end
+
 function tests.overseer_select_routes_only_overseer_kinds()
   with_clean_state(function()
     reset_modules("patches.overseer_select")
@@ -313,6 +350,7 @@ local test_order = {
   "lifecycle_file_post_waits_for_ui_and_skips_directories",
   "lifecycle_file_post_handles_file_opened_before_ui",
   "lifecycle_scheduled_subscriptions_run_once",
+  "bookmarks_picker_aligns_display_columns",
   "overseer_select_routes_only_overseer_kinds",
   "bookmarks_tree_icons_and_refresh",
   "ai_commit_is_available_from_neogit_status_and_commit_popup",

@@ -1,34 +1,5 @@
-local function selected_text()
-  local start_pos = vim.fn.getpos("'<")
-  local end_pos = vim.fn.getpos("'>")
-  local start_row, start_col = start_pos[2], start_pos[3]
-  local end_row, end_col = end_pos[2], end_pos[3]
-
-  if start_row == 0 or end_row == 0 then
-    return nil
-  end
-
-  if start_row > end_row or (start_row == end_row and start_col > end_col) then
-    start_row, end_row = end_row, start_row
-    start_col, end_col = end_col, start_col
-  end
-
-  local lines = vim.api.nvim_buf_get_text(0, start_row - 1, start_col - 1, end_row - 1, end_col, {})
-  local text = table.concat(lines, "\n")
-
-  return text ~= "" and text or nil
-end
-
 local function fzf()
   return require("fzf-lua")
-end
-
-local function live_grep_current_text()
-  return function()
-    fzf().live_grep({
-      search = selected_text() or vim.fn.expand("<cword>"),
-    })
-  end
 end
 
 return {
@@ -58,9 +29,20 @@ return {
     },
     {
       "<leader>fw",
-      live_grep_current_text(),
+      function()
+        fzf().live_grep({ search = vim.fn.expand("<cword>") })
+      end,
       desc = "Search word",
-      mode = { "n", "x" },
+    },
+    {
+      "<leader>fw",
+      function()
+        local lines = vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() })
+        local text = table.concat(lines, "\n")
+        fzf().live_grep({ search = text ~= "" and text or vim.fn.expand("<cword>") })
+      end,
+      desc = "Search selection",
+      mode = "x",
     },
     {
       "<leader>,",
