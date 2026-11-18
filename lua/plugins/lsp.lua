@@ -1,7 +1,7 @@
 local lifecycle = require("config.lifecycle")
 
 -- LSP：使用 Neovim 0.11+ 的 vim.lsp.config / vim.lsp.enable API。
--- Mason 负责手动安装管理；LSP 在 UI 就绪后加载，按文件类型启动服务器。
+-- Mason 负责手动安装管理；LSP 在首个真实文件就绪后加载，按文件类型启动服务器。
 
 local function enable_inlay_hints(bufnr)
   if vim.lsp.inlay_hint and type(vim.lsp.inlay_hint.enable) == "function" then
@@ -25,9 +25,6 @@ end
 return {
   {
     "williamboman/mason.nvim",
-    init = function()
-      require("config.tools").setup()
-    end,
     cmd = {
       "Mason",
       "MasonInstall",
@@ -36,12 +33,11 @@ return {
       "MasonUninstallAll",
       "MasonUpdate",
     },
-    opts = { PATH = "append" },
+    opts = { PATH = "skip" },
   },
   {
     "neovim/nvim-lspconfig",
-    event = lifecycle.lazy_events.ui_ready,
-    dependencies = { "williamboman/mason.nvim" },
+    event = lifecycle.lazy_events.file_post,
     config = function()
       local registry = require("lsp")
       local diagnostics = require("plugins.lsp.diagnostics")

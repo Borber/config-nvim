@@ -1,5 +1,5 @@
--- 加载顺序：options → keymaps → autocmds → lazy
 require("config.options")
+require("config.tools").setup()
 require("config.keymaps")
 require("config.notes").setup()
 require("config.autocmds")

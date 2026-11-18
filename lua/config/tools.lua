@@ -79,12 +79,18 @@ end
 -- 环境与手动入口
 -- ============================================
 function M.setup()
-  local bin = vim.fs.joinpath(vim.fn.stdpath("data"), "tools", "bin")
+  local data = vim.fn.stdpath("data")
+  local tools_bin = vim.fs.joinpath(data, "tools", "bin")
+  local mason_bin = vim.fs.joinpath(data, "mason", "bin")
   local separator = package.config:sub(1, 1) == "\\" and ";" or ":"
-  local paths = vim.split(vim.env.PATH or "", separator, { plain = true })
-  if not vim.tbl_contains(paths, bin) then
-    vim.env.PATH = bin .. separator .. (vim.env.PATH or "")
+  local paths = vim.env.PATH and vim.split(vim.env.PATH, separator, { plain = true }) or {}
+  if not vim.tbl_contains(paths, tools_bin) then
+    table.insert(paths, 1, tools_bin)
   end
+  if not vim.tbl_contains(paths, mason_bin) then
+    table.insert(paths, mason_bin)
+  end
+  vim.env.PATH = table.concat(paths, separator)
 
   vim.api.nvim_create_user_command("ConfigToolsCheck", function()
     local lines = { "语言工具检查（Neovim PATH）" }

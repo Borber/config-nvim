@@ -1,6 +1,8 @@
 local repo = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h:h")
-vim.opt.runtimepath:append(repo)
-vim.opt.runtimepath:append(vim.fn.stdpath("data") .. "/lazy/nvim-lspconfig")
+local data = vim.fn.stdpath("data")
+vim.opt.runtimepath:prepend(data .. "/lazy/nvim-lspconfig")
+vim.opt.runtimepath:prepend(repo)
+vim.opt.runtimepath:append(repo .. "/after")
 vim.opt.updatecount = 0
 
 local function assert_eq(actual, expected, message)
@@ -37,9 +39,31 @@ end
 
 local ok, err = xpcall(function()
   local tools = require("config.tools")
+  local separator = package.config:sub(1, 1) == "\\" and ";" or ":"
+  local original_path = vim.env.PATH
+  local system_path = vim.fs.joinpath(project, "system-bin")
+  vim.env.PATH = system_path
+  tools.setup()
+  tools.setup()
+  assert_eq(
+    vim.env.PATH,
+    table.concat({
+      vim.fs.joinpath(data, "tools", "bin"),
+      system_path,
+      vim.fs.joinpath(data, "mason", "bin"),
+    }, separator),
+    "Tool PATH setup should keep the search order and avoid duplicates"
+  )
+  vim.env.PATH = original_path
   tools.setup()
   local registry = require("lsp")
   registry.configure()
+
+  assert_eq(package.loaded["blink.cmp"], nil, "LSP setup should leave Blink unloaded")
+  vim.opt.runtimepath:append(data .. "/lazy/blink.lib")
+  vim.opt.runtimepath:append(data .. "/lazy/blink.cmp")
+  local capabilities = vim.tbl_deep_extend("force", vim.lsp.protocol.make_client_capabilities(), vim.lsp.config["*"].capabilities)
+  assert_eq(capabilities, require("blink.cmp").get_lsp_capabilities(nil, true), "LSP handshake must keep Blink capabilities")
 
   assert_eq(vim.tbl_contains(registry.names(), "rust_glancer"), true, "Rust should use Glancer")
   assert_eq(vim.tbl_contains(registry.names(), "rust_analyzer"), false, "RA should not remain enabled")
@@ -53,7 +77,14 @@ local ok, err = xpcall(function()
     onSave = true,
     command = "check",
   }, "Glancer should retain startup/save diagnostics via initialization options")
-  assert_eq(require("lsp.servers.rust_glancer").settings, nil, "Glancer should not inherit RA settings")
+  assert_eq(glancer.settings, nil, "Glancer should not inherit RA settings")
+  assert_eq(vim.lsp.config.taplo.cmd, {
+    "taplo",
+    "lsp",
+    "--config",
+    vim.fs.joinpath(vim.fn.stdpath("config"), "taplo.toml"),
+    "stdio",
+  }, "Taplo should resolve through PATH and retain its configuration argument")
   assert_eq(vim.lsp.config.jsonls.settings.json.validate.enable, true, "JSON validation should remain enabled after configuration is sent")
 
   local function try_start(name)
