@@ -4,152 +4,92 @@
 local M = {}
 
 local buffer_util = require("libs.buffer")
-local state = require("state.lifecycle")
+local path_util = require("libs.path")
+local configured = false
+local file_post_event
 
-M.user_patterns = {
-  ui_ready = "ConfigUiReady",
-  background = "ConfigBackground",
+local patterns = {
+  ui_ready = "VeryLazy",
   file_post = "ConfigFilePost",
 }
 
 M.lazy_events = {
-  ui_ready = "User ConfigUiReady",
-  background = "User ConfigBackground",
+  ui_ready = "VeryLazy",
   file_post = "User ConfigFilePost",
 }
 
-local configured = false
-
 -- ============================================
--- 事件状态与广播
+-- 一次性订阅与回放
 -- ============================================
-local function synthetic_event(name)
-  local data = state[name].data
-
-  return {
-    event = "User",
-    match = M.user_patterns[name],
-    buf = data and data.buf or 0,
-    data = data,
-  }
-end
-
-function M.ready(name)
-  local target = state[name]
-  if target == nil then
-    error("Unknown lifecycle event: " .. tostring(name))
-  end
-
-  return target.fired
-end
-
-function M.emit(name, data)
-  local pattern = M.user_patterns[name]
-  if pattern == nil then
-    error("Unknown lifecycle event: " .. tostring(name))
-  end
-
-  state[name].fired = true
-  state[name].data = data
-
-  vim.api.nvim_exec_autocmds("User", {
-    pattern = pattern,
-    modeline = false,
-    data = data,
-  })
-end
-
 function M.once(name, callback, opts)
   opts = opts or {}
+  local pattern = assert(patterns[name], "Unknown lifecycle event: " .. tostring(name))
+  local event
 
-  if M.ready(name) then
-    local run = function()
-      callback(synthetic_event(name))
-    end
+  if name == "file_post" then
+    event = file_post_event
+  elseif vim.g.did_very_lazy then
+    event = { event = "User", match = pattern, buf = 0 }
+  end
 
+  local function run(args)
     if opts.schedule then
-      vim.schedule(run)
+      vim.schedule(function()
+        callback(args)
+      end)
     else
-      run()
+      callback(args)
     end
+  end
 
+  if event ~= nil then
+    run(event)
     return
   end
 
   vim.api.nvim_create_autocmd("User", {
     group = opts.group,
-    pattern = M.user_patterns[name],
+    pattern = pattern,
     once = true,
-    callback = callback,
+    callback = run,
     desc = opts.desc,
   })
 end
 
-function M.on(name, callback, opts)
-  opts = opts or {}
-
-  if M.ready(name) then
-    local run = function()
-      callback(synthetic_event(name))
-    end
-
-    if opts.schedule then
-      vim.schedule(run)
-    else
-      run()
-    end
-
+-- ============================================
+-- 首个文件就绪
+-- ============================================
+function M.setup()
+  if configured then
     return
   end
 
-  vim.api.nvim_create_autocmd("User", {
-    group = opts.group,
-    pattern = M.user_patterns[name],
-    callback = callback,
-    desc = opts.desc,
-  })
-end
-
--- ============================================
--- 生命周期自动命令
--- ============================================
-local function setup_lazy_layers()
-  vim.api.nvim_create_autocmd("User", {
-    group = vim.api.nvim_create_augroup("config_lazy_layers", { clear = true }),
-    pattern = "VeryLazy",
-    once = true,
-    callback = function()
-      M.emit("ui_ready")
-
-      vim.defer_fn(function()
-        if vim.v.exiting ~= vim.NIL then
-          return
-        end
-
-        M.emit("background")
-      end, 800)
-    end,
-    desc = "Split VeryLazy follow-up work into ordered config layers",
-  })
-end
-
-local function setup_file_post()
-  local group_name = "config_file_post"
-  local file_post_fired = state.file_post.fired
-  local ui_entered = false
+  configured = true
+  local group = vim.api.nvim_create_augroup("config_file_post", { clear = true })
+  local ui_entered = vim.v.vim_did_enter == 1 and #vim.api.nvim_list_uis() > 0
 
   local function fire_file_post(bufnr)
-    if file_post_fired or not ui_entered or not buffer_util.is_normal_file(bufnr) then
+    bufnr = buffer_util.resolve(bufnr)
+    if file_post_event ~= nil or not ui_entered or bufnr == nil or not buffer_util.is_normal_file(bufnr) then
       return
     end
 
-    file_post_fired = true
-    M.emit("file_post", { buf = bufnr })
-    vim.api.nvim_del_augroup_by_name(group_name)
+    local path = path_util.local_normalized(vim.api.nvim_buf_get_name(bufnr))
+    if path == nil or path_util.is_directory(path) then
+      return
+    end
+
+    file_post_event = { event = "User", match = patterns.file_post, buf = bufnr, data = { buf = bufnr } }
+    vim.api.nvim_del_augroup_by_id(group)
+    vim.api.nvim_exec_autocmds("User", {
+      pattern = patterns.file_post,
+      modeline = false,
+      data = file_post_event.data,
+    })
   end
 
-  vim.api.nvim_create_autocmd({ "UIEnter", "BufReadPost", "BufNewFile" }, {
-    group = vim.api.nvim_create_augroup(group_name, { clear = true }),
+  vim.api.nvim_create_autocmd({ "UIEnter", "BufReadPost", "BufNewFile", "BufEnter" }, {
+    group = group,
     callback = function(event)
       if event.event == "UIEnter" then
         ui_entered = true
@@ -159,16 +99,10 @@ local function setup_file_post()
     end,
     desc = "Emit ConfigFilePost after UI enters a real file buffer",
   })
-end
 
-function M.setup()
-  if configured then
-    return
+  if ui_entered then
+    fire_file_post(vim.api.nvim_get_current_buf())
   end
-
-  configured = true
-  setup_lazy_layers()
-  setup_file_post()
 end
 
 return M

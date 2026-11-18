@@ -101,12 +101,7 @@ vim.fn.mkdir(project, "p")
 vim.cmd("silent edit " .. vim.fn.fnameescape(project))
 local directory_buf = vim.api.nvim_get_current_buf()
 
-vim.api.nvim_exec_autocmds("User", {
-  pattern = "ConfigFilePost",
-  modeline = false,
-  data = { buf = directory_buf },
-})
-
+vim.api.nvim_exec_autocmds("UIEnter", { buffer = directory_buf, modeline = false })
 flush_scheduled()
 assert_eq(refreshes, 0, "directory placeholder should not trigger branch refresh")
 assert_eq(#branch_probe_bufs, 0, "directory placeholder should not probe git branch")
@@ -116,22 +111,16 @@ write_file(file, { "print('ok')" })
 vim.cmd("silent edit " .. vim.fn.fnameescape(file))
 local file_buf = vim.api.nvim_get_current_buf()
 
-vim.api.nvim_exec_autocmds("User", {
-  pattern = "ConfigFilePost",
-  modeline = false,
-  data = { buf = file_buf },
-})
-
 flush_scheduled()
 assert_eq(refreshes, 1, "real file should refresh lualine branch once")
 assert_eq(branch_probe_bufs[1], file_buf, "branch refresh should run in the real file buffer")
 
 vim.api.nvim_exec_autocmds("User", {
-  pattern = "ConfigUiReady",
+  pattern = "VeryLazy",
   modeline = false,
 })
 flush_scheduled()
-assert_eq(wakatime_loads, 0, "ConfigUiReady should only set up deferred WakaTime refresh")
+assert_eq(wakatime_loads, 0, "VeryLazy should only set up deferred WakaTime refresh")
 
 vim.api.nvim_exec_autocmds("FocusGained", { modeline = false })
 flush_scheduled()

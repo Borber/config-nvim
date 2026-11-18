@@ -27,7 +27,7 @@ local lifecycle = require("config.lifecycle")
 return {
   "lewis6991/gitsigns.nvim",
   -- 首个真实文件出现后再加载，starter 首屏不需要 git sign；blame 仍保持手动开启。
-  event = lifecycle.lazy_events.ui_ready,
+  event = lifecycle.lazy_events.file_post,
   opts = function()
     local float = require("util.float")
     local icons = require("libs.icons").git

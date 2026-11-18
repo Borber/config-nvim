@@ -7,20 +7,12 @@ local function read_local_options()
   return local_config.input_method
 end
 
-local function executable(command)
-  return vim.fn.executable(command) == 1
-end
-
-local function command_succeeds(command, args)
-  local argv = { command }
-  vim.list_extend(argv, args or {})
-  vim.fn.system(argv)
-
-  return vim.v.shell_error == 0
-end
-
 local function usable(command, args)
-  return executable(command) and command_succeeds(command, args)
+  if vim.fn.executable(command) ~= 1 then
+    return false
+  end
+  vim.fn.system(vim.list_extend({ command }, args or {}))
+  return vim.v.shell_error == 0
 end
 
 local function detected_options()
@@ -59,27 +51,8 @@ local function detected_options()
   return nil
 end
 
--- 检测结果单独缓存：即使上层 options 缓存被清除，也不会重新 fork 子进程。
-local detected_defaults = nil
-local detected_done = false
-
-local function ensure_detected()
-  if not detected_done then
-    detected_done = true
-    detected_defaults = detected_options()
-  end
-  return detected_defaults
-end
-
 local function has_value(value)
   return type(value) == "string" and value ~= ""
-end
-
-local function sanitized_options(options)
-  local result = vim.deepcopy(options)
-  result.enabled = nil
-
-  return result
 end
 
 local has_cached_options = false
@@ -97,12 +70,16 @@ local function input_method_options()
     return nil
   end
 
-  local defaults = ensure_detected() or {}
+  local defaults = {}
+  if not (has_value(local_options.default_command) and has_value(local_options.default_im_select)) then
+    defaults = detected_options() or {}
+  end
   local options = vim.tbl_deep_extend("force", {
     set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
     set_previous_events = { "InsertEnter" },
     async_switch_im = true,
-  }, defaults, sanitized_options(local_options))
+  }, defaults, vim.deepcopy(local_options))
+  options.enabled = nil
 
   if not has_value(options.default_command) or not has_value(options.default_im_select) then
     return nil

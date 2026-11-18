@@ -52,40 +52,118 @@ end
 
 local tests = {}
 
-function tests.lifecycle_once_runs_immediately_after_ready()
-  with_clean_state(function()
-    reset_modules("config.lifecycle", "state.lifecycle")
+function tests.lifecycle_ui_uses_very_lazy_and_replays_once()
+  reset_modules("config.lifecycle")
+  local lifecycle = require("config.lifecycle")
+  local old_ready = vim.g.did_very_lazy
+  vim.g.did_very_lazy = false
+  local count = 0
 
-    local lifecycle = require("config.lifecycle")
-    lifecycle.setup()
-    lifecycle.emit("ui_ready")
-    local count = 0
-
-    lifecycle.once("ui_ready", function()
-      count = count + 1
-    end)
-
-    assert_eq(count, 1, "lifecycle.once should fire immediately after ui_ready")
+  lifecycle.once("ui_ready", function()
+    count = count + 1
   end)
+  vim.g.did_very_lazy = true
+  vim.api.nvim_exec_autocmds("User", { pattern = "VeryLazy", modeline = false })
+  vim.api.nvim_exec_autocmds("User", { pattern = "VeryLazy", modeline = false })
+  assert_eq(count, 1, "UI subscriber should run only once")
+
+  lifecycle.once("ui_ready", function()
+    count = count + 1
+  end)
+  assert_eq(count, 2, "late UI subscriber should replay immediately")
+  vim.g.did_very_lazy = old_ready
 end
 
-function tests.lifecycle_on_handles_multiple_emissions()
-  with_clean_state(function()
-    reset_modules("config.lifecycle", "state.lifecycle")
-
-    local lifecycle = require("config.lifecycle")
-    lifecycle.setup()
-    local count = 0
-
-    lifecycle.on("file_post", function()
-      count = count + 1
-    end)
-
-    lifecycle.emit("file_post", { buf = 0 })
-    lifecycle.emit("file_post", { buf = 0 })
-
-    assert_eq(count, 2, "lifecycle.on should remain active across repeated file_post emissions")
+function tests.lifecycle_file_post_waits_for_ui_and_skips_directories()
+  reset_modules("config.lifecycle")
+  local lifecycle = require("config.lifecycle")
+  lifecycle.setup()
+  local received = {}
+  lifecycle.once("file_post", function(event)
+    received[#received + 1] = event.data.buf
   end)
+
+  local directory = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(directory, vim.fn.getcwd())
+  vim.api.nvim_set_current_buf(directory)
+  vim.api.nvim_exec_autocmds("UIEnter", { buffer = directory, modeline = false })
+  assert_eq(#received, 0, "directory placeholder should not trigger file plugins")
+
+  local special = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(special, vim.fn.tempname())
+  vim.api.nvim_set_current_buf(special)
+  local uri = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(uri, "zipfile:///tmp/example.zip::file.lua")
+  vim.api.nvim_set_current_buf(uri)
+  assert_eq(#received, 0, "special buffers and URI paths should not trigger file plugins")
+
+  local file = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(file, vim.fn.tempname() .. ".lua")
+  vim.api.nvim_set_current_buf(file)
+  assert_eq(received[1], file, "entering a preloaded file should emit file_post")
+  vim.api.nvim_exec_autocmds("BufEnter", { buffer = file, modeline = false })
+  assert_eq(#received, 1, "file_post should fire only once")
+
+  lifecycle.once("file_post", function(event)
+    received[#received + 1] = event.data.buf
+  end)
+  assert_eq(received[2], file, "late file subscriber should replay the original buffer")
+  vim.api.nvim_buf_delete(directory, { force = true })
+  vim.api.nvim_buf_delete(special, { force = true })
+  vim.api.nvim_buf_delete(uri, { force = true })
+  vim.api.nvim_buf_delete(file, { force = true })
+end
+
+function tests.lifecycle_scheduled_subscriptions_run_once()
+  reset_modules("config.lifecycle")
+  local lifecycle = require("config.lifecycle")
+  local old_ready = vim.g.did_very_lazy
+  vim.g.did_very_lazy = false
+  local count = 0
+  local function subscribe()
+    lifecycle.once("ui_ready", function()
+      count = count + 1
+    end, { schedule = true })
+  end
+
+  subscribe()
+  vim.g.did_very_lazy = true
+  vim.api.nvim_exec_autocmds("User", { pattern = "VeryLazy", modeline = false })
+  assert_eq(count, 0, "scheduled subscriber should wait for the next loop")
+  assert_true(
+    vim.wait(1000, function()
+      return count == 1
+    end),
+    "scheduled subscriber should run"
+  )
+  subscribe()
+  assert_eq(count, 1, "late scheduled subscriber should also wait for the next loop")
+  assert_true(
+    vim.wait(1000, function()
+      return count == 2
+    end),
+    "late scheduled subscriber should replay once"
+  )
+  vim.g.did_very_lazy = old_ready
+end
+
+function tests.lifecycle_file_post_handles_file_opened_before_ui()
+  reset_modules("config.lifecycle")
+  local lifecycle = require("config.lifecycle")
+  lifecycle.setup()
+  local received
+  lifecycle.once("file_post", function(event)
+    received = event.data.buf
+  end)
+
+  local file = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(file, vim.fn.tempname() .. ".lua")
+  vim.api.nvim_set_current_buf(file)
+  vim.api.nvim_exec_autocmds("BufReadPost", { buffer = file, modeline = false })
+  assert_eq(received, nil, "reading a file before UIEnter should keep file plugins deferred")
+  vim.api.nvim_exec_autocmds("UIEnter", { buffer = file, modeline = false })
+  assert_eq(received, file, "UIEnter should pick up an already opened file")
+  vim.api.nvim_buf_delete(file, { force = true })
 end
 
 function tests.blink_preview_expands_snippets_and_restores_cursor()
@@ -315,8 +393,10 @@ function tests.ai_commit_is_available_from_neogit_status_and_commit_popup()
 end
 
 local test_order = {
-  "lifecycle_once_runs_immediately_after_ready",
-  "lifecycle_on_handles_multiple_emissions",
+  "lifecycle_ui_uses_very_lazy_and_replays_once",
+  "lifecycle_file_post_waits_for_ui_and_skips_directories",
+  "lifecycle_file_post_handles_file_opened_before_ui",
+  "lifecycle_scheduled_subscriptions_run_once",
   "blink_preview_expands_snippets_and_restores_cursor",
   "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
