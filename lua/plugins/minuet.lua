@@ -71,7 +71,17 @@ end
 
 return {
   "milanglacier/minuet-ai.nvim",
-  event = "InsertEnter",
+  cmd = "Minuet",
+  keys = {
+    {
+      "<M-y>",
+      function()
+        require("blink.cmp").show({ providers = { "minuet" } })
+      end,
+      mode = "i",
+      desc = "Minuet AI completion",
+    },
+  },
   opts = function()
     local local_config = read_local_config()
     local minuet_config = local_minuet_config(local_config)
@@ -79,7 +89,7 @@ return {
     local defaults = {
       provider = "codestral",
       blink = {
-        enable_auto_complete = true,
+        enable_auto_complete = false,
       },
       cmp = {
         enable_auto_complete = false,

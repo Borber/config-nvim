@@ -6,11 +6,6 @@ return {
   dependencies = {
     "MunifTanjim/nui.nvim",
   },
-  config = function(_, opts)
-    require("patches.noice_signature").apply()
-
-    require("noice").setup(opts)
-  end,
   opts = function()
     local float = require("util.float")
 
@@ -78,6 +73,9 @@ return {
       },
       lsp = {
         hover = {
+          enabled = false,
+        },
+        signature = {
           enabled = false,
         },
         progress = {

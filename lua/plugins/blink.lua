@@ -66,29 +66,16 @@ end
 
 return {
   "saghen/blink.cmp",
+  main = "blink.cmp",
   event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
     "saghen/blink.lib",
     "rafamadriz/friendly-snippets",
-    "milanglacier/minuet-ai.nvim",
   },
   build = function()
     with_blink_build_env(function()
       require("blink.cmp").build():pwait(60000)
     end)
-  end,
-  config = function(_, opts)
-    -- 覆盖 blink 内部的 accept preview，实现多行候选的临时预览。
-    -- 这个入口属于内部模块，升级 blink 后如果预览异常，优先检查这里。
-    require("patches.blink_preview").apply()
-    local blink = require("blink.cmp")
-    blink.setup(opts)
-
-    local function show_minuet()
-      blink.show({ providers = { "minuet" } })
-    end
-
-    vim.keymap.set("i", "<M-y>", show_minuet, { desc = "Minuet AI completion" })
   end,
   opts = function()
     local float = require("util.float")
@@ -142,7 +129,7 @@ return {
         preset = "default",
       },
       sources = {
-        default = { "lsp", "minuet", "path", "buffer" },
+        default = { "lsp", "path", "buffer" },
         per_filetype = {
           markdown = { inherit_defaults = true, "snippets" },
         },
@@ -182,12 +169,6 @@ return {
         implementation = "prefer_rust",
       },
 
-      signature = {
-        window = {
-          border = float.border,
-          winhighlight = float.float_winhighlight(),
-        },
-      },
       cmdline = {
         enabled = true,
         keymap = {

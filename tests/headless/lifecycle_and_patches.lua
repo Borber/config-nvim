@@ -166,90 +166,6 @@ function tests.lifecycle_file_post_handles_file_opened_before_ui()
   vim.api.nvim_buf_delete(file, { force = true })
 end
 
-function tests.blink_preview_expands_snippets_and_restores_cursor()
-  with_clean_state(function()
-    reset_modules("patches.blink_preview", "blink.cmp.lib.text_edits", "blink.cmp.sources.snippets.utils")
-
-    local applied_text
-    package.loaded["blink.cmp.lib.text_edits"] = {
-      get_from_item = function(item)
-        return { newText = item.newText }
-      end,
-      get_undo_text_edit = function(edit)
-        return { undo = edit.newText }
-      end,
-      apply = function(edit)
-        applied_text = edit.newText
-      end,
-    }
-    package.loaded["blink.cmp.sources.snippets.utils"] = {
-      safe_parse = function()
-        return setmetatable({}, {
-          __tostring = function()
-            return "expanded"
-          end,
-        })
-      end,
-    }
-
-    vim.cmd("silent! enew!")
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "alpha" })
-    vim.api.nvim_win_set_cursor(0, { 1, 0 })
-
-    local patch = require("patches.blink_preview")
-    local undo = patch.preview_multiline_completion({
-      insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
-      newText = "${1:hello}",
-    })
-
-    assert_eq(applied_text, "expanded", "blink preview should expand snippet text before previewing")
-    assert_eq(undo.undo, "expanded", "blink preview should return an undo edit for the expanded text")
-    assert_eq(vim.api.nvim_win_get_cursor(0)[1], 1, "blink preview should restore the original cursor row")
-    assert_eq(vim.api.nvim_win_get_cursor(0)[2], 0, "blink preview should restore the original cursor column")
-  end)
-end
-
-function tests.noice_signature_guard_blocks_while_menu_visible()
-  with_clean_state(function()
-    reset_modules("patches.noice_signature", "noice.lsp.signature", "blink.cmp")
-
-    local check_calls = 0
-    local on_signature_calls = 0
-    local menu_visible = false
-
-    package.loaded["noice.lsp.signature"] = {
-      check = function()
-        check_calls = check_calls + 1
-      end,
-      on_signature = function()
-        on_signature_calls = on_signature_calls + 1
-      end,
-    }
-    package.loaded["blink.cmp"] = {
-      is_menu_visible = function()
-        return menu_visible
-      end,
-    }
-
-    local patch = require("patches.noice_signature")
-    patch.apply()
-    patch.apply()
-
-    local signature = package.loaded["noice.lsp.signature"]
-    signature.check()
-    signature.on_signature()
-    assert_eq(check_calls, 1, "signature helper should pass through while menu is hidden")
-    assert_eq(on_signature_calls, 1, "signature helper should pass through while menu is hidden")
-
-    menu_visible = true
-    signature.check()
-    signature.on_signature()
-    assert_eq(check_calls, 1, "signature helper should block while blink menu is visible")
-    assert_eq(on_signature_calls, 1, "signature helper should block while blink menu is visible")
-    assert_true(rawget(signature, "_config_nvim_blink_guarded") == true, "noice signature guard should be marked as applied")
-  end)
-end
-
 function tests.overseer_select_routes_only_overseer_kinds()
   with_clean_state(function()
     reset_modules("patches.overseer_select")
@@ -397,8 +313,6 @@ local test_order = {
   "lifecycle_file_post_waits_for_ui_and_skips_directories",
   "lifecycle_file_post_handles_file_opened_before_ui",
   "lifecycle_scheduled_subscriptions_run_once",
-  "blink_preview_expands_snippets_and_restores_cursor",
-  "noice_signature_guard_blocks_while_menu_visible",
   "overseer_select_routes_only_overseer_kinds",
   "bookmarks_tree_icons_and_refresh",
   "ai_commit_is_available_from_neogit_status_and_commit_popup",
